@@ -35,6 +35,7 @@ export interface Customer {
   address?: string | null;
   aadhaar_no?: string | null;
   aadhaar_doc_path?: string | null;
+  aadhaar_back_doc_path?: string | null;
   pan_no?: string | null;
   pan_doc_path?: string | null;
   opening_balance: number;
@@ -52,6 +53,7 @@ export interface CustomerCreate {
   address?: string;
   aadhaar_no?: string;
   aadhaar_doc_path?: string;
+  aadhaar_back_doc_path?: string;
   pan_no?: string;
   pan_doc_path?: string;
   opening_balance?: number;

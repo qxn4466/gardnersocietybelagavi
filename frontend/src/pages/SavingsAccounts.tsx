@@ -30,6 +30,7 @@ const INITIAL_FORM: CustomerCreate = {
   address: '',
   aadhaar_no: '',
   aadhaar_doc_path: '',
+  aadhaar_back_doc_path: '',
   pan_no: '',
   pan_doc_path: '',
   opening_balance: 0,
@@ -43,7 +44,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
   const [form, setForm] = useState<CustomerCreate>(INITIAL_FORM);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploadingAadhaar, setUploadingAadhaar] = useState(false);
+  const [uploadingAadhaarFront, setUploadingAadhaarFront] = useState(false);
+  const [uploadingAadhaarBack, setUploadingAadhaarBack] = useState(false);
   const [uploadingPan, setUploadingPan] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [previewDocUrl, setPreviewDocUrl] = useState<{ url: string; title: string } | null>(null);
@@ -93,12 +95,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     form.last_name,
   ].filter(Boolean).join(' ').trim();
 
-  // Document Upload Handlers
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: 'aadhaar' | 'pan') => {
+  // Document Upload Handlers (3 Documents: Aadhaar Front, Aadhaar Back, PAN)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: 'aadhaar_front' | 'aadhaar_back' | 'pan') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (docType === 'aadhaar') setUploadingAadhaar(true);
+    if (docType === 'aadhaar_front') setUploadingAadhaarFront(true);
+    if (docType === 'aadhaar_back') setUploadingAadhaarBack(true);
     if (docType === 'pan') setUploadingPan(true);
 
     const reader = new FileReader();
@@ -107,21 +110,27 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
       try {
         const res = await uploadCustomerDocument(file, docType).catch(() => null);
         const finalPath = dataUrl || res?.filepath || '';
-        if (docType === 'aadhaar') {
+        if (docType === 'aadhaar_front') {
           setForm(prev => ({ ...prev, aadhaar_doc_path: finalPath }));
-          setAlert({ type: 'success', msg: 'Aadhaar card scan attached successfully!' });
+          setAlert({ type: 'success', msg: 'Aadhaar Card (Front Scan) attached successfully!' });
+        } else if (docType === 'aadhaar_back') {
+          setForm(prev => ({ ...prev, aadhaar_back_doc_path: finalPath }));
+          setAlert({ type: 'success', msg: 'Aadhaar Card (Back Scan) attached successfully!' });
         } else {
           setForm(prev => ({ ...prev, pan_doc_path: finalPath }));
-          setAlert({ type: 'success', msg: 'PAN card scan attached successfully!' });
+          setAlert({ type: 'success', msg: 'PAN Card scan attached successfully!' });
         }
       } catch {
-        if (docType === 'aadhaar') {
+        if (docType === 'aadhaar_front') {
           setForm(prev => ({ ...prev, aadhaar_doc_path: dataUrl }));
+        } else if (docType === 'aadhaar_back') {
+          setForm(prev => ({ ...prev, aadhaar_back_doc_path: dataUrl }));
         } else {
           setForm(prev => ({ ...prev, pan_doc_path: dataUrl }));
         }
       } finally {
-        if (docType === 'aadhaar') setUploadingAadhaar(false);
+        if (docType === 'aadhaar_front') setUploadingAadhaarFront(false);
+        if (docType === 'aadhaar_back') setUploadingAadhaarBack(false);
         if (docType === 'pan') setUploadingPan(false);
       }
     };
@@ -167,6 +176,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
       address: cust.address || '',
       aadhaar_no: cust.aadhaar_no || '',
       aadhaar_doc_path: cust.aadhaar_doc_path || '',
+      aadhaar_back_doc_path: cust.aadhaar_back_doc_path || '',
       pan_no: cust.pan_no || '',
       pan_doc_path: cust.pan_doc_path || '',
       opening_balance: cust.opening_balance || 0,
@@ -191,7 +201,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     <div className="page-container">
       <Header
         title="Customer Savings Accounts"
-        subtitle="Manage customer profiles, 10-Digit IDs, Aadhaar & PAN card scans"
+        subtitle="Manage customer profiles, 10-Digit IDs, Aadhaar Front/Back &amp; PAN card scans"
         level={1}
         user={user}
         onLogout={onLogout}
@@ -199,11 +209,18 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
       <div className="page-content">
 
-        {/* ── Alert ── */}
+        {/* ── Alert Banner ── */}
         {alert && (
-          <div className={`alert alert-${alert.type}`}>
-            {alert.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-            {alert.msg}
+          <div
+            className={`alert alert-${alert.type}`}
+            style={
+              alert.type === 'success'
+                ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontWeight: 700 }
+                : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontWeight: 700 }
+            }
+          >
+            {alert.type === 'success' ? <CheckCircle size={18} color="#16a34a" /> : <XCircle size={18} color="#dc2626" />}
+            <span style={{ color: alert.type === 'success' ? '#15803d' : '#b91c1c' }}>{alert.msg}</span>
           </div>
         )}
 
@@ -215,7 +232,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                 <UserPlus size={20} color="var(--blue-700)" />
                 {editingId ? `Edit Savings Account (${form.customer_id})` : 'New Savings Account Registration'}
               </div>
-              <div className="card-subtitle">Auto-generated 10-Digit Customer ID & Document Verification</div>
+              <div className="card-subtitle">Auto-generated 10-Digit Customer ID &amp; 3-Document Verification</div>
             </div>
 
             {editingId && (
@@ -249,33 +266,28 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em' }}
                       value={form.customer_id || ''}
                       onChange={e => handleInputChange('customer_id', e.target.value)}
-                      placeholder="e.g. 1000000001"
+                      placeholder="1000000001"
                       required
                     />
-                    <Hash size={16} style={{ position: 'absolute', right: 12, top: 12, color: 'var(--blue-600)' }} />
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Mobile Number</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="tel"
-                      className="form-input"
-                      placeholder="10-digit mobile number"
-                      value={form.mobile_no || ''}
-                      onChange={e => handleInputChange('mobile_no', e.target.value)}
-                    />
-                    <Phone size={15} style={{ position: 'absolute', right: 12, top: 12, color: 'var(--text-muted)' }} />
-                  </div>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="10-digit mobile number"
+                    value={form.mobile_no || ''}
+                    onChange={e => handleInputChange('mobile_no', e.target.value)}
+                  />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Opening Savings Balance (₹)</label>
                   <input
                     type="number"
-                    step="any"
-                    min="0"
+                    step="0.01"
                     className="form-input"
                     placeholder="0.00"
                     value={form.opening_balance || ''}
@@ -285,22 +297,21 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
               </div>
 
-              {/* Row 2: Salutation, First Name, Middle Name, Last Name */}
-              <div className="form-grid" style={{ gridTemplateColumns: '90px 1fr 1fr 1fr', marginBottom: 16 }}>
+              {/* Row 2: Name Parts */}
+              <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', marginBottom: 16 }}>
                 
                 <div className="form-group">
-                  <label className="form-label">Title</label>
+                  <label className="form-label">Salutation</label>
                   <select
                     className="form-select"
                     value={form.salutation || 'Mr.'}
                     onChange={e => handleInputChange('salutation', e.target.value)}
                   >
-                    <option>Mr.</option>
-                    <option>Mrs.</option>
-                    <option>Ms.</option>
-                    <option>Dr.</option>
-                    <option>Sri.</option>
-                    <option>Smt.</option>
+                    <option value="Mr.">Mr.</option>
+                    <option value="Smt.">Smt.</option>
+                    <option value="Sri.">Sri.</option>
+                    <option value="Dr.">Dr.</option>
+                    <option value="M/s.">M/s.</option>
                   </select>
                 </div>
 
@@ -364,20 +375,20 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                 />
               </div>
 
-              {/* Document Scans / Uploads Section */}
+              {/* 3 KYC Document Scans / Uploads Section */}
               <div style={{
                 background: '#f8fafc', border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 24
               }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <ShieldCheck size={16} color="var(--blue-700)" /> KYC Document Verification (Aadhaar &amp; PAN Card Scan)
+                  <ShieldCheck size={16} color="var(--blue-700)" /> 3-Document KYC Verification (Aadhaar Front, Aadhaar Back &amp; PAN Card)
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                   
-                  {/* Aadhaar Upload Box */}
+                  {/* Doc 1: Aadhaar Front Upload Box */}
                   <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>Aadhaar Card Details</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>1. Aadhaar Card (Front)</div>
                     <input
                       type="text"
                       className="form-input"
@@ -387,15 +398,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       style={{ marginBottom: 10, fontSize: 13 }}
                     />
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
-                        <Upload size={14} />
-                        {uploadingAadhaar ? 'Uploading…' : form.aadhaar_doc_path ? 'Change Aadhaar Scan' : 'Scan / Upload Aadhaar Card'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
+                        <Upload size={13} />
+                        {uploadingAadhaarFront ? 'Uploading…' : form.aadhaar_doc_path ? 'Change Front' : 'Scan Front'}
                         <input
                           type="file"
                           accept="image/*,.pdf"
                           style={{ display: 'none' }}
-                          onChange={e => handleFileUpload(e, 'aadhaar')}
+                          onChange={e => handleFileUpload(e, 'aadhaar_front')}
                         />
                       </label>
 
@@ -403,36 +414,71 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card Scan' })}
-                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe' }}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)' })}
+                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
                         >
-                          <Eye size={14} /> View Document
+                          <Eye size={13} /> View
                         </button>
                       )}
                     </div>
                     {form.aadhaar_doc_path && (
-                      <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={12} /> Aadhaar document scan attached
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle size={12} color="#16a34a" /> Front Scan attached
                       </div>
                     )}
                   </div>
 
-                  {/* PAN Card Upload Box */}
+                  {/* Doc 2: Aadhaar Back Upload Box */}
                   <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>PAN Card Details</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>2. Aadhaar Card (Back)</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>Address &amp; QR Code Side Scan</div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
+                        <Upload size={13} />
+                        {uploadingAadhaarBack ? 'Uploading…' : form.aadhaar_back_doc_path ? 'Change Back' : 'Scan Back'}
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          style={{ display: 'none' }}
+                          onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                        />
+                      </label>
+
+                      {form.aadhaar_back_doc_path && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)' })}
+                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
+                        >
+                          <Eye size={13} /> View
+                        </button>
+                      )}
+                    </div>
+                    {form.aadhaar_back_doc_path && (
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle size={12} color="#16a34a" /> Back Scan attached
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Doc 3: PAN Card Upload Box */}
+                  <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>3. PAN Card Scan</div>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="10-character PAN Number (e.g. ABCDE1234F)"
+                      placeholder="10-char PAN (e.g. ABCDE1234F)"
                       value={form.pan_no || ''}
-                      onChange={e => handleInputChange('pan_no', e.target.value)}
+                      onChange={e => handleInputChange('pan_no', e.target.value.toUpperCase())}
                       style={{ marginBottom: 10, fontSize: 13 }}
                     />
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
-                        <Upload size={14} />
-                        {uploadingPan ? 'Uploading…' : form.pan_doc_path ? 'Change PAN Scan' : 'Scan / Upload PAN Card'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
+                        <Upload size={13} />
+                        {uploadingPan ? 'Uploading…' : form.pan_doc_path ? 'Change PAN' : 'Scan PAN'}
                         <input
                           type="file"
                           accept="image/*,.pdf"
@@ -446,15 +492,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                           type="button"
                           className="btn btn-secondary btn-sm"
                           onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan' })}
-                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe' }}
+                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
                         >
-                          <Eye size={14} /> View Document
+                          <Eye size={13} /> View
                         </button>
                       )}
                     </div>
                     {form.pan_doc_path && (
-                      <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={12} /> PAN document scan attached
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
                       </div>
                     )}
                   </div>
@@ -464,12 +510,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
               {/* Submit Buttons */}
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={handleReset}>
-                  Reset
-                </button>
+                {editingId && (
+                  <button type="button" className="btn btn-secondary" onClick={handleReset}>
+                    Cancel Edit
+                  </button>
+                )}
                 <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                  {loading ? <span className="spinner" /> : <UserPlus size={16} />}
-                  {loading ? 'Saving…' : editingId ? 'Update Savings Account' : 'Create Savings Account'}
+                  {loading ? <span className="spinner" /> : <UserPlus size={18} />}
+                  {editingId ? 'Update Customer Savings Account' : 'Register Customer Savings Account'}
                 </button>
               </div>
 
@@ -477,34 +525,32 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
           </div>
         </div>
 
-        {/* ── Customers Accounts Directory Table ── */}
+        {/* ── Registered Customers List Table ── */}
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                Customer Accounts Directory ({customers.length})
-              </div>
-              <div className="card-subtitle">Search by 10-Digit ID, Name, Mobile, Aadhaar or PAN</div>
+              <div className="card-title">Customer Savings Accounts Directory</div>
+              <div className="card-subtitle">Showing all registered member accounts &amp; 3-document KYC scans</div>
             </div>
-          </div>
 
-          <div className="card-body">
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="filter-bar" style={{ boxShadow: 'none', background: '#f8fafc', marginBottom: 20 }}>
-              <div className="filter-group" style={{ flex: 1 }}>
-                <span className="filter-label">Search Directory:</span>
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
+              <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   className="filter-input"
-                  placeholder="Enter 10-Digit Customer ID, Name, Mobile No, Aadhaar or PAN..."
+                  placeholder="Search by ID, Name, Mobile, Aadhaar, PAN…"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: '100%' }}
+                  style={{ width: 280, paddingLeft: 30 }}
                 />
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               </div>
+
               <button type="submit" className="btn btn-primary btn-sm">
-                <Search size={14} /> Search
+                Search
               </button>
+
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -513,101 +559,111 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                 <RefreshCw size={14} /> Reset
               </button>
             </form>
+          </div>
 
-            {/* Table */}
-            <div className="table-wrapper">
-              {loading ? (
-                <div className="loading-overlay">
-                  <span className="spinner" /> Loading customer accounts…
-                </div>
-              ) : customers.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon"><UserPlus /></div>
-                  <div className="empty-state-title">No customer savings accounts found</div>
-                  <div className="empty-state-sub">Create a new customer account using the registration form above</div>
-                </div>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Customer ID</th>
-                      <th>Full Name</th>
-                      <th>Mobile Number</th>
-                      <th>Address</th>
-                      <th>Aadhaar No / Doc</th>
-                      <th>PAN No / Doc</th>
-                      <th style={{ textAlign: 'right' }}>Opening Balance</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customers.map(c => (
-                      <tr key={c.id}>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--blue-800)', fontSize: 13 }}>
-                          {c.customer_id}
-                        </td>
-                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {c.full_name}
-                        </td>
-                        <td>{c.mobile_no || '—'}</td>
-                        <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {c.address || '—'}
-                        </td>
-                        <td>
-                          <div style={{ fontSize: 12 }}>
-                            {c.aadhaar_no || '—'}
+          {/* Table */}
+          <div className="table-wrapper">
+            {loading ? (
+              <div className="loading-overlay">
+                <span className="spinner" /> Loading customer accounts…
+              </div>
+            ) : customers.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon"><UserPlus /></div>
+                <div className="empty-state-title">No customer savings accounts found</div>
+                <div className="empty-state-sub">Create a new customer account using the registration form above</div>
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Customer ID</th>
+                    <th>Full Name</th>
+                    <th>Mobile Number</th>
+                    <th>Residential Address</th>
+                    <th>Aadhaar No / 2 Scans</th>
+                    <th>PAN No / Scan</th>
+                    <th style={{ textAlign: 'right' }}>Opening Balance</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map(c => (
+                    <tr key={c.id}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--blue-800)', fontSize: 13 }}>
+                        {c.customer_id}
+                      </td>
+                      <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {c.full_name}
+                      </td>
+                      <td>{c.mobile_no || '—'}</td>
+                      <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {c.address || '—'}
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 12 }}>
+                          <div>{c.aadhaar_no || '—'}</div>
+                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                             {c.aadhaar_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar - ${c.full_name}` })}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar Front - ${c.full_name}` })}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                               >
-                                <ImageIcon size={10} /> Scan
+                                <ImageIcon size={10} /> Front
                               </button>
                             )}
-                          </div>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: 12 }}>
-                            {c.pan_no || '—'}
-                            {c.pan_doc_path && (
+                            {c.aadhaar_back_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}` })}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_back_doc_path), title: `Aadhaar Back - ${c.full_name}` })}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                               >
-                                <ImageIcon size={10} /> Scan
+                                <ImageIcon size={10} /> Back
                               </button>
                             )}
                           </div>
-                        </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)' }}>
-                          ₹ {Number(c.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6 }}>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 12 }}>
+                          <div>{c.pan_no || '—'}</div>
+                          {c.pan_doc_path && (
                             <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ fontSize: 11, padding: '4px 8px' }}
-                              onClick={() => handleEdit(c)}
-                              title="Edit Customer Profile"
+                              onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}` })}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                             >
-                              Edit Profile
+                              <ImageIcon size={10} /> PAN Scan
                             </button>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              style={{ fontSize: 11, padding: '4px 8px' }}
-                              onClick={() => handleNewTransactionForCustomer(c)}
-                              title="Create Credit Account Transaction for this Customer"
-                            >
-                              Entry <ArrowRight size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)' }}>
+                        ₹ {Number(c.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: 11, padding: '4px 8px' }}
+                            onClick={() => handleEdit(c)}
+                            title="Edit Customer Profile"
+                          >
+                            Edit Profile
+                          </button>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ fontSize: 11, padding: '4px 8px' }}
+                            onClick={() => handleNewTransactionForCustomer(c)}
+                            title="Create Credit Account Transaction for this Customer"
+                          >
+                            Entry <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -621,7 +677,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
           }}>
             <div style={{
               background: '#ffffff', border: '1px solid var(--border-muted)',
-              borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 720,
+              borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 780,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden'
             }}>
@@ -641,7 +697,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       className="btn btn-secondary btn-sm"
                       style={{ fontSize: 11, padding: '4px 10px' }}
                     >
-                      Open Link ↗
+                      Open Original Link ↗
                     </a>
                   )}
                   <button
@@ -655,15 +711,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
               <div style={{ padding: 20, overflowY: 'auto', textAlign: 'center', background: '#f8fafc', flex: 1 }}>
                 {previewDocUrl.url.toLowerCase().endsWith('.pdf') ? (
-                  <iframe src={previewDocUrl.url} style={{ width: '100%', height: '500px', border: 'none' }} title="PDF Preview" />
+                  <iframe src={previewDocUrl.url} style={{ width: '100%', height: '520px', border: 'none' }} title="PDF Preview" />
                 ) : (
                   <img
                     src={previewDocUrl.url}
                     alt="Document Scan Preview"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="100%" height="100%" fill="%23f1f5f9"/><text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-size="14" font-family="sans-serif">Document File Attached</text><text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" fill="%232563eb" font-size="12" font-family="sans-serif">File URL path updated</text></svg>';
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="250" viewBox="0 0 500 250"><rect width="100%" height="100%" fill="%23f8fafc" stroke="%23cbd5e1" stroke-width="2"/><text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" fill="%2315803d" font-size="16" font-weight="bold" font-family="sans-serif">✓ Document Scan Attached &amp; Saved</text><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-size="13" font-family="sans-serif">Document File path linked in database</text></svg>';
                     }}
-                    style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                    style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
                   />
                 )}
               </div>

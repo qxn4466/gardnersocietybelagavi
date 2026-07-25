@@ -140,6 +140,7 @@ class CustomerBase(BaseModel):
     address: Optional[str] = None
     aadhaar_no: Optional[str] = None
     aadhaar_doc_path: Optional[str] = None
+    aadhaar_back_doc_path: Optional[str] = None
     pan_no: Optional[str] = None
     pan_doc_path: Optional[str] = None
     opening_balance: Optional[Decimal] = Decimal("0.00")

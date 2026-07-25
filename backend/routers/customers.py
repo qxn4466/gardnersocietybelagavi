@@ -83,6 +83,7 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
         address=payload.address.strip() if payload.address else None,
         aadhaar_no=payload.aadhaar_no.strip() if payload.aadhaar_no else None,
         aadhaar_doc_path=payload.aadhaar_doc_path,
+        aadhaar_back_doc_path=payload.aadhaar_back_doc_path,
         pan_no=payload.pan_no.strip() if payload.pan_no else None,
         pan_doc_path=payload.pan_doc_path,
         opening_balance=payload.opening_balance or 0,
@@ -146,6 +147,8 @@ def update_customer(id: int, payload: CustomerCreate, db: Session = Depends(get_
     cust.aadhaar_no = payload.aadhaar_no.strip() if payload.aadhaar_no else None
     if payload.aadhaar_doc_path:
         cust.aadhaar_doc_path = payload.aadhaar_doc_path
+    if payload.aadhaar_back_doc_path:
+        cust.aadhaar_back_doc_path = payload.aadhaar_back_doc_path
     cust.pan_no = payload.pan_no.strip() if payload.pan_no else None
     if payload.pan_doc_path:
         cust.pan_doc_path = payload.pan_doc_path
