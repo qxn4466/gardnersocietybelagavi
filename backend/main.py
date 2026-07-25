@@ -5,8 +5,11 @@ from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 from routers import masters, transactions, cashbook, ledger, auth, customers
 
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
+# Create all tables on startup safely
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Startup DB Table Creation Notice: {e}")
 
 app = FastAPI(
     title="Belagavi Gardeners Society — Accounting System",
