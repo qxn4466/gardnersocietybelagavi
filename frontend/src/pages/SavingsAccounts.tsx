@@ -11,6 +11,7 @@ import {
   createCustomer,
   updateCustomer,
   uploadCustomerDocument,
+  getFileUrl,
 } from '../api/client';
 import type { Customer, CustomerCreate, User } from '../types';
 
@@ -392,7 +393,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: `http://localhost:8000${form.aadhaar_doc_path}`, title: 'Aadhaar Card Scan' })}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card Scan' })}
                           style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe' }}
                         >
                           <Eye size={14} /> View Document
@@ -434,7 +435,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: `http://localhost:8000${form.pan_doc_path}`, title: 'PAN Card Scan' })}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan' })}
                           style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe' }}
                         >
                           <Eye size={14} /> View Document
@@ -547,7 +548,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                             {c.aadhaar_no || '—'}
                             {c.aadhaar_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: `http://localhost:8000${c.aadhaar_doc_path}`, title: `Aadhaar - ${c.full_name}` })}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar - ${c.full_name}` })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }}
                               >
                                 <ImageIcon size={10} /> Scan
@@ -560,7 +561,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                             {c.pan_no || '—'}
                             {c.pan_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: `http://localhost:8000${c.pan_doc_path}`, title: `PAN - ${c.full_name}` })}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}` })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }}
                               >
                                 <ImageIcon size={10} /> Scan

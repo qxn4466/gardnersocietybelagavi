@@ -10,7 +10,15 @@ import type {
   AccountMaster,
 } from '../types';
 
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+export const API_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
+
+export const getFileUrl = (path?: string | null): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 
 const api = axios.create({ baseURL: BASE_URL });
 
