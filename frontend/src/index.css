@@ -647,6 +647,13 @@ body {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: var(--blue-700);
+  letter-spacing: 0.05em;
+}
+
 .alert {
   padding: 12px 16px;
   border-radius: var(--radius-md);
