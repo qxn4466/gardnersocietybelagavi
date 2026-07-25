@@ -95,6 +95,56 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     form.last_name,
   ].filter(Boolean).join(' ').trim();
 
+  // Compress image to Base64 Data URL (~80KB) for permanent 100% DB persistence
+  const compressImageToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } else {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }
+      };
+      img.onerror = () => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  };
+
   // Document Upload Handlers (3 Documents: Aadhaar Front, Aadhaar Back, PAN)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: 'aadhaar_front' | 'aadhaar_back' | 'pan') => {
     const file = e.target.files?.[0];
@@ -104,37 +154,27 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     if (docType === 'aadhaar_back') setUploadingAadhaarBack(true);
     if (docType === 'pan') setUploadingPan(true);
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      try {
-        const res = await uploadCustomerDocument(file, docType).catch(() => null);
-        const finalPath = dataUrl || res?.filepath || '';
-        if (docType === 'aadhaar_front') {
-          setForm(prev => ({ ...prev, aadhaar_doc_path: finalPath }));
-          setAlert({ type: 'success', msg: 'Aadhaar Card (Front Scan) attached successfully!' });
-        } else if (docType === 'aadhaar_back') {
-          setForm(prev => ({ ...prev, aadhaar_back_doc_path: finalPath }));
-          setAlert({ type: 'success', msg: 'Aadhaar Card (Back Scan) attached successfully!' });
-        } else {
-          setForm(prev => ({ ...prev, pan_doc_path: finalPath }));
-          setAlert({ type: 'success', msg: 'PAN Card scan attached successfully!' });
-        }
-      } catch {
-        if (docType === 'aadhaar_front') {
-          setForm(prev => ({ ...prev, aadhaar_doc_path: dataUrl }));
-        } else if (docType === 'aadhaar_back') {
-          setForm(prev => ({ ...prev, aadhaar_back_doc_path: dataUrl }));
-        } else {
-          setForm(prev => ({ ...prev, pan_doc_path: dataUrl }));
-        }
-      } finally {
-        if (docType === 'aadhaar_front') setUploadingAadhaarFront(false);
-        if (docType === 'aadhaar_back') setUploadingAadhaarBack(false);
-        if (docType === 'pan') setUploadingPan(false);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      uploadCustomerDocument(file, docType).catch(() => null);
+
+      if (docType === 'aadhaar_front') {
+        setForm(prev => ({ ...prev, aadhaar_doc_path: dataUrl }));
+        setAlert({ type: 'success', msg: 'Aadhaar Card (Front Scan) attached successfully!' });
+      } else if (docType === 'aadhaar_back') {
+        setForm(prev => ({ ...prev, aadhaar_back_doc_path: dataUrl }));
+        setAlert({ type: 'success', msg: 'Aadhaar Card (Back Scan) attached successfully!' });
+      } else {
+        setForm(prev => ({ ...prev, pan_doc_path: dataUrl }));
+        setAlert({ type: 'success', msg: 'PAN Card scan attached successfully!' });
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setAlert({ type: 'error', msg: `Failed to attach ${docType.toUpperCase()} document.` });
+    } finally {
+      if (docType === 'aadhaar_front') setUploadingAadhaarFront(false);
+      if (docType === 'aadhaar_back') setUploadingAadhaarBack(false);
+      if (docType === 'pan') setUploadingPan(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
