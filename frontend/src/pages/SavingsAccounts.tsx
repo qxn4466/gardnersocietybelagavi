@@ -48,7 +48,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
   const [uploadingAadhaarBack, setUploadingAadhaarBack] = useState(false);
   const [uploadingPan, setUploadingPan] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [previewDocUrl, setPreviewDocUrl] = useState<{ url: string; title: string } | null>(null);
+  
+  const [previewDocUrl, setPreviewDocUrl] = useState<{
+    url: string;
+    title: string;
+    customer?: Customer;
+    docType?: 'aadhaar_front' | 'aadhaar_back' | 'pan';
+  } | null>(null);
 
   // Fetch next 10-digit customer ID
   const loadNextId = useCallback(async () => {
@@ -174,6 +180,47 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
       if (docType === 'aadhaar_front') setUploadingAadhaarFront(false);
       if (docType === 'aadhaar_back') setUploadingAadhaarBack(false);
       if (docType === 'pan') setUploadingPan(false);
+    }
+  };
+
+  // Replace/Upload Scan Photo Directly in Preview Modal
+  const handleModalPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !previewDocUrl) return;
+
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      uploadCustomerDocument(file, previewDocUrl.docType || 'aadhaar_front').catch(() => null);
+
+      // If viewing from an existing customer record, save directly to database!
+      if (previewDocUrl.customer && previewDocUrl.docType) {
+        const cust = previewDocUrl.customer;
+        const fieldMap = {
+          aadhaar_front: 'aadhaar_doc_path',
+          aadhaar_back: 'aadhaar_back_doc_path',
+          pan: 'pan_doc_path',
+        };
+        const fieldName = fieldMap[previewDocUrl.docType];
+        await updateCustomer(cust.id, {
+          ...cust,
+          [fieldName]: dataUrl,
+        });
+        loadCustomers();
+      } else if (previewDocUrl.docType) {
+        // If in form creation
+        const fieldMap = {
+          aadhaar_front: 'aadhaar_doc_path',
+          aadhaar_back: 'aadhaar_back_doc_path',
+          pan: 'pan_doc_path',
+        };
+        const fieldName = fieldMap[previewDocUrl.docType] as keyof CustomerCreate;
+        setForm(prev => ({ ...prev, [fieldName]: dataUrl }));
+      }
+
+      setPreviewDocUrl(prev => prev ? { ...prev, url: dataUrl } : null);
+      setAlert({ type: 'success', msg: 'Document scan photo updated and saved!' });
+    } catch {
+      setAlert({ type: 'error', msg: 'Failed to update document photo.' });
     }
   };
 
@@ -454,7 +501,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)' })}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
                           style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
                         >
                           <Eye size={13} /> View
@@ -489,7 +536,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)' })}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
                           style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
                         >
                           <Eye size={13} /> View
@@ -531,7 +578,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan' })}
+                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan', docType: 'pan' })}
                           style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
                         >
                           <Eye size={13} /> View
@@ -646,7 +693,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                           <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                             {c.aadhaar_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar Front - ${c.full_name}` })}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar Front - ${c.full_name}`, customer: c, docType: 'aadhaar_front' })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                               >
                                 <ImageIcon size={10} /> Front
@@ -654,7 +701,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                             )}
                             {c.aadhaar_back_doc_path && (
                               <button
-                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_back_doc_path), title: `Aadhaar Back - ${c.full_name}` })}
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_back_doc_path), title: `Aadhaar Back - ${c.full_name}`, customer: c, docType: 'aadhaar_back' })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                               >
                                 <ImageIcon size={10} /> Back
@@ -668,7 +715,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                           <div>{c.pan_no || '—'}</div>
                           {c.pan_doc_path && (
                             <button
-                              onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}` })}
+                              onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}`, customer: c, docType: 'pan' })}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                             >
                               <ImageIcon size={10} /> PAN Scan
@@ -707,7 +754,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
           </div>
         </div>
 
-        {/* ── Document Preview Modal ── */}
+        {/* ── Enhanced Document Preview Modal with Instant Photo Upload ── */}
         {previewDocUrl && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -729,6 +776,17 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                   {previewDocUrl.title}
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {/* Upload / Replace Photo Button directly inside Modal */}
+                  <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 10px' }}>
+                    <Upload size={12} /> Upload / Update Scan Photo
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: 'none' }}
+                      onChange={handleModalPhotoUpload}
+                    />
+                  </label>
+
                   {previewDocUrl.url && !previewDocUrl.url.startsWith('data:') && (
                     <a
                       href={previewDocUrl.url}
@@ -737,7 +795,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       className="btn btn-secondary btn-sm"
                       style={{ fontSize: 11, padding: '4px 10px' }}
                     >
-                      Open Original Link ↗
+                      Open Link ↗
                     </a>
                   )}
                   <button
@@ -753,14 +811,48 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                 {previewDocUrl.url.toLowerCase().endsWith('.pdf') ? (
                   <iframe src={previewDocUrl.url} style={{ width: '100%', height: '520px', border: 'none' }} title="PDF Preview" />
                 ) : (
-                  <img
-                    src={previewDocUrl.url}
-                    alt="Document Scan Preview"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="250" viewBox="0 0 500 250"><rect width="100%" height="100%" fill="%23f8fafc" stroke="%23cbd5e1" stroke-width="2"/><text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" fill="%2315803d" font-size="16" font-weight="bold" font-family="sans-serif">✓ Document Scan Attached &amp; Saved</text><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-size="13" font-family="sans-serif">Document File path linked in database</text></svg>';
-                    }}
-                    style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
-                  />
+                  <div>
+                    <img
+                      src={previewDocUrl.url}
+                      alt="Document Scan Preview"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const fallbackDiv = document.getElementById('modal-fallback-card');
+                        if (fallbackDiv) fallbackDiv.style.display = 'block';
+                      }}
+                      style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
+                    />
+
+                    {/* Interactive Fallback Container with Upload Action */}
+                    <div
+                      id="modal-fallback-card"
+                      style={{
+                        display: 'none',
+                        background: '#ffffff',
+                        border: '2px dashed #cbd5e1',
+                        borderRadius: 12,
+                        padding: 32,
+                        maxWidth: 480,
+                        margin: '20px auto',
+                      }}
+                    >
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
+                        Document Scan Attached &amp; Saved
+                      </div>
+                      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+                        File path linked in database. Click below to select and view the photo scan directly!
+                      </div>
+                      <label className="btn btn-primary btn-lg" style={{ cursor: 'pointer', margin: '0 auto' }}>
+                        <Upload size={18} /> Select &amp; Upload Scan Photo
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          style={{ display: 'none' }}
+                          onChange={handleModalPhotoUpload}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
