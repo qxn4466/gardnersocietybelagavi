@@ -49,5 +49,7 @@ app.include_router(customers.router)
 
 
 @app.get("/")
+@app.get("/health")
+@app.get("/healthcheck")
 def root():
-    return {"message": "Belagavi Gardeners Society API is running."}
+    return {"status": "ok", "message": "Belagavi Gardeners Society API is running."}
