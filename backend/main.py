@@ -45,7 +45,7 @@ app.include_router(masters.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(cashbook.router, prefix="/api")
 app.include_router(ledger.router, prefix="/api")
-app.include_router(customers.router)
+app.include_router(customers.router, prefix="/api")
 
 
 @app.get("/")

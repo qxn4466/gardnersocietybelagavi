@@ -10,7 +10,7 @@ from database import get_db
 from models import Customer, Transaction
 from schemas import CustomerCreate, CustomerOut
 
-router = APIRouter(prefix="/api/customers", tags=["customers"])
+router = APIRouter(prefix="/customers", tags=["customers"])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
