@@ -16,7 +16,14 @@ export const API_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
 
 export const getFileUrl = (path?: string | null): string => {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (
+    path.startsWith('http://') ||
+    path.startsWith('https://') ||
+    path.startsWith('data:') ||
+    path.startsWith('blob:')
+  ) {
+    return path;
+  }
   return `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 

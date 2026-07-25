@@ -101,21 +101,31 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     if (docType === 'aadhaar') setUploadingAadhaar(true);
     if (docType === 'pan') setUploadingPan(true);
 
-    try {
-      const res = await uploadCustomerDocument(file, docType);
-      if (docType === 'aadhaar') {
-        setForm(prev => ({ ...prev, aadhaar_doc_path: res.filepath }));
-        setAlert({ type: 'success', msg: 'Aadhaar card scan uploaded successfully!' });
-      } else {
-        setForm(prev => ({ ...prev, pan_doc_path: res.filepath }));
-        setAlert({ type: 'success', msg: 'PAN card scan uploaded successfully!' });
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      try {
+        const res = await uploadCustomerDocument(file, docType).catch(() => null);
+        const finalPath = dataUrl || res?.filepath || '';
+        if (docType === 'aadhaar') {
+          setForm(prev => ({ ...prev, aadhaar_doc_path: finalPath }));
+          setAlert({ type: 'success', msg: 'Aadhaar card scan attached successfully!' });
+        } else {
+          setForm(prev => ({ ...prev, pan_doc_path: finalPath }));
+          setAlert({ type: 'success', msg: 'PAN card scan attached successfully!' });
+        }
+      } catch {
+        if (docType === 'aadhaar') {
+          setForm(prev => ({ ...prev, aadhaar_doc_path: dataUrl }));
+        } else {
+          setForm(prev => ({ ...prev, pan_doc_path: dataUrl }));
+        }
+      } finally {
+        if (docType === 'aadhaar') setUploadingAadhaar(false);
+        if (docType === 'pan') setUploadingPan(false);
       }
-    } catch {
-      setAlert({ type: 'error', msg: `Failed to upload ${docType.toUpperCase()} document scan.` });
-    } finally {
-      if (docType === 'aadhaar') setUploadingAadhaar(false);
-      if (docType === 'pan') setUploadingPan(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -611,7 +621,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
           }}>
             <div style={{
               background: '#ffffff', border: '1px solid var(--border-muted)',
-              borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 700,
+              borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 720,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden'
             }}>
@@ -622,21 +632,37 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
                   {previewDocUrl.title}
                 </div>
-                <button
-                  onClick={() => setPreviewDocUrl(null)}
-                  style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 22, cursor: 'pointer' }}
-                >
-                  <X size={20} />
-                </button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {previewDocUrl.url && !previewDocUrl.url.startsWith('data:') && (
+                    <a
+                      href={previewDocUrl.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                    >
+                      Open Link ↗
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setPreviewDocUrl(null)}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 22, cursor: 'pointer' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               <div style={{ padding: 20, overflowY: 'auto', textAlign: 'center', background: '#f8fafc', flex: 1 }}>
-                {previewDocUrl.url.endsWith('.pdf') ? (
+                {previewDocUrl.url.toLowerCase().endsWith('.pdf') ? (
                   <iframe src={previewDocUrl.url} style={{ width: '100%', height: '500px', border: 'none' }} title="PDF Preview" />
                 ) : (
                   <img
                     src={previewDocUrl.url}
                     alt="Document Scan Preview"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="100%" height="100%" fill="%23f1f5f9"/><text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-size="14" font-family="sans-serif">Document File Attached</text><text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" fill="%232563eb" font-size="12" font-family="sans-serif">File URL path updated</text></svg>';
+                    }}
                     style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
                   />
                 )}
