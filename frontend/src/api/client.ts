@@ -12,10 +12,15 @@ import type {
 
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
+  let url = 'https://gardnersocietybelagavi-production.up.railway.app/api';
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && envUrl.startsWith('http')) {
-    return envUrl.trim();
+    url = envUrl.trim();
   }
-  return 'https://gardnersocietybelagavi-production.up.railway.app/api';
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/api')) {
+    url += '/api';
+  }
+  return url;
 };
 
 const BASE_URL = getApiBaseUrl();
