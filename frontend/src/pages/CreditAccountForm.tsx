@@ -199,7 +199,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout })
   useEffect(() => {
     fetchOffice()
       .then(setOffice)
-      .catch(() => setAlert({ type: 'error', msg: 'Backend not reachable. Start the FastAPI server.' }));
+      .catch((err) => {
+        if (!err?.response) {
+          setAlert({ type: 'error', msg: 'Backend not reachable. Start the FastAPI server.' });
+        }
+      });
     fetchTransactionTypes().then(setTxnTypes);
     fetchCustomers().then(setCustomerList).catch(() => {});
     loadDrafts();
