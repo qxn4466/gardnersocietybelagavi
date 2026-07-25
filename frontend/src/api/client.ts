@@ -10,7 +10,15 @@ import type {
   AccountMaster,
 } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && envUrl.startsWith('http')) {
+    return envUrl.trim();
+  }
+  return 'https://gardnersocietybelagavi-production.up.railway.app/api';
+};
+
+const BASE_URL = getApiBaseUrl();
 
 export const API_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
 
