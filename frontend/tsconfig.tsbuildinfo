@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/api/client.ts","./src/components/Header.tsx","./src/components/PrintButton.tsx","./src/components/Sidebar.tsx","./src/pages/CashBook.tsx","./src/pages/CreditAccountForm.tsx","./src/pages/GeneralLedger.tsx","./src/types/index.ts"],"version":"5.9.3"}

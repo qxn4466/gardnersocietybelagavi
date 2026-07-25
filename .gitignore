@@ -1,0 +1,116 @@
+# ----------------------------------------
+# Python
+# ----------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# ----------------------------------------
+# Node / React / TypeScript
+# ----------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build files
+dist/
+build/
+out/
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# ----------------------------------------
+# IDEs
+# ----------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----------------------------------------
+# Operating System
+# ----------------------------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------------------------
+# Logs
+# ----------------------------------------
+logs/
+*.log
+
+# ----------------------------------------
+# Cache Files
+# ----------------------------------------
+.cache/
+.parcel-cache/
+.eslintcache
+
+# ----------------------------------------
+# Coverage Reports
+# ----------------------------------------
+coverage/
+
+# ----------------------------------------
+# React Native / Misc
+# ----------------------------------------
+.expo/
+.next/
+.nuxt/
+
+# ----------------------------------------
+# Temporary Files
+# ----------------------------------------
+tmp/
+temp/
+*.tmp
+
+# ----------------------------------------
+# SQLite
+# ----------------------------------------
+*.sqlite3
+*.db
+
+# ----------------------------------------
+# Package Manager Locks
+# Uncomment if required
+# ----------------------------------------
+
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ----------------------------------------
+# Lucide (No special ignore required)
+# ----------------------------------------
