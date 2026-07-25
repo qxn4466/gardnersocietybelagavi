@@ -5,17 +5,18 @@ from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 from routers import masters, transactions, cashbook, ledger, auth, customers
 
-# Create all tables on startup safely
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as e:
-    print(f"Startup DB Table Creation Notice: {e}")
-
 app = FastAPI(
     title="Belagavi Gardeners Society — Accounting System",
     description="3-Level Accounting: Credit Form → Cash Book → General Ledger",
     version="1.0.0",
 )
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Startup DB Table Creation Notice: {e}")
 
 # Ensure uploads directory exists and mount static files
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
