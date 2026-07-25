@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from database import engine, Base
+from database import get_engine, Base
 from routers import masters, transactions, cashbook, ledger, auth, customers
 
 app = FastAPI(
@@ -14,6 +14,7 @@ app = FastAPI(
 @app.on_event("startup")
 def startup_event():
     try:
+        engine = get_engine()
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"Startup DB Table Creation Notice: {e}")
@@ -53,3 +54,4 @@ app.include_router(customers.router)
 @app.get("/healthcheck")
 def root():
     return {"status": "ok", "message": "Belagavi Gardeners Society API is running."}
+
