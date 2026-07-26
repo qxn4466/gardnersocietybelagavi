@@ -199,17 +199,24 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
       // If viewing from an existing customer record, save directly to database!
       if (previewDocUrl.customer && previewDocUrl.docType) {
-        const cust = previewDocUrl.customer;
-        const fieldMap = {
-          aadhaar_front: 'aadhaar_doc_path',
-          aadhaar_back: 'aadhaar_back_doc_path',
-          pan: 'pan_doc_path',
-        };
-        const fieldName = fieldMap[previewDocUrl.docType];
-        await updateCustomer(cust.id, {
-          ...cust,
+        const updatePayload: CustomerCreate = {
+          customer_id: cust.customer_id,
+          salutation: cust.salutation || 'Mr.',
+          first_name: cust.first_name,
+          middle_name: cust.middle_name || undefined,
+          last_name: cust.last_name,
+          mobile_no: cust.mobile_no || undefined,
+          address: cust.address || undefined,
+          aadhaar_no: cust.aadhaar_no || undefined,
+          aadhaar_doc_path: cust.aadhaar_doc_path || undefined,
+          aadhaar_back_doc_path: cust.aadhaar_back_doc_path || undefined,
+          pan_no: cust.pan_no || undefined,
+          pan_doc_path: cust.pan_doc_path || undefined,
+          opening_balance: cust.opening_balance || 0,
+          status: cust.status || 'ACTIVE',
           [fieldName]: dataUrl,
-        });
+        };
+        await updateCustomer(cust.id, updatePayload);
         loadCustomers();
       } else if (previewDocUrl.docType) {
         // If in form creation
