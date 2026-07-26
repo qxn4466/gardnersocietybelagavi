@@ -68,6 +68,7 @@ def get_cashbook(
         row_data = {
             "id": txn.id,
             "date": txn.date,
+            "customer_id": txn.customer_id or "",
             "lf_no": lf_no,
             "name": txn.customer_name,
             "particulars": txn.particulars or "",

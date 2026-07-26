@@ -204,6 +204,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>Customer ID</th>
                     <th>Date</th>
                     <th>L.F No</th>
                     <th>Name</th>
@@ -219,6 +220,9 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                 <tbody>
                   {rows.map(row => (
                     <tr key={row.id}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)', fontSize: 12 }}>
+                        {row.customer_id || '—'}
+                      </td>
                       <td>{new Date(row.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{row.name}</td>
@@ -280,7 +284,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4} style={{ fontWeight: 700 }}>CREDIT TOTALS</td>
+                    <td colSpan={5} style={{ fontWeight: 700 }}>CREDIT TOTALS</td>
                     {visibleColumns.map(col => (
                       <td key={col.key} style={{ textAlign: 'right', fontFamily: 'monospace' }}>
                         {totals[col.key as string] > 0

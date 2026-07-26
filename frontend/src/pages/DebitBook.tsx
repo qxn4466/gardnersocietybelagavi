@@ -204,6 +204,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
               <table className="data-table">
                 <thead>
                   <tr style={{ background: '#fef2f2' }}>
+                    <th>Customer ID</th>
                     <th>Date</th>
                     <th>L.F No</th>
                     <th>Name</th>
@@ -219,6 +220,9 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                 <tbody>
                   {rows.map(row => (
                     <tr key={row.id}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#b91c1c', fontSize: 12 }}>
+                        {row.customer_id || '—'}
+                      </td>
                       <td>{new Date(row.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{row.name}</td>
@@ -280,7 +284,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                 </tbody>
                 <tfoot>
                   <tr style={{ background: '#fff5f5', borderTop: '2px solid #fca5a5' }}>
-                    <td colSpan={4} style={{ fontWeight: 700, color: '#991b1b' }}>DEBIT TOTALS</td>
+                    <td colSpan={5} style={{ fontWeight: 700, color: '#991b1b' }}>DEBIT TOTALS</td>
                     {visibleColumns.map(col => (
                       <td key={col.key} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#991b1b', fontWeight: 700 }}>
                         {totals[col.key as string] > 0

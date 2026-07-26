@@ -97,6 +97,7 @@ export interface TransactionCreate {
 export interface CashBookRow {
   id: number;
   date: string;
+  customer_id?: string;
   lf_no: string;
   name: string;
   particulars?: string;

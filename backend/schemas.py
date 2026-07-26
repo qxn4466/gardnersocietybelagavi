@@ -86,6 +86,7 @@ class TransactionOut(TransactionCreate):
 class CashBookRow(BaseModel):
     id: int
     date: date
+    customer_id: Optional[str] = ""
     lf_no: str
     name: str
     particulars: Optional[str] = ""
