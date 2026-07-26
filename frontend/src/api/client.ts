@@ -92,6 +92,12 @@ export const fetchTransaction = (id: number): Promise<Transaction> =>
 export const deleteTransaction = (id: number): Promise<void> =>
   api.delete(`/transactions/${id}`).then(r => r.data);
 
+export const seedJuneTestData = (): Promise<{ inserted: number; skipped: number }> =>
+  api.post('/transactions/seed-june-test-data').then(r => r.data);
+
+export const clearJuneTestData = (): Promise<{ deleted: number }> =>
+  api.delete('/transactions/clear-june-test-data').then(r => r.data);
+
 // ─── Cash Book / Credit Book / Debit Book ─────────────────────────────────────
 export const fetchCashBook = (startDate?: string, endDate?: string, bookType?: string): Promise<CashBookRow[]> =>
   api.get('/cashbook/', { params: { start_date: startDate, end_date: endDate, book_type: bookType } }).then(r => r.data);

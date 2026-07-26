@@ -19,6 +19,8 @@ import {
   fetchDrafts,
   deleteTransaction,
   fetchCustomers,
+  seedJuneTestData,
+  clearJuneTestData,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 
@@ -427,6 +429,41 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
   };
 
+  const handleSeedJuneData = async () => {
+    setLoading(true);
+    try {
+      const res = await seedJuneTestData();
+      setAlert({
+        type: 'success',
+        msg: `Successfully added June 2026 test dataset! (${res.inserted} inserted, ${res.skipped} skipped)`,
+      });
+      loadHistory();
+      refreshMemo(form.date);
+    } catch {
+      setAlert({ type: 'error', msg: 'Failed to seed June test data.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearJuneData = async () => {
+    if (!window.confirm('Are you sure you want to delete all June 2026 test transaction records?')) return;
+    setLoading(true);
+    try {
+      const res = await clearJuneTestData();
+      setAlert({
+        type: 'success',
+        msg: `Successfully deleted ${res.deleted} June 2026 test transaction records!`,
+      });
+      loadHistory();
+      refreshMemo(form.date);
+    } catch {
+      setAlert({ type: 'error', msg: 'Failed to clear June test data.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────────────────
   const colGrid = '1fr 140px 100px 40px';
 
@@ -450,6 +487,38 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       />
 
       <div className="page-content">
+
+        {/* ── June Test Dataset Toolbar ── */}
+        <div className="no-print" style={{
+          marginBottom: 16, padding: '12px 18px', background: '#f8fafc',
+          borderRadius: 10, border: '1px solid var(--border-subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12
+        }}>
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue-700)' }}>🧪 June 2026 Test Dataset Toolbar</span>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Add or clear 18 test transactions covering all 16 Credit & Debit heads</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleSeedJuneData}
+              disabled={loading}
+              style={{ background: 'var(--blue-700)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <PlusCircle size={14} /> ➕ Add June Test Records
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleClearJuneData}
+              disabled={loading}
+              style={{ borderColor: 'var(--red-600)', color: 'var(--red-600)', background: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Trash2 size={14} /> 🗑️ Delete June Test Records
+            </button>
+          </div>
+        </div>
 
         {/* ── Alert ── */}
         {alert && (
