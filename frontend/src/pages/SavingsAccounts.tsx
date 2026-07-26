@@ -60,6 +60,11 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
   const [uploadingAadhaarBack, setUploadingAadhaarBack] = useState(false);
   const [uploadingPan, setUploadingPan] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [docFileNames, setDocFileNames] = useState<{
+    aadhaar_front?: string;
+    aadhaar_back?: string;
+    pan?: string;
+  }>({});
   
   const [previewDocUrl, setPreviewDocUrl] = useState<{
     url: string;
@@ -173,6 +178,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setDocFileNames(prev => ({ ...prev, [docType]: file.name }));
+
     if (docType === 'aadhaar_front') setUploadingAadhaarFront(true);
     if (docType === 'aadhaar_back') setUploadingAadhaarBack(true);
     if (docType === 'pan') setUploadingPan(true);
@@ -204,6 +211,10 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
   const handleModalPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !previewDocUrl) return;
+
+    if (previewDocUrl.docType) {
+      setDocFileNames(prev => ({ ...prev, [previewDocUrl.docType!]: file.name }));
+    }
 
     try {
       const dataUrl = await compressImageToDataUrl(file);
