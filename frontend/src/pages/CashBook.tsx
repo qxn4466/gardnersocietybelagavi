@@ -47,7 +47,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
 
   useEffect(() => {
     loadData();
-    fetchOffice().then(setOffice).catch(() => {});
+    fetchOffice().then(setOffice).catch(() => { });
   }, []); // eslint-disable-line
 
   const handleDelete = async (id: number, memoNo: string) => {
@@ -223,7 +223,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                       <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)', fontSize: 12 }}>
                         {row.customer_id || '—'}
                       </td>
-                      <td>{new Date(row.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' })}</td>
+                      <td>{new Date(row.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{row.name}</td>
                       <td
