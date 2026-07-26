@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import CreditAccountForm from './pages/CreditAccountForm';
@@ -17,6 +17,8 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const handleLoginSuccess = (loggedInUser: User) => {
     localStorage.setItem('user', JSON.stringify(loggedInUser));
     setUser(loggedInUser);
@@ -27,6 +29,9 @@ const App: React.FC = () => {
     setUser(null);
   };
 
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+  const closeSidebar = () => setSidebarOpen(false);
+
   if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
@@ -34,36 +39,36 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        <Sidebar />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <main className="main-content">
           <Routes>
             <Route
               path="/"
-              element={<CreditAccountForm user={user} onLogout={handleLogout} />}
+              element={<CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/savings-accounts"
-              element={<SavingsAccounts user={user} onLogout={handleLogout} />}
+              element={<SavingsAccounts user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/creditbook"
-              element={<CashBook user={user} onLogout={handleLogout} />}
+              element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/cashbook"
-              element={<CashBook user={user} onLogout={handleLogout} />}
+              element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/debitbook"
-              element={<DebitBook user={user} onLogout={handleLogout} />}
+              element={<DebitBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/ledger"
-              element={<GeneralLedger user={user} onLogout={handleLogout} />}
+              element={<GeneralLedger user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route
               path="/audit-package"
-              element={<AuditPackage user={user} onLogout={handleLogout} />}
+              element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

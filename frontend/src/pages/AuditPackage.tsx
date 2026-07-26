@@ -23,9 +23,10 @@ import { CREDIT_BOOK_COLUMNS, DEBIT_BOOK_COLUMNS } from '../types';
 interface AuditPackageProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout }) => {
+const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState('2026-06-01');
   const [endDate, setEndDate] = useState('2026-06-30');
@@ -125,6 +126,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout }) => {
         }
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">

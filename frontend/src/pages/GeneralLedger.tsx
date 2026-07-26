@@ -17,9 +17,10 @@ const fmtAmt = (v: number) =>
 interface GeneralLedgerProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout }) => {
+const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const now = new Date();
   const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
   const [year, setYear] = useState<string>(String(now.getFullYear()));
@@ -70,6 +71,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout }) => {
         actions={<PrintButton label="Print Ledger" />}
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">

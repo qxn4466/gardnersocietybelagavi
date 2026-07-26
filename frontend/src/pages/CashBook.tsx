@@ -17,9 +17,10 @@ const fmt = (v: number) =>
 interface CashBookProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-const CashBook: React.FC<CashBookProps> = ({ user, onLogout }) => {
+const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(today);
@@ -92,6 +93,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout }) => {
         actions={<PrintButton label="Print Credit Book Sheet" />}
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">

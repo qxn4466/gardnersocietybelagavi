@@ -17,9 +17,10 @@ const fmt = (v: number) =>
 interface DebitBookProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout }) => {
+const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(today);
@@ -92,6 +93,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout }) => {
         actions={<PrintButton label="Print Debit Book Sheet" />}
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">

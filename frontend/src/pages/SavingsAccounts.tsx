@@ -18,7 +18,19 @@ import type { Customer, CustomerCreate, User } from '../types';
 interface SavingsAccountsProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
+
+const getDocFileName = (docPath: string | null | undefined, defaultName: string): string => {
+  if (!docPath) return '';
+  if (docPath.startsWith('data:application/pdf') || docPath.toLowerCase().includes('.pdf')) return `${defaultName}.pdf`;
+  if (docPath.startsWith('data:image/png') || docPath.toLowerCase().includes('.png')) return `${defaultName}.png`;
+  if (docPath.startsWith('data:image/jpeg') || docPath.startsWith('data:image/jpg') || docPath.toLowerCase().includes('.jpg') || docPath.toLowerCase().includes('.jpeg')) return `${defaultName}.jpg`;
+  if (docPath.startsWith('data:')) return `${defaultName}_scan`;
+  const parts = docPath.split('/');
+  const lastPart = parts[parts.length - 1];
+  return lastPart || defaultName;
+};
 
 const INITIAL_FORM: CustomerCreate = {
   customer_id: '',
@@ -37,7 +49,7 @@ const INITIAL_FORM: CustomerCreate = {
   status: 'ACTIVE',
 };
 
-const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => {
+const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -311,6 +323,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
         level={1}
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">
@@ -528,8 +541,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       )}
                     </div>
                     {form.aadhaar_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={12} color="#16a34a" /> Front Scan attached
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <CheckCircle size={12} color="#16a34a" /> Front Scan attached
+                        </div>
+                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          📄 {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -563,8 +581,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       )}
                     </div>
                     {form.aadhaar_back_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={12} color="#16a34a" /> Back Scan attached
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <CheckCircle size={12} color="#16a34a" /> Back Scan attached
+                        </div>
+                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          📄 {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -605,8 +628,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       )}
                     </div>
                     {form.pan_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
+                        </div>
+                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          📄 {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -709,21 +737,23 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                       <td>
                         <div style={{ fontSize: 12 }}>
                           <div>{c.aadhaar_no || '—'}</div>
-                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                          <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                             {c.aadhaar_doc_path && (
                               <button
                                 onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_doc_path), title: `Aadhaar Front - ${c.full_name}`, customer: c, docType: 'aadhaar_front' })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
+                                title={getDocFileName(c.aadhaar_doc_path, 'Aadhaar_Front')}
                               >
-                                <ImageIcon size={10} /> Front
+                                <ImageIcon size={10} /> {getDocFileName(c.aadhaar_doc_path, 'Front Scan')}
                               </button>
                             )}
                             {c.aadhaar_back_doc_path && (
                               <button
                                 onClick={() => setPreviewDocUrl({ url: getFileUrl(c.aadhaar_back_doc_path), title: `Aadhaar Back - ${c.full_name}`, customer: c, docType: 'aadhaar_back' })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
+                                title={getDocFileName(c.aadhaar_back_doc_path, 'Aadhaar_Back')}
                               >
-                                <ImageIcon size={10} /> Back
+                                <ImageIcon size={10} /> {getDocFileName(c.aadhaar_back_doc_path, 'Back Scan')}
                               </button>
                             )}
                           </div>
@@ -736,8 +766,9 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
                             <button
                               onClick={() => setPreviewDocUrl({ url: getFileUrl(c.pan_doc_path), title: `PAN - ${c.full_name}`, customer: c, docType: 'pan' })}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
+                              title={getDocFileName(c.pan_doc_path, 'PAN_Scan')}
                             >
-                              <ImageIcon size={10} /> PAN Scan
+                              <ImageIcon size={10} /> {getDocFileName(c.pan_doc_path, 'PAN Scan')}
                             </button>
                           )}
                         </div>

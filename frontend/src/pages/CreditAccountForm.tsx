@@ -116,10 +116,11 @@ const gridInput: React.CSSProperties = { padding: '7px 10px', fontSize: 13 };
 interface CreditAccountFormProps {
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout }) => {
+const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const todayStr = new Date().toISOString().split('T')[0];
   const firstOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
@@ -419,6 +420,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout })
         showPrint={!!savedMemo}
         user={user}
         onLogout={onLogout}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="page-content">

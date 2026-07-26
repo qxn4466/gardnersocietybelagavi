@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, User as UserIcon, LogOut } from 'lucide-react';
+import { Calendar, User as UserIcon, LogOut, Menu } from 'lucide-react';
 import PrintButton from './PrintButton';
 import type { User } from '../types';
 
@@ -11,6 +11,7 @@ interface HeaderProps {
   actions?: React.ReactNode;
   user?: User | null;
   onLogout?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
 const LEVEL_LABELS: Record<number, string> = {
@@ -20,28 +21,53 @@ const LEVEL_LABELS: Record<number, string> = {
 };
 
 const Header: React.FC<HeaderProps> = ({
-  title, subtitle, level, showPrint = false, actions, user, onLogout
+  title, subtitle, level, showPrint = false, actions, user, onLogout, onToggleMobileMenu
 }) => {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-IN', {
-    weekday: 'long',
+    weekday: 'short',
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   });
 
   return (
     <header className="app-header">
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <h1 className="header-title">{title}</h1>
-          {level && (
-            <span className={`level-pill level-${level}`}>
-              {LEVEL_LABELS[level]}
-            </span>
-          )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            className="mobile-menu-btn"
+            title="Open Navigation Menu"
+            style={{
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              color: 'var(--blue-700)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            <Menu size={18} /> Menu
+          </button>
+        )}
+
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h1 className="header-title">{title}</h1>
+            {level && (
+              <span className={`level-pill level-${level}`}>
+                {LEVEL_LABELS[level]}
+              </span>
+            )}
+          </div>
+          {subtitle && <div className="header-subtitle">{subtitle}</div>}
         </div>
-        {subtitle && <div className="header-subtitle">{subtitle}</div>}
       </div>
 
       <div className="header-right">
