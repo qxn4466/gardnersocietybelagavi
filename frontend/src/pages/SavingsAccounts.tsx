@@ -199,6 +199,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
 
       // If viewing from an existing customer record, save directly to database!
       if (previewDocUrl.customer && previewDocUrl.docType) {
+        const cust = previewDocUrl.customer;
+        const fieldMap = {
+          aadhaar_front: 'aadhaar_doc_path',
+          aadhaar_back: 'aadhaar_back_doc_path',
+          pan: 'pan_doc_path',
+        };
+        const fieldName = fieldMap[previewDocUrl.docType];
         const updatePayload: CustomerCreate = {
           customer_id: cust.customer_id,
           salutation: cust.salutation || 'Mr.',
