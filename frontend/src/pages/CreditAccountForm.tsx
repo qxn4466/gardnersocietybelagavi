@@ -178,7 +178,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const CREDIT_DRAFT_KEY = 'bgs_credit_form_draft';
 
   useEffect(() => {
-    if (form.customer_name.trim() || rows.some(r => r.particulars.trim() !== '')) {
+    if (form.customer_name.trim() || rows.some(r => r.description.trim() !== '')) {
       localStorage.setItem(CREDIT_DRAFT_KEY, JSON.stringify({ form, rows, editingDraftId }));
     }
   }, [form, rows, editingDraftId]);
