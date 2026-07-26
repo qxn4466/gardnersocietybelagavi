@@ -677,19 +677,42 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
                 {/* Entry Nature Toggle Switcher */}
                 <div className="form-group full-width" style={{ marginTop: 6, marginBottom: 6 }}>
-                  <label className="form-label">Transaction Nature / Book Type Entry</label>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Transaction Nature / Book Type Entry <span className="required">*</span></span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Select entry nature to filter matching heads
+                    </span>
+                  </label>
                   <div className="nature-pill-container">
                     <button
                       type="button"
                       className={`nature-pill-btn ${form.entry_nature === 'CREDIT' ? 'credit-active' : ''}`}
-                      onClick={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
+                      onClick={() => {
+                        const newNature = 'CREDIT';
+                        const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                        const isStillValid = currentType && (currentType.entry_type === 'CREDIT' || currentType.entry_type === 'BOTH');
+                        setForm(prev => ({
+                          ...prev,
+                          entry_nature: newNature,
+                          transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                        }));
+                      }}
                     >
                       📥 CREDIT ENTRY (Receipt Inflow → Credit Book)
                     </button>
                     <button
                       type="button"
                       className={`nature-pill-btn ${form.entry_nature === 'DEBIT' ? 'debit-active' : ''}`}
-                      onClick={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
+                      onClick={() => {
+                        const newNature = 'DEBIT';
+                        const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                        const isStillValid = currentType && (currentType.entry_type === 'DEBIT' || currentType.entry_type === 'BOTH');
+                        setForm(prev => ({
+                          ...prev,
+                          entry_nature: newNature,
+                          transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                        }));
+                      }}
                     >
                       📤 DEBIT ENTRY (Payment Outflow → Debit Book)
                     </button>
@@ -699,7 +722,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 {/* ── 1. Transaction Type + Remarks ── */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Transaction Type <span className="required">*</span></span>
+                    <span>Transaction Type ({form.entry_nature} Heads) <span className="required">*</span></span>
                     {form.transaction_type_id && (
                       <span style={{
                         fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
@@ -707,7 +730,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         color: form.entry_nature === 'CREDIT' ? '#15803d' : '#b91c1c',
                         border: form.entry_nature === 'CREDIT' ? '1px solid #86efac' : '1px solid #fca5a5',
                       }}>
-                        {form.entry_nature} ENTRY
+                        {form.entry_nature} BOOK
                       </span>
                     )}
                   </label>
@@ -718,11 +741,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     onChange={e => {
                       const selectedId = e.target.value;
                       const selectedType = txnTypes.find(t => String(t.id) === selectedId);
-                      let defaultNature: 'CREDIT' | 'DEBIT' = 'CREDIT';
+                      let defaultNature = form.entry_nature || 'CREDIT';
                       if (selectedType) {
                         if (selectedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
                         else if (selectedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
-                        else defaultNature = form.entry_nature || 'CREDIT';
                       }
                       setForm(prev => ({
                         ...prev,
@@ -732,12 +754,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     }}
                     required
                   >
-                    <option value="">— Select Type —</option>
-                    {txnTypes.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.entry_type || 'CREDIT'})
-                      </option>
-                    ))}
+                    <option value="">— Select {form.entry_nature} Head —</option>
+                    {txnTypes
+                      .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.entry_type === 'BOTH' ? 'Configurable Credit/Debit' : t.entry_type})
+                        </option>
+                      ))}
                   </select>
 
                   {/* Configurable Credit / Debit selector for Sundry Account / Both types */}
