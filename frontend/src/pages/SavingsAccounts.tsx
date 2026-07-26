@@ -96,6 +96,36 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     }
   }, []);
 
+  // ── Auto-save draft in localStorage ──
+  const SAVINGS_DRAFT_KEY = 'bgs_savings_form_draft';
+
+  useEffect(() => {
+    if (form.first_name || form.last_name || form.mobile_no || form.aadhaar_doc_path || form.pan_doc_path) {
+      localStorage.setItem(SAVINGS_DRAFT_KEY, JSON.stringify({ form, docFileNames }));
+    }
+  }, [form, docFileNames]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(SAVINGS_DRAFT_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.form) {
+          setForm(parsed.form);
+          if (parsed.docFileNames) setDocFileNames(parsed.docFileNames);
+          setAlert({ type: 'success', msg: '💾 In-progress account registration draft auto-restored!' });
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  const handleSaveDraftExplicitly = () => {
+    localStorage.setItem(SAVINGS_DRAFT_KEY, JSON.stringify({ form, docFileNames }));
+    setAlert({ type: 'success', msg: '💾 Registration draft saved to memory! It will remain intact even after page refresh.' });
+  };
+
   useEffect(() => {
     loadCustomers();
     loadNextId();
@@ -345,7 +375,9 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
   };
 
   const handleReset = () => {
+    localStorage.removeItem('bgs_savings_form_draft');
     setForm(INITIAL_FORM);
+    setDocFileNames({});
     setEditingId(null);
     setAlert(null);
     loadNextId();
@@ -793,12 +825,25 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {editingId && (
-                  <button type="button" className="btn btn-secondary btn-lg" onClick={handleReset}>
-                    Cancel Edit
-                  </button>
-                )}
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-lg"
+                  onClick={handleSaveDraftExplicitly}
+                  style={{ background: '#f8fafc', borderColor: '#cbd5e1', color: '#334155', fontSize: 14, fontWeight: 700 }}
+                >
+                  💾 Save Draft
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-lg"
+                  onClick={handleReset}
+                  style={{ background: '#fff1f2', borderColor: '#fecdd3', color: '#be123c', fontSize: 14, fontWeight: 700 }}
+                >
+                  Clear Form
+                </button>
+
                 <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ padding: '12px 24px', fontSize: 15, fontWeight: 800 }}>
                   {loading ? <span className="spinner" /> : <UserPlus size={20} />}
                   {editingId ? 'Update Customer Savings Account' : 'Register Customer Savings Account'}

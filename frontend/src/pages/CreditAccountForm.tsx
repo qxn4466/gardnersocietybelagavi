@@ -174,6 +174,30 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
+  // ── Auto-save draft in localStorage for CreditAccountForm ──
+  const CREDIT_DRAFT_KEY = 'bgs_credit_form_draft';
+
+  useEffect(() => {
+    if (form.customer_name.trim() || rows.some(r => r.particulars.trim() !== '')) {
+      localStorage.setItem(CREDIT_DRAFT_KEY, JSON.stringify({ form, rows, editingDraftId }));
+    }
+  }, [form, rows, editingDraftId]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(CREDIT_DRAFT_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.form && parsed.rows && parsed.rows.length > 0) {
+          setForm(parsed.form);
+          setRows(parsed.rows);
+          if (parsed.editingDraftId) setEditingDraftId(parsed.editingDraftId);
+          setAlert({ type: 'success', msg: '💾 In-progress transaction form draft auto-restored!' });
+        }
+      } catch {
+    }
+  }, []);
+
   // Check URL search params for ?edit=ID or ?customer_id=...
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -328,6 +352,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   };
 
   const handleReset = () => {
+    localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
     setAlert(null);
