@@ -963,12 +963,20 @@ body {
   }
 
   .app-header {
+    position: relative !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
     border-radius: 12px !important;
     margin-bottom: 16px !important;
     padding: 12px 14px !important;
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 12px !important;
+    box-sizing: border-box !important;
   }
 
   .header-right {
