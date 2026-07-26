@@ -70,6 +70,7 @@ def get_cashbook(
             "date": txn.date,
             "lf_no": lf_no,
             "name": txn.customer_name,
+            "particulars": txn.particulars or "",
             "cash_memo_no": txn.cash_memo_no,
             "transaction_type": txn.transaction_type.name if txn.transaction_type else "",
             "cash_book_column": cash_book_col,

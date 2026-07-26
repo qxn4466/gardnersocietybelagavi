@@ -88,6 +88,7 @@ class CashBookRow(BaseModel):
     date: date
     lf_no: str
     name: str
+    particulars: Optional[str] = ""
     cash_memo_no: str
     transaction_type: str
     cash_book_column: str

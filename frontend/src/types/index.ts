@@ -99,6 +99,7 @@ export interface CashBookRow {
   date: string;
   lf_no: string;
   name: string;
+  particulars?: string;
   cash_memo_no: string;
   transaction_type: string;
   cash_book_column: string;

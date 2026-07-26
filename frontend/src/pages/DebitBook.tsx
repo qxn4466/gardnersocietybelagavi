@@ -177,6 +177,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                     <th>Date</th>
                     <th>L.F No</th>
                     <th>Name</th>
+                    <th>Particulars</th>
                     {DEBIT_BOOK_COLUMNS.map(col => (
                       <th key={col.key} style={{ color: '#991b1b' }}>{col.label}</th>
                     ))}
@@ -190,7 +191,8 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                     <tr key={row.id}>
                       <td>{new Date(row.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
-                      <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</td>
+                      <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{row.name}</td>
+                      <td style={{ maxWidth: 220, fontSize: 12, color: 'var(--text-secondary)' }}>{row.particulars || '—'}</td>
                       {DEBIT_BOOK_COLUMNS.map(col => (
                         <td key={col.key} style={{ textAlign: 'right' }}>
                           {fmt(Number(row[col.key]))}
