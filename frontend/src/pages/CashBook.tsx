@@ -83,6 +83,15 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
   // Stats
   const txnCount = rows.length;
   const uniqueNames = new Set(rows.map(r => r.name)).size;
+  const [showAllColumns, setShowAllColumns] = useState(false);
+  const [expandedParticularId, setExpandedParticularId] = useState<number | null>(null);
+
+  // Active columns (columns with non-zero amounts in currently displayed rows)
+  const activeColumns = CREDIT_BOOK_COLUMNS.filter(col =>
+    rows.some(r => Number(r[col.key]) !== 0)
+  );
+
+  const visibleColumns = showAllColumns || activeColumns.length === 0 ? CREDIT_BOOK_COLUMNS : activeColumns;
 
   return (
     <div className="page-container">
@@ -113,7 +122,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
           </div>
         </div>
 
-        {/* Filter Bar */}
+        {/* Filters */}
         <div className="filter-bar no-print">
           <div className="filter-group">
             <span className="filter-label">From</span>
@@ -159,6 +168,27 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
 
         {/* Table */}
         <div className="card">
+          {/* Column View Mode Controls */}
+          {rows.length > 0 && (
+            <div className="no-print" style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {visibleColumns.length < CREDIT_BOOK_COLUMNS.length ? (
+                  <span>Showing <strong style={{ color: 'var(--blue-700)' }}>{visibleColumns.length} Active Columns</strong> ({CREDIT_BOOK_COLUMNS.length - visibleColumns.length} empty zero columns hidden)</span>
+                ) : (
+                  <span>Showing All <strong>16 Credit Book Spreadsheet Columns</strong></span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowAllColumns(!showAllColumns)}
+                style={{ fontSize: 12, fontWeight: 700 }}
+              >
+                {showAllColumns ? '👁️ Compact Active Columns' : `↔️ Expand All 16 Columns (${CREDIT_BOOK_COLUMNS.length - visibleColumns.length} Hidden)`}
+              </button>
+            </div>
+          )}
+
           <div className="table-wrapper">
             {loading ? (
               <div className="loading-overlay">
@@ -178,7 +208,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                     <th>L.F No</th>
                     <th>Name</th>
                     <th>Particulars</th>
-                    {CREDIT_BOOK_COLUMNS.map(col => (
+                    {visibleColumns.map(col => (
                       <th key={col.key}>{col.label}</th>
                     ))}
                     <th>Total</th>
@@ -192,8 +222,25 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                       <td>{new Date(row.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{row.name}</td>
-                      <td style={{ maxWidth: 220, fontSize: 12, color: 'var(--text-secondary)' }}>{row.particulars || '—'}</td>
-                      {CREDIT_BOOK_COLUMNS.map(col => (
+                      <td
+                        style={{ maxWidth: expandedParticularId === row.id ? 300 : 180, fontSize: 12, cursor: 'pointer' }}
+                        onClick={() => setExpandedParticularId(expandedParticularId === row.id ? null : row.id)}
+                      >
+                        <div style={{
+                          whiteSpace: expandedParticularId === row.id ? 'normal' : 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          color: 'var(--text-primary)',
+                        }} title={row.particulars || '—'}>
+                          {row.particulars || '—'}
+                        </div>
+                        {row.particulars && row.particulars.length > 25 && (
+                          <span style={{ fontSize: 10, color: 'var(--blue-700)', fontWeight: 700, display: 'block', marginTop: 2 }}>
+                            {expandedParticularId === row.id ? '▲ Collapse' : '▼ Expand Items'}
+                          </span>
+                        )}
+                      </td>
+                      {visibleColumns.map(col => (
                         <td key={col.key} style={{ textAlign: 'right' }}>
                           {fmt(Number(row[col.key]))}
                         </td>
@@ -233,8 +280,8 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={3} style={{ fontWeight: 700 }}>CREDIT TOTALS</td>
-                    {CREDIT_BOOK_COLUMNS.map(col => (
+                    <td colSpan={4} style={{ fontWeight: 700 }}>CREDIT TOTALS</td>
+                    {visibleColumns.map(col => (
                       <td key={col.key} style={{ textAlign: 'right', fontFamily: 'monospace' }}>
                         {totals[col.key as string] > 0
                           ? `₹${totals[col.key as string].toLocaleString('en-IN', { minimumFractionDigits: 2 })}`

@@ -140,6 +140,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [drafts, setDrafts] = useState<Transaction[]>([]);
   const [showDraftsModal, setShowDraftsModal] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<number | null>(null);
+  const [expandedParticularsId, setExpandedParticularsId] = useState<number | null>(null);
 
   // History Filter states
   const [hStartDate, setHStartDate] = useState(firstOfMonthStr);
@@ -337,11 +338,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         setAlert({ type: 'success', msg: `Draft saved successfully! (Memo: ${saved.cash_memo_no})` });
         setEditingDraftId(saved.id);
       } else {
+        localStorage.removeItem('bgs_credit_form_draft');
         setAlert({ type: 'success', msg: `Transaction posted successfully! Cash Memo: ${saved.cash_memo_no}` });
-        setForm({ ...INITIAL_FORM, date: form.date, created_by: form.created_by });
-        setRows([newRow()]);
-        setEditingDraftId(null);
-        refreshMemo(form.date);
+        handleReset();
       }
     } catch (err: unknown) {
       const msg =
@@ -1074,8 +1073,23 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               {txn.transaction_type?.name || '—'}
                             </span>
                           </td>
-                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>
-                            {txn.particulars || '—'}
+                          <td
+                            style={{ maxWidth: expandedParticularsId === txn.id ? 320 : 220, fontSize: 12, cursor: 'pointer' }}
+                            onClick={() => setExpandedParticularsId(expandedParticularsId === txn.id ? null : txn.id)}
+                          >
+                            <div style={{
+                              whiteSpace: expandedParticularsId === txn.id ? 'normal' : 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              color: 'var(--text-primary)',
+                            }} title={txn.particulars || '—'}>
+                              {txn.particulars || '—'}
+                            </div>
+                            {txn.particulars && txn.particulars.length > 25 && (
+                              <span style={{ fontSize: 10, color: 'var(--blue-700)', fontWeight: 700, display: 'block', marginTop: 2 }}>
+                                {expandedParticularsId === txn.id ? '▲ Collapse' : '▼ Expand Items'}
+                              </span>
+                            )}
                           </td>
                           <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)' }}>
                             ₹ {totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
