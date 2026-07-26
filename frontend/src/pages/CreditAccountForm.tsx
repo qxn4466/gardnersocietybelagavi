@@ -195,6 +195,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           setAlert({ type: 'success', msg: '💾 In-progress transaction form draft auto-restored!' });
         }
       } catch {
+        // ignore
+      }
     }
   }, []);
 
