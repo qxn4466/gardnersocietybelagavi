@@ -815,33 +815,76 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
               <div style={{ padding: 20, overflowY: 'auto', textAlign: 'center', background: '#f8fafc', flex: 1 }}>
                 {(() => {
                   const urlLower = previewDocUrl.url.toLowerCase();
-                  const isPdf = urlLower.startsWith('data:application/pdf') || urlLower.endsWith('.pdf') || urlLower.includes('.pdf?');
-                  
+                  const isPdf =
+                    urlLower.includes('application/pdf') ||
+                    urlLower.includes('application/x-pdf') ||
+                    urlLower.endsWith('.pdf') ||
+                    urlLower.includes('.pdf');
+
                   if (isPdf) {
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
-                        <object
-                          data={previewDocUrl.url}
-                          type="application/pdf"
-                          style={{ width: '100%', height: '540px', borderRadius: 8, border: '1px solid #cbd5e1' }}
-                        >
-                          <iframe
-                            src={previewDocUrl.url}
-                            style={{ width: '100%', height: '540px', border: 'none', borderRadius: 8 }}
-                            title="PDF Preview"
-                          />
-                        </object>
-                        <div style={{ marginTop: 12 }}>
-                          <a
-                            href={previewDocUrl.url}
-                            download={`${previewDocUrl.title.replace(/[^a-z0-9]/gi, '_')}.pdf`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-secondary btn-sm"
-                            style={{ fontSize: 12, padding: '6px 14px' }}
+                        <div style={{
+                          width: '100%',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 8,
+                          padding: 16,
+                          marginBottom: 16,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                        }}>
+                          <object
+                            data={previewDocUrl.url}
+                            type="application/pdf"
+                            style={{ width: '100%', height: '500px', borderRadius: 6, border: 'none' }}
                           >
-                            Download / Open PDF Document ↗
-                          </a>
+                            <iframe
+                              src={previewDocUrl.url}
+                              style={{ width: '100%', height: '500px', border: 'none', borderRadius: 6 }}
+                              title="PDF Preview"
+                            />
+                          </object>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              if (previewDocUrl.url.startsWith('data:')) {
+                                try {
+                                  const parts = previewDocUrl.url.split(',');
+                                  const mimeMatch = parts[0].match(/:(.*?);/);
+                                  const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+                                  const bstr = atob(parts[1]);
+                                  let n = bstr.length;
+                                  const u8arr = new Uint8Array(n);
+                                  while (n--) {
+                                    u8arr[n] = bstr.charCodeAt(n);
+                                  }
+                                  const blob = new Blob([u8arr], { type: mime });
+                                  const blobUrl = URL.createObjectURL(blob);
+                                  const win = window.open(blobUrl, '_blank');
+                                  if (!win) {
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = `${previewDocUrl.title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                                    a.click();
+                                  }
+                                } catch {
+                                  const a = document.createElement('a');
+                                  a.href = previewDocUrl.url;
+                                  a.download = `${previewDocUrl.title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                                  a.click();
+                                }
+                              } else {
+                                window.open(previewDocUrl.url, '_blank');
+                              }
+                            }}
+                            style={{ fontSize: 13, padding: '8px 18px' }}
+                          >
+                            Open / Download PDF Document ↗
+                          </button>
                         </div>
                       </div>
                     );
