@@ -150,6 +150,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [hTxnTypeId, setHTxnTypeId] = useState('');
   const [hCustomerId, setHCustomerId] = useState('');
   const [hStatus, setHStatus] = useState('');
+  const [hNature, setHNature] = useState('');
   const [historyList, setHistoryList] = useState<Transaction[]>([]);
   const [hLoading, setHLoading] = useState(false);
 
@@ -272,8 +273,22 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const grandPs = Math.round((grandTotal - grandRs) * 100);
   const amountInWords = amountToWords(grandTotal);
 
-  // ── History total amount calculation ─────────────────────────────────────────
-  const historyTotalAmount = historyList.reduce(
+  // ── History total amount & nature calculations ──────────────────────────────
+  const displayedHistoryList = historyList.filter(t => {
+    if (!hNature) return true;
+    const nature = t.entry_nature || t.transaction_type?.entry_type || 'CREDIT';
+    return nature === hNature;
+  });
+
+  const historyCreditTotal = displayedHistoryList
+    .filter(t => (t.entry_nature || t.transaction_type?.entry_type || 'CREDIT') === 'CREDIT')
+    .reduce((sum, t) => sum + Number(t.amount_rs) + Number(t.amount_ps) / 100, 0);
+
+  const historyDebitTotal = displayedHistoryList
+    .filter(t => (t.entry_nature || t.transaction_type?.entry_type) === 'DEBIT')
+    .reduce((sum, t) => sum + Number(t.amount_rs) + Number(t.amount_ps) / 100, 0);
+
+  const historyTotalAmount = displayedHistoryList.reduce(
     (sum, t) => sum + Number(t.amount_rs) + Number(t.amount_ps) / 100,
     0
   );
@@ -1096,6 +1111,21 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               <div className="filter-group">
+                <span className="filter-label">Book Entry Nature:</span>
+                <select
+                  id="hist-nature"
+                  className="filter-select"
+                  value={hNature}
+                  onChange={e => setHNature(e.target.value)}
+                  style={{ minWidth: 160, fontWeight: 700 }}
+                >
+                  <option value="">— All (Credit &amp; Debit) —</option>
+                  <option value="CREDIT">📥 CREDIT Receipts Only</option>
+                  <option value="DEBIT">📤 DEBIT Payments Only</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
                 <span className="filter-label">Transaction Type:</span>
                 <select
                   id="hist-type"
@@ -1106,7 +1136,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 >
                   <option value="">— All Types —</option>
                   {txnTypes.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.entry_type})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1134,11 +1166,23 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             <div className="stat-row" style={{ marginBottom: 20 }}>
               <div className="stat-card" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
                 <div className="stat-label" style={{ color: '#1e40af' }}>Total Records Found</div>
-                <div className="stat-value" style={{ color: '#1d4ed8' }}>{historyList.length}</div>
+                <div className="stat-value" style={{ color: '#1d4ed8' }}>{displayedHistoryList.length}</div>
+              </div>
+              <div className="stat-card" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                <div className="stat-label" style={{ color: '#166534' }}>Total Credit Receipts</div>
+                <div className="stat-value" style={{ color: '#15803d', fontSize: 18 }}>
+                  ₹ {historyCreditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="stat-card" style={{ background: '#fef2f2', borderColor: '#fecaca' }}>
+                <div className="stat-label" style={{ color: '#991b1b' }}>Total Debit Payments</div>
+                <div className="stat-value" style={{ color: '#b91c1c', fontSize: 18 }}>
+                  ₹ {historyDebitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
               </div>
               <div className="stat-card" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderColor: '#93c5fd' }}>
                 <div className="stat-label" style={{ color: '#1e40af' }}>Total Period Amount</div>
-                <div className="stat-value" style={{ color: '#1d4ed8', fontSize: 22 }}>
+                <div className="stat-value" style={{ color: '#1d4ed8', fontSize: 20 }}>
                   ₹ {historyTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -1150,11 +1194,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 <div className="loading-overlay">
                   <span className="spinner" /> Loading period records…
                 </div>
-              ) : historyList.length === 0 ? (
+              ) : displayedHistoryList.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon"><Filter /></div>
                   <div className="empty-state-title">No matching transactions found</div>
-                  <div className="empty-state-sub">Try adjusting Customer ID, date range, or transaction type filter above</div>
+                  <div className="empty-state-sub">Try adjusting Customer ID, date range, book entry nature, or transaction type filter above</div>
                 </div>
               ) : (
                 <table className="data-table">
@@ -1172,8 +1216,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     </tr>
                   </thead>
                   <tbody>
-                    {historyList.map(txn => {
+                    {displayedHistoryList.map(txn => {
                       const totalAmt = Number(txn.amount_rs) + Number(txn.amount_ps) / 100;
+                      const nature = txn.entry_nature || txn.transaction_type?.entry_type || 'CREDIT';
                       return (
                         <tr key={txn.id}>
                           <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)' }}>
@@ -1183,8 +1228,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{txn.cash_memo_no}</td>
                           <td style={{ fontWeight: 600 }}>{txn.customer_name}</td>
                           <td>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue-700)' }}>
-                              {txn.transaction_type?.name || '—'}
+                            <span style={{
+                              fontSize: 12, fontWeight: 700,
+                              color: nature === 'DEBIT' ? '#b91c1c' : 'var(--blue-700)'
+                            }}>
+                              {txn.transaction_type?.name || '—'} ({nature})
                             </span>
                           </td>
                           <td

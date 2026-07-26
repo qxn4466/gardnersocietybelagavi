@@ -149,7 +149,9 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                       <tr key={t.id} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                         <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{t.date}</td>
                         <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{t.cash_memo_no}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1d4ed8' }}>{t.transaction_type?.name || '—'}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, color: (t.entry_nature || t.transaction_type?.entry_type) === 'DEBIT' ? '#b91c1c' : '#1d4ed8' }}>
+                          {t.transaction_type?.name || '—'} ({t.entry_nature || t.transaction_type?.entry_type || 'CREDIT'})
+                        </td>
                         <td style={{ padding: '8px 12px', maxWidth: 220, fontSize: 11 }}>{t.particulars || '—'}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           <span style={{
