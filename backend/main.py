@@ -15,8 +15,10 @@ app = FastAPI(
 def startup_event():
     try:
         Base.metadata.create_all(bind=engine)
+        from seed import seed
+        seed()
     except Exception as e:
-        print(f"Startup DB Table Creation Notice: {e}")
+        print(f"Startup DB Initialization Notice: {e}")
 
 # Ensure uploads directory exists and mount static files
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")

@@ -63,7 +63,7 @@ def seed():
                 db.add(AccountMaster(account_name=acc))
 
         # Users (Accountant & Cashier)
-        from models import User
+        from models import User, Customer
         default_users = [
             {"username": "accountant", "password": "pass123", "full_name": "Accounts Officer", "role": "ACCOUNTS"},
             {"username": "cashier", "password": "pass123", "full_name": "Society Cashier", "role": "CASHIER"},
@@ -74,12 +74,60 @@ def seed():
                 db.add(User(**u))
                 print(f"  ✓ Added user: {u['username']} ({u['role']})")
 
+        # Initial Sample Customers
+        if not db.query(Customer).first():
+            default_customers = [
+                {
+                    "customer_id": "1000000001",
+                    "salutation": "Mr.",
+                    "first_name": "Ramesh",
+                    "middle_name": "Kumar",
+                    "last_name": "Patil",
+                    "full_name": "Mr. Ramesh Kumar Patil",
+                    "mobile_no": "9845012345",
+                    "address": "Plot 42, Shahapur, Belagavi, Karnataka - 590003",
+                    "aadhaar_no": "458912349012",
+                    "pan_no": "ABCDE1234F",
+                    "opening_balance": 5000.00,
+                    "status": "ACTIVE",
+                },
+                {
+                    "customer_id": "1000000002",
+                    "salutation": "Smt.",
+                    "first_name": "Sunita",
+                    "middle_name": "R",
+                    "last_name": "Kulkarni",
+                    "full_name": "Smt. Sunita R Kulkarni",
+                    "mobile_no": "9448198765",
+                    "address": "12/B Tilakwadi 3rd Line, Belagavi, Karnataka - 590006",
+                    "aadhaar_no": "890123456789",
+                    "pan_no": "XYZPK9876Q",
+                    "opening_balance": 10000.00,
+                    "status": "ACTIVE",
+                },
+                {
+                    "customer_id": "1000000003",
+                    "salutation": "Sri.",
+                    "first_name": "Anand",
+                    "middle_name": "B",
+                    "last_name": "Joshi",
+                    "full_name": "Sri. Anand B Joshi",
+                    "mobile_no": "9880054321",
+                    "address": "Main Street, Vadgaon, Belagavi, Karnataka - 590005",
+                    "aadhaar_no": "234567890123",
+                    "pan_no": "JOSHI5432M",
+                    "opening_balance": 2500.00,
+                    "status": "ACTIVE",
+                },
+            ]
+            for cust in default_customers:
+                db.add(Customer(**cust))
+
         db.commit()
         print("\n✅ Seed complete!")
     except Exception as e:
         db.rollback()
         print(f"❌ Seed failed: {e}")
-        sys.exit(1)
     finally:
         db.close()
 

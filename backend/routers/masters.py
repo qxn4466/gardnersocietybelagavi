@@ -41,10 +41,19 @@ def get_office(db: Session = Depends(get_db)):
 @router.get("/transaction-types", response_model=List[TransactionTypeOut])
 def get_transaction_types(db: Session = Depends(get_db)):
     types = db.query(TransactionTypeMaster).order_by(TransactionTypeMaster.display_order).all()
+    if not types:
+        from seed import seed
+        seed()
+        types = db.query(TransactionTypeMaster).order_by(TransactionTypeMaster.display_order).all()
     return types
 
 
 # ─── Account Master ─────────────────────────────────────────────────────────────
 @router.get("/accounts", response_model=List[AccountMasterOut])
 def get_accounts(db: Session = Depends(get_db)):
-    return db.query(AccountMaster).order_by(AccountMaster.account_name).all()
+    accs = db.query(AccountMaster).order_by(AccountMaster.account_name).all()
+    if not accs:
+        from seed import seed
+        seed()
+        accs = db.query(AccountMaster).order_by(AccountMaster.account_name).all()
+    return accs
