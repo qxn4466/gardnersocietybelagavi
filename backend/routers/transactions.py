@@ -150,3 +150,15 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.delete(txn)
     db.commit()
+
+
+@router.post("/seed-june-test-data")
+def trigger_seed_june_test_data():
+    from seed_june_test_data import seed_june_data
+    return seed_june_data()
+
+
+@router.delete("/clear-june-test-data")
+def trigger_clear_june_test_data():
+    from clear_june_test_data import clear_june_data
+    return clear_june_data()
