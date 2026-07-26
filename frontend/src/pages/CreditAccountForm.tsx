@@ -675,13 +675,34 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   </div>
                 </div>
 
+                {/* Entry Nature Toggle Switcher */}
+                <div className="form-group full-width" style={{ marginTop: 6, marginBottom: 6 }}>
+                  <label className="form-label">Transaction Nature / Book Type Entry</label>
+                  <div className="nature-pill-container">
+                    <button
+                      type="button"
+                      className={`nature-pill-btn ${form.entry_nature === 'CREDIT' ? 'credit-active' : ''}`}
+                      onClick={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
+                    >
+                      📥 CREDIT ENTRY (Receipt Inflow → Credit Book)
+                    </button>
+                    <button
+                      type="button"
+                      className={`nature-pill-btn ${form.entry_nature === 'DEBIT' ? 'debit-active' : ''}`}
+                      onClick={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
+                    >
+                      📤 DEBIT ENTRY (Payment Outflow → Debit Book)
+                    </button>
+                  </div>
+                </div>
+
                 {/* ── 1. Transaction Type + Remarks ── */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>Transaction Type <span className="required">*</span></span>
                     {form.transaction_type_id && (
                       <span style={{
-                        fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 6,
+                        fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
                         background: form.entry_nature === 'CREDIT' ? '#dcfce7' : '#fee2e2',
                         color: form.entry_nature === 'CREDIT' ? '#15803d' : '#b91c1c',
                         border: form.entry_nature === 'CREDIT' ? '1px solid #86efac' : '1px solid #fca5a5',
