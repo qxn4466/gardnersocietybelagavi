@@ -84,24 +84,14 @@ def get_ledger(
         payable = Decimal("0")
         receivable = Decimal("0")
 
-        if acc == "Sundary a/c":
-            if nature == "CREDIT":
-                receipt = total
-            else:
-                debit = total
-        elif acc in RECEIPT_ACCOUNTS:
+        if nature == "CREDIT":
             receipt = total
-        elif acc in DEBIT_ACCOUNTS:
+        elif nature == "DEBIT":
             debit = total
-        elif acc in PAYABLE_ACCOUNTS:
-            payable = total
-        elif acc in RECEIVABLE_ACCOUNTS:
-            receivable = total
-        else:
-            if nature == "CREDIT":
-                receipt = total
-            else:
-                debit = total
+            if acc in PAYABLE_ACCOUNTS:
+                payable = total
+            elif acc in RECEIVABLE_ACCOUNTS:
+                receivable = total
 
         rows.append(LedgerRow(
             month=mo,
