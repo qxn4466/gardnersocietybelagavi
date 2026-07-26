@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   UserPlus, Search, CheckCircle, XCircle, Hash, Phone, MapPin,
-  FileCheck, Upload, Eye, CreditCard, ShieldCheck, RefreshCw, ArrowRight, X, Image as ImageIcon
+  Upload, Eye, ShieldCheck, RefreshCw, ArrowRight, X, Image as ImageIcon,
+  Camera, FileText, User as UserIcon, Wallet, CreditCard, Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -73,7 +74,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     docType?: 'aadhaar_front' | 'aadhaar_back' | 'pan';
   } | null>(null);
 
-  // Fetch next 10-digit customer ID
+  // Fetch unique 10-digit random customer ID
   const loadNextId = useCallback(async () => {
     try {
       const res = await fetchNextCustomerId();
@@ -110,6 +111,22 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     setAlert(null);
   };
 
+  // Specific formatters & validators
+  const handleMobileChange = (val: string) => {
+    const cleaned = val.replace(/\D/g, '').slice(0, 10);
+    handleInputChange('mobile_no', cleaned);
+  };
+
+  const handleAadhaarChange = (val: string) => {
+    const cleaned = val.replace(/\D/g, '').slice(0, 12);
+    handleInputChange('aadhaar_no', cleaned);
+  };
+
+  const handlePanChange = (val: string) => {
+    const cleaned = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    handleInputChange('pan_no', cleaned);
+  };
+
   // Auto-compose full name live preview
   const composedFullName = [
     form.salutation,
@@ -124,7 +141,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
       const fileType = file.type || '';
       const fileName = file.name.toLowerCase();
 
-      // If PDF or non-image document, read as Data URL directly without canvas compression
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf') || !fileType.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -133,7 +149,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
         return;
       }
 
-      // If JPEG, PNG, JPG, WEBP, GIF, SVG etc., compress via canvas
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
@@ -220,7 +235,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
       const dataUrl = await compressImageToDataUrl(file);
       uploadCustomerDocument(file, previewDocUrl.docType || 'aadhaar_front').catch(() => null);
 
-      // If viewing from an existing customer record, save directly to database!
       if (previewDocUrl.customer && previewDocUrl.docType) {
         const cust = previewDocUrl.customer;
         const fieldMap = {
@@ -249,7 +263,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
         await updateCustomer(cust.id, updatePayload);
         loadCustomers();
       } else if (previewDocUrl.docType) {
-        // If in form creation
         const fieldMap = {
           aadhaar_front: 'aadhaar_doc_path',
           aadhaar_back: 'aadhaar_back_doc_path',
@@ -271,6 +284,22 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
     if (!form.first_name.trim() || !form.last_name.trim()) {
       setAlert({ type: 'error', msg: 'First name and Last name are required.' });
+      return;
+    }
+
+    if (form.mobile_no && form.mobile_no.trim().length !== 10) {
+      setAlert({ type: 'error', msg: 'Mobile number must be exactly 10 digits.' });
+      return;
+    }
+
+    if (form.aadhaar_no && form.aadhaar_no.trim().length !== 12) {
+      setAlert({ type: 'error', msg: 'Aadhaar number must be exactly 12 digits.' });
+      return;
+    }
+
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (form.pan_no && form.pan_no.trim() && !panRegex.test(form.pan_no.trim())) {
+      setAlert({ type: 'error', msg: 'PAN number must follow format 5 Letters + 4 Digits + 1 Letter (e.g. ABCDE1234F).' });
       return;
     }
 
@@ -354,314 +383,424 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
           </div>
         )}
 
-        {/* ── Create / Edit Customer Form Card ── */}
-        <div className="card" style={{ marginBottom: 32 }}>
-          <div className="card-header">
+        {/* ── Overhauled Modern Savings Account Form ── */}
+        <div className="card" style={{ marginBottom: 32, border: '1px solid #cbd5e1', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+          <div className="card-header" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff', borderRadius: '12px 12px 0 0', padding: '16px 24px' }}>
             <div>
-              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <UserPlus size={20} color="var(--blue-700)" />
-                {editingId ? `Edit Savings Account (${form.customer_id})` : 'New Savings Account Registration'}
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ffffff', fontSize: 18 }}>
+                <UserPlus size={22} color="#60a5fa" />
+                {editingId ? `Edit Customer Profile (${form.customer_id})` : 'New Savings Account Registration Form'}
               </div>
-              <div className="card-subtitle">Auto-generated 10-Digit Customer ID &amp; 3-Document Verification</div>
+              <div className="card-subtitle" style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
+                Fill out the member identity details and attach 3-Document KYC Scans
+              </div>
             </div>
 
             {editingId && (
-              <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-                + New Customer Account
+              <button className="btn btn-secondary btn-sm" onClick={handleReset} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
+                + Reset &amp; Register New Account
               </button>
             )}
           </div>
 
-          <div className="card-body">
+          <div className="card-body" style={{ padding: '24px' }}>
             <form onSubmit={handleSubmit}>
               
-              {/* Row 1: Customer ID & Opening Balance */}
-              <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', marginBottom: 16 }}>
-                
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>10-Digit Customer ID <span className="required">*</span></span>
-                    <button
-                      type="button"
-                      onClick={loadNextId}
-                      style={{ background: 'none', border: 'none', color: 'var(--blue-700)', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
-                    >
-                      Auto-Generate
-                    </button>
-                  </label>
-                  <div style={{ position: 'relative' }}>
+              {/* ── Section 1: Account Identity & Deposit ── */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Hash size={18} color="var(--blue-700)" />
+                  <span>1. Account Identity &amp; Initial Deposit</span>
+                </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                  
+                  {/* Customer ID */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700 }}>10-Digit Customer ID <span className="required">*</span></span>
+                      <button
+                        type="button"
+                        onClick={loadNextId}
+                        style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: 'var(--blue-700)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Sparkles size={11} /> Auto-Generate
+                      </button>
+                    </label>
                     <input
                       type="text"
                       className="form-input"
-                      style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em' }}
+                      style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em', background: '#ffffff' }}
                       value={form.customer_id || ''}
-                      onChange={e => handleInputChange('customer_id', e.target.value)}
-                      placeholder="1000000001"
+                      onChange={e => handleInputChange('customer_id', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="e.g. 5839204192"
+                      required
+                    />
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Unique 10-digit random account identifier</div>
+                  </div>
+
+                  {/* Mobile Number (10 digits only) */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>
+                      <Phone size={13} style={{ display: 'inline', marginRight: 4 }} />
+                      Mobile Number (10 Digits)
+                    </label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="10-digit mobile number"
+                      value={form.mobile_no || ''}
+                      onChange={e => handleMobileChange(e.target.value)}
+                      maxLength={10}
+                      style={{ background: '#ffffff' }}
+                    />
+                    <div style={{ fontSize: 10, color: form.mobile_no && form.mobile_no.length !== 10 ? '#b91c1c' : '#64748b', marginTop: 4, fontWeight: form.mobile_no && form.mobile_no.length !== 10 ? 700 : 400 }}>
+                      {form.mobile_no ? `${form.mobile_no.length}/10 digits entered` : 'Exactly 10 digits required'}
+                    </div>
+                  </div>
+
+                  {/* Opening Savings Balance */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>
+                      <Wallet size={13} style={{ display: 'inline', marginRight: 4 }} />
+                      Opening Savings Deposit (₹)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={form.opening_balance || ''}
+                      onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
+                      style={{ background: '#ffffff' }}
+                    />
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Initial savings balance credited</div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── Section 2: Member Personal Profile ── */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UserIcon size={18} color="var(--blue-700)" />
+                  <span>2. Member Personal Profile</span>
+                </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>Salutation</label>
+                    <select
+                      className="form-select"
+                      value={form.salutation || 'Mr.'}
+                      onChange={e => handleInputChange('salutation', e.target.value)}
+                      style={{ background: '#ffffff' }}
+                    >
+                      <option value="Mr.">Mr.</option>
+                      <option value="Smt.">Smt.</option>
+                      <option value="Sri.">Sri.</option>
+                      <option value="Dr.">Dr.</option>
+                      <option value="M/s.">M/s.</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>First Name <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="First name"
+                      value={form.first_name || ''}
+                      onChange={e => handleInputChange('first_name', e.target.value)}
+                      style={{ background: '#ffffff' }}
                       required
                     />
                   </div>
-                </div>
 
-                <div className="form-group">
-                  <label className="form-label">Mobile Number</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="10-digit mobile number"
-                    value={form.mobile_no || ''}
-                    onChange={e => handleInputChange('mobile_no', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Opening Savings Balance (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="0.00"
-                    value={form.opening_balance || ''}
-                    onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-
-              </div>
-
-              {/* Row 2: Name Parts */}
-              <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', marginBottom: 16 }}>
-                
-                <div className="form-group">
-                  <label className="form-label">Salutation</label>
-                  <select
-                    className="form-select"
-                    value={form.salutation || 'Mr.'}
-                    onChange={e => handleInputChange('salutation', e.target.value)}
-                  >
-                    <option value="Mr.">Mr.</option>
-                    <option value="Smt.">Smt.</option>
-                    <option value="Sri.">Sri.</option>
-                    <option value="Dr.">Dr.</option>
-                    <option value="M/s.">M/s.</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">First Name <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="First name"
-                    value={form.first_name || ''}
-                    onChange={e => handleInputChange('first_name', e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Middle Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Middle name"
-                    value={form.middle_name || ''}
-                    onChange={e => handleInputChange('middle_name', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Last Name <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Last / Surname"
-                    value={form.last_name || ''}
-                    onChange={e => handleInputChange('last_name', e.target.value)}
-                    required
-                  />
-                </div>
-
-              </div>
-
-              {/* Full Name Preview Banner */}
-              {composedFullName && (
-                <div style={{
-                  padding: '8px 14px', background: '#eff6ff', border: '1px solid #bfdbfe',
-                  borderRadius: 'var(--radius-md)', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8
-                }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase' }}>FULL NAME PREVIEW:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{composedFullName}</span>
-                </div>
-              )}
-
-              {/* Address */}
-              <div className="form-group" style={{ marginBottom: 20 }}>
-                <label className="form-label">Residential Address</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Full residential address, Village / Town, Belagavi"
-                  value={form.address || ''}
-                  onChange={e => handleInputChange('address', e.target.value)}
-                />
-              </div>
-
-              {/* 3 KYC Document Scans / Uploads Section */}
-              <div style={{
-                background: '#f8fafc', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 24
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <ShieldCheck size={16} color="var(--blue-700)" /> 3-Document KYC Verification (Aadhaar Front, Aadhaar Back &amp; PAN Card)
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                  
-                  {/* Doc 1: Aadhaar Front Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>1. Aadhaar Card (Front)</div>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>Middle Name</label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="12-digit Aadhaar Number"
-                      value={form.aadhaar_no || ''}
-                      onChange={e => handleInputChange('aadhaar_no', e.target.value)}
-                      style={{ marginBottom: 10, fontSize: 13 }}
+                      placeholder="Middle name"
+                      value={form.middle_name || ''}
+                      onChange={e => handleInputChange('middle_name', e.target.value)}
+                      style={{ background: '#ffffff' }}
                     />
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
-                        <Upload size={13} />
-                        {uploadingAadhaarFront ? 'Uploading…' : form.aadhaar_doc_path ? 'Change Front' : 'Scan Front'}
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          style={{ display: 'none' }}
-                          onChange={e => handleFileUpload(e, 'aadhaar_front')}
-                        />
-                      </label>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>Last Name <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Last / Surname"
+                      value={form.last_name || ''}
+                      onChange={e => handleInputChange('last_name', e.target.value)}
+                      style={{ background: '#ffffff' }}
+                      required
+                    />
+                  </div>
+
+                </div>
+
+                {/* Full Name Preview Banner */}
+                {composedFullName && (
+                  <div style={{
+                    padding: '10px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                    borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>FULL NAME:</span>
+                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 15 }}>{composedFullName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Section 3: Residential Address ── */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MapPin size={18} color="var(--blue-700)" />
+                  <span>3. Residential Address</span>
+                </div>
+
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code"
+                    value={form.address || ''}
+                    onChange={e => handleInputChange('address', e.target.value)}
+                    style={{ background: '#ffffff' }}
+                  />
+                </div>
+              </div>
+
+              {/* ── Section 4: 3-Document KYC Verification (With Camera Scan & File Upload) ── */}
+              <div style={{
+                background: '#f8fafc', border: '1px solid #e2e8f0',
+                borderRadius: 12, padding: 18, marginBottom: 24
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ShieldCheck size={18} color="var(--blue-700)" />
+                  <span>4. 3-Document KYC Verification (Camera Scan &amp; File Upload)</span>
+                </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                  
+                  {/* Doc 1: Aadhaar Front Upload Box */}
+                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                        <span>1. Aadhaar Card (Front)</span>
+                        <span style={{ fontSize: 10, color: '#64748b' }}>12 Digits</span>
+                      </div>
+                      
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="12-digit Aadhaar Number"
+                        value={form.aadhaar_no || ''}
+                        onChange={e => handleAadhaarChange(e.target.value)}
+                        maxLength={12}
+                        style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700 }}
+                      />
+                      <div style={{ fontSize: 10, color: form.aadhaar_no && form.aadhaar_no.length !== 12 ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.aadhaar_no && form.aadhaar_no.length !== 12 ? 700 : 400 }}>
+                        {form.aadhaar_no ? `${form.aadhaar_no.length}/12 digits` : '12-digit number'}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {/* Option 1: Mobile Camera Scan */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Camera size={13} color="#2563eb" /> Camera
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                          />
+                        </label>
+
+                        {/* Option 2: File Upload (PDF/Image) */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Upload size={13} /> Upload File
+                          <input
+                            type="file"
+                            accept="image/*,.pdf,.doc,.docx"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                          />
+                        </label>
+
+                        {form.aadhaar_doc_path && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
+                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                        )}
+                      </div>
 
                       {form.aadhaar_doc_path && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
-                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
-                        >
-                          <Eye size={13} /> View
-                        </button>
+                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={12} color="#16a34a" /> Front Scan attached
+                          </div>
+                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📄 {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {form.aadhaar_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle size={12} color="#16a34a" /> Front Scan attached
-                        </div>
-                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          📄 {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Doc 2: Aadhaar Back Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>2. Aadhaar Card (Back)</div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>Address &amp; QR Code Side Scan</div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
-                        <Upload size={13} />
-                        {uploadingAadhaarBack ? 'Uploading…' : form.aadhaar_back_doc_path ? 'Change Back' : 'Scan Back'}
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          style={{ display: 'none' }}
-                          onChange={e => handleFileUpload(e, 'aadhaar_back')}
-                        />
-                      </label>
+                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>2. Aadhaar Card (Back)</div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>Address &amp; QR Code Side Scan</div>
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {/* Option 1: Mobile Camera Scan */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Camera size={13} color="#2563eb" /> Camera
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                          />
+                        </label>
+
+                        {/* Option 2: File Upload (PDF/Image) */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Upload size={13} /> Upload File
+                          <input
+                            type="file"
+                            accept="image/*,.pdf,.doc,.docx"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                          />
+                        </label>
+
+                        {form.aadhaar_back_doc_path && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
+                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                        )}
+                      </div>
 
                       {form.aadhaar_back_doc_path && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
-                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
-                        >
-                          <Eye size={13} /> View
-                        </button>
+                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={12} color="#16a34a" /> Back Scan attached
+                          </div>
+                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📄 {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {form.aadhaar_back_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle size={12} color="#16a34a" /> Back Scan attached
-                        </div>
-                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          📄 {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Doc 3: PAN Card Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>3. PAN Card Scan</div>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="10-char PAN (e.g. ABCDE1234F)"
-                      value={form.pan_no || ''}
-                      onChange={e => handleInputChange('pan_no', e.target.value.toUpperCase())}
-                      style={{ marginBottom: 10, fontSize: 13 }}
-                    />
+                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                        <span>3. PAN Card Scan</span>
+                        <span style={{ fontSize: 10, color: '#64748b' }}>ABCDE1234F</span>
+                      </div>
+                      
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. ABCDE1234F"
+                        value={form.pan_no || ''}
+                        onChange={e => handlePanChange(e.target.value)}
+                        maxLength={10}
+                        style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700, textTransform: 'uppercase' }}
+                      />
+                      <div style={{ fontSize: 10, color: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? 700 : 400 }}>
+                        {form.pan_no ? `Format: 5 Letters + 4 Digits + 1 Letter` : '10-character PAN'}
+                      </div>
+                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '5px 10px' }}>
-                        <Upload size={13} />
-                        {uploadingPan ? 'Uploading…' : form.pan_doc_path ? 'Change PAN' : 'Scan PAN'}
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          style={{ display: 'none' }}
-                          onChange={e => handleFileUpload(e, 'pan')}
-                        />
-                      </label>
+                    <div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {/* Option 1: Mobile Camera Scan */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Camera size={13} color="#2563eb" /> Camera
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'pan')}
+                          />
+                        </label>
+
+                        {/* Option 2: File Upload (PDF/Image) */}
+                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
+                          <Upload size={13} /> Upload File
+                          <input
+                            type="file"
+                            accept="image/*,.pdf,.doc,.docx"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileUpload(e, 'pan')}
+                          />
+                        </label>
+
+                        {form.pan_doc_path && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan', docType: 'pan' })}
+                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                        )}
+                      </div>
 
                       {form.pan_doc_path && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan', docType: 'pan' })}
-                          style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '5px 10px' }}
-                        >
-                          <Eye size={13} /> View
-                        </button>
+                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
+                          </div>
+                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📄 {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {form.pan_doc_path && (
-                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
-                        </div>
-                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          📄 {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {editingId && (
-                  <button type="button" className="btn btn-secondary" onClick={handleReset}>
+                  <button type="button" className="btn btn-secondary btn-lg" onClick={handleReset}>
                     Cancel Edit
                   </button>
                 )}
-                <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                  {loading ? <span className="spinner" /> : <UserPlus size={18} />}
+                <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ padding: '12px 24px', fontSize: 15, fontWeight: 800 }}>
+                  {loading ? <span className="spinner" /> : <UserPlus size={20} />}
                   {editingId ? 'Update Customer Savings Account' : 'Register Customer Savings Account'}
                 </button>
               </div>
@@ -679,15 +818,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
             </div>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
-              <div style={{ position: 'relative' }}>
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
                 <input
                   type="text"
                   className="filter-input"
                   placeholder="Search by ID, Name, Mobile, Aadhaar, PAN…"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: 280, paddingLeft: 30 }}
+                  style={{ width: '100%', paddingLeft: 30 }}
                 />
                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               </div>
@@ -815,7 +954,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
           </div>
         </div>
 
-        {/* ── Enhanced Document Preview Modal with Instant Photo Upload ── */}
+        {/* ── Enhanced Document Preview Modal with Camera & File Upload ── */}
         {previewDocUrl && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -832,17 +971,30 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               <div style={{
                 padding: '14px 20px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexWrap: 'wrap', gap: 10,
               }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
                   {previewDocUrl.title}
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  {/* Upload / Replace Photo Button directly inside Modal */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Option 1: Take Camera Photo */}
                   <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 10px' }}>
-                    <Upload size={12} /> Upload / Update Scan Photo
+                    <Camera size={12} /> Camera
                     <input
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="image/*"
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={handleModalPhotoUpload}
+                    />
+                  </label>
+
+                  {/* Option 2: Upload File */}
+                  <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 10px' }}>
+                    <Upload size={12} /> Upload File
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
                       style={{ display: 'none' }}
                       onChange={handleModalPhotoUpload}
                     />
@@ -959,7 +1111,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                         style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
                       />
 
-                      {/* Interactive Fallback Container with Upload Action */}
+                      {/* Interactive Fallback Container with Camera & Upload Actions */}
                       <div
                         id="modal-fallback-card"
                         style={{
@@ -976,17 +1128,29 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           Document Scan Attached &amp; Saved
                         </div>
                         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-                          File path linked in database. Select or update the scan photo/PDF below to view directly!
+                          Select your scan photo or PDF below to attach and view directly!
                         </div>
-                        <label className="btn btn-primary btn-lg" style={{ cursor: 'pointer', margin: '0 auto' }}>
-                          <Upload size={18} /> Select &amp; Upload Scan (Image / PDF)
-                          <input
-                            type="file"
-                            accept="image/*,.pdf,.png,.jpg,.jpeg,.webp,.gif"
-                            style={{ display: 'none' }}
-                            onChange={handleModalPhotoUpload}
-                          />
-                        </label>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          <label className="btn btn-primary btn-lg" style={{ cursor: 'pointer', margin: 0 }}>
+                            <Camera size={18} /> Take Camera Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              style={{ display: 'none' }}
+                              onChange={handleModalPhotoUpload}
+                            />
+                          </label>
+                          <label className="btn btn-secondary btn-lg" style={{ cursor: 'pointer', margin: 0 }}>
+                            <Upload size={18} /> Upload File
+                            <input
+                              type="file"
+                              accept="image/*,.pdf,.doc,.docx"
+                              style={{ display: 'none' }}
+                              onChange={handleModalPhotoUpload}
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   );

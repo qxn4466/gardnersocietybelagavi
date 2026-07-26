@@ -1,6 +1,7 @@
 import os
 import uuid
 import shutil
+import random
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
@@ -17,23 +18,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def generate_10digit_customer_id(db: Session) -> str:
-    """Generate a unique 10-digit sequential Customer ID starting at 1000000001"""
-    last_cust = db.query(Customer).order_by(Customer.id.desc()).first()
-    if not last_cust:
-        return "1000000001"
-    
-    # Try parsing last_cust.customer_id
-    try:
-        last_num = int(last_cust.customer_id)
-        if 1000000000 <= last_num < 9999999999:
-            next_num = last_num + 1
-            return str(next_num)
-    except (ValueError, TypeError):
-        pass
-
-    # Fallback if non-numeric ID exists: count + 1000000001
-    count = db.query(Customer).count()
-    return str(1000000001 + count)
+    """Generate a unique random 10-digit Customer ID (e.g. 5839204192)"""
+    for _ in range(100):
+        rand_id = str(random.randint(1000000000, 9999999999))
+        existing = db.query(Customer).filter(Customer.customer_id == rand_id).first()
+        if not existing:
+            return rand_id
+    return str(random.randint(1000000000, 9999999999))
 
 
 @router.get("/next-id")
