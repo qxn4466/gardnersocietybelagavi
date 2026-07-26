@@ -9,22 +9,22 @@ import sys
 Base.metadata.create_all(bind=engine)
 
 TRANSACTION_TYPES = [
-    {"name": "Shares",                        "cash_book_column": "Shares",                        "ledger_account": "Shares",                        "display_order": 1},
-    {"name": "Purchases",                     "cash_book_column": "Purchases",                     "ledger_account": "Purchases",                     "display_order": 2},
-    {"name": "Commission",                    "cash_book_column": "Commissions",                   "ledger_account": "Commission",                    "display_order": 3},
-    {"name": "Loan Account",                  "cash_book_column": "Loan a/c",                      "ledger_account": "Loan a/c",                      "display_order": 4},
-    {"name": "Interest",                      "cash_book_column": "Interest",                      "ledger_account": "Interest",                      "display_order": 5},
-    {"name": "Pigmi Commission",              "cash_book_column": "Pigmi Comm.",                   "ledger_account": "Pigmi Comm.",                   "display_order": 6},
-    {"name": "Bank Current",                  "cash_book_column": "Bank Current",                  "ledger_account": "Bank Current",                  "display_order": 7},
-    {"name": "Advance",                       "cash_book_column": "Advance",                       "ledger_account": "Advance",                       "display_order": 8},
-    {"name": "Lakshmi Pigmi Deposit",         "cash_book_column": "Lakshmi Pigmi Deposit",         "ledger_account": "Lakshmi Pigmi Deposit",         "display_order": 9},
-    {"name": "Vegetable Commission",          "cash_book_column": "Vegetable Comm.",               "ledger_account": "Vegetable Comm.",               "display_order": 10},
-    {"name": "Sundry Account",                "cash_book_column": "Sundary a/c",                   "ledger_account": "Sundary a/c",                   "display_order": 11},
-    {"name": "Cash Sales",                    "cash_book_column": "Cash Sales",                    "ledger_account": "Cash Sales",                    "display_order": 12},
-    {"name": "Pesticide Sales",               "cash_book_column": "Pesticide Sales",               "ledger_account": "Pesticide Sales",               "display_order": 13},
-    {"name": "Cold Storage Advance",          "cash_book_column": "Cold Storage Adv",              "ledger_account": "Cold Storage Adv",              "display_order": 14},
-    {"name": "Lakshmi Pigmi Deposit Loan",    "cash_book_column": "Lakshmi Pigmi Deposit Loan",    "ledger_account": "Lakshmi Pigmi Deposit Loan",    "display_order": 15},
-    {"name": "Lakshmi Pigmi Deposit Interest","cash_book_column": "Lakshmi Pigmi Deposit Interest","ledger_account": "Lakshmi Pigmi Deposit Interest","display_order": 16},
+    {"name": "Shares",                        "cash_book_column": "Shares",                        "ledger_account": "Shares",                        "display_order": 1,  "entry_type": "CREDIT"},
+    {"name": "Purchases",                     "cash_book_column": "Purchases",                     "ledger_account": "Purchases",                     "display_order": 2,  "entry_type": "DEBIT"},
+    {"name": "Commission",                    "cash_book_column": "Commissions",                   "ledger_account": "Commission",                    "display_order": 3,  "entry_type": "CREDIT"},
+    {"name": "Loan Account",                  "cash_book_column": "Loan a/c",                      "ledger_account": "Loan a/c",                      "display_order": 4,  "entry_type": "DEBIT"},
+    {"name": "Interest",                      "cash_book_column": "Interest",                      "ledger_account": "Interest",                      "display_order": 5,  "entry_type": "CREDIT"},
+    {"name": "Pigmi Commission",              "cash_book_column": "Pigmi Comm.",                   "ledger_account": "Pigmi Comm.",                   "display_order": 6,  "entry_type": "CREDIT"},
+    {"name": "Bank Current",                  "cash_book_column": "Bank Current",                  "ledger_account": "Bank Current",                  "display_order": 7,  "entry_type": "DEBIT"},
+    {"name": "Advance",                       "cash_book_column": "Advance",                       "ledger_account": "Advance",                       "display_order": 8,  "entry_type": "DEBIT"},
+    {"name": "Lakshmi Pigmi Deposit",         "cash_book_column": "Lakshmi Pigmi Deposit",         "ledger_account": "Lakshmi Pigmi Deposit",         "display_order": 9,  "entry_type": "CREDIT"},
+    {"name": "Vegetable Commission",          "cash_book_column": "Vegetable Comm.",               "ledger_account": "Vegetable Comm.",               "display_order": 10, "entry_type": "CREDIT"},
+    {"name": "Sundry Account",                "cash_book_column": "Sundary a/c",                   "ledger_account": "Sundary a/c",                   "display_order": 11, "entry_type": "BOTH"},
+    {"name": "Cash Sales",                    "cash_book_column": "Cash Sales",                    "ledger_account": "Cash Sales",                    "display_order": 12, "entry_type": "CREDIT"},
+    {"name": "Pesticide Sales",               "cash_book_column": "Pesticide Sales",               "ledger_account": "Pesticide Sales",               "display_order": 13, "entry_type": "CREDIT"},
+    {"name": "Cold Storage Advance",          "cash_book_column": "Cold Storage Adv",              "ledger_account": "Cold Storage Adv",              "display_order": 14, "entry_type": "DEBIT"},
+    {"name": "Lakshmi Pigmi Deposit Loan",    "cash_book_column": "Lakshmi Pigmi Deposit Loan",    "ledger_account": "Lakshmi Pigmi Deposit Loan",    "display_order": 15, "entry_type": "DEBIT"},
+    {"name": "Lakshmi Pigmi Deposit Interest","cash_book_column": "Lakshmi Pigmi Deposit Interest","ledger_account": "Lakshmi Pigmi Deposit Interest","display_order": 16, "entry_type": "DEBIT"},
 ]
 
 OFFICE = {
@@ -47,13 +47,18 @@ def seed():
             print("- Office master already exists, skipping")
 
         # Transaction Types
-        existing_names = {t.name for t in db.query(TransactionTypeMaster).all()}
+        existing_map = {t.name: t for t in db.query(TransactionTypeMaster).all()}
         for tt in TRANSACTION_TYPES:
-            if tt["name"] not in existing_names:
+            if tt["name"] not in existing_map:
                 db.add(TransactionTypeMaster(**tt))
-                print(f"  ✓ Added: {tt['name']}")
+                print(f"  ✓ Added: {tt['name']} ({tt['entry_type']})")
             else:
-                print(f"  - Exists: {tt['name']}")
+                item = existing_map[tt["name"]]
+                item.entry_type = tt["entry_type"]
+                item.cash_book_column = tt["cash_book_column"]
+                item.ledger_account = tt["ledger_account"]
+                item.display_order = tt["display_order"]
+                print(f"  ✓ Updated: {tt['name']} ({tt['entry_type']})")
 
         # Account Master (mirrors transaction type ledger_account values)
         existing_accs = {a.account_name for a in db.query(AccountMaster).all()}
