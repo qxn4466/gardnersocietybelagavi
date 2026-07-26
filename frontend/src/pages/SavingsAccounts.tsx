@@ -101,10 +101,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
     form.last_name,
   ].filter(Boolean).join(' ').trim();
 
-  // Compress image to Base64 Data URL (~80KB) for permanent 100% DB persistence
+  // Compress image or encode PDF/document to Base64 Data URL for permanent 100% DB persistence
   const compressImageToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      if (file.type === 'application/pdf') {
+      const fileType = file.type || '';
+      const fileName = file.name.toLowerCase();
+
+      // If PDF or non-image document, read as Data URL directly without canvas compression
+      if (fileType === 'application/pdf' || fileName.endsWith('.pdf') || !fileType.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
@@ -112,13 +116,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
         return;
       }
 
+      // If JPEG, PNG, JPG, WEBP, GIF, SVG etc., compress via canvas
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
         const canvas = document.createElement('canvas');
         let { width, height } = img;
-        const maxDim = 1200;
+        const maxDim = 1400;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -133,7 +138,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
+          resolve(canvas.toDataURL(fileType === 'image/png' ? 'image/png' : 'image/jpeg', 0.85));
         } else {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -808,52 +813,85 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout }) => 
               </div>
 
               <div style={{ padding: 20, overflowY: 'auto', textAlign: 'center', background: '#f8fafc', flex: 1 }}>
-                {previewDocUrl.url.toLowerCase().endsWith('.pdf') ? (
-                  <iframe src={previewDocUrl.url} style={{ width: '100%', height: '520px', border: 'none' }} title="PDF Preview" />
-                ) : (
-                  <div>
-                    <img
-                      src={previewDocUrl.url}
-                      alt="Document Scan Preview"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        const fallbackDiv = document.getElementById('modal-fallback-card');
-                        if (fallbackDiv) fallbackDiv.style.display = 'block';
-                      }}
-                      style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
-                    />
+                {(() => {
+                  const urlLower = previewDocUrl.url.toLowerCase();
+                  const isPdf = urlLower.startsWith('data:application/pdf') || urlLower.endsWith('.pdf') || urlLower.includes('.pdf?');
+                  
+                  if (isPdf) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
+                        <object
+                          data={previewDocUrl.url}
+                          type="application/pdf"
+                          style={{ width: '100%', height: '540px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+                        >
+                          <iframe
+                            src={previewDocUrl.url}
+                            style={{ width: '100%', height: '540px', border: 'none', borderRadius: 8 }}
+                            title="PDF Preview"
+                          />
+                        </object>
+                        <div style={{ marginTop: 12 }}>
+                          <a
+                            href={previewDocUrl.url}
+                            download={`${previewDocUrl.title.replace(/[^a-z0-9]/gi, '_')}.pdf`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: 12, padding: '6px 14px' }}
+                          >
+                            Download / Open PDF Document ↗
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  }
 
-                    {/* Interactive Fallback Container with Upload Action */}
-                    <div
-                      id="modal-fallback-card"
-                      style={{
-                        display: 'none',
-                        background: '#ffffff',
-                        border: '2px dashed #cbd5e1',
-                        borderRadius: 12,
-                        padding: 32,
-                        maxWidth: 480,
-                        margin: '20px auto',
-                      }}
-                    >
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
-                        Document Scan Attached &amp; Saved
+                  return (
+                    <div>
+                      <img
+                        src={previewDocUrl.url}
+                        alt="Document Scan Preview"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          const fallbackDiv = document.getElementById('modal-fallback-card');
+                          if (fallbackDiv) fallbackDiv.style.display = 'block';
+                        }}
+                        style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
+                      />
+
+                      {/* Interactive Fallback Container with Upload Action */}
+                      <div
+                        id="modal-fallback-card"
+                        style={{
+                          display: 'none',
+                          background: '#ffffff',
+                          border: '2px dashed #cbd5e1',
+                          borderRadius: 12,
+                          padding: 32,
+                          maxWidth: 480,
+                          margin: '20px auto',
+                        }}
+                      >
+                        <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
+                          Document Scan Attached &amp; Saved
+                        </div>
+                        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+                          File path linked in database. Select or update the scan photo/PDF below to view directly!
+                        </div>
+                        <label className="btn btn-primary btn-lg" style={{ cursor: 'pointer', margin: '0 auto' }}>
+                          <Upload size={18} /> Select &amp; Upload Scan (Image / PDF)
+                          <input
+                            type="file"
+                            accept="image/*,.pdf,.png,.jpg,.jpeg,.webp,.gif"
+                            style={{ display: 'none' }}
+                            onChange={handleModalPhotoUpload}
+                          />
+                        </label>
                       </div>
-                      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-                        File path linked in database. Click below to select and view the photo scan directly!
-                      </div>
-                      <label className="btn btn-primary btn-lg" style={{ cursor: 'pointer', margin: '0 auto' }}>
-                        <Upload size={18} /> Select &amp; Upload Scan Photo
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          style={{ display: 'none' }}
-                          onChange={handleModalPhotoUpload}
-                        />
-                      </label>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
