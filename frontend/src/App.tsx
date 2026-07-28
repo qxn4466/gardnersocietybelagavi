@@ -9,7 +9,9 @@ import SavingsAccounts from './pages/SavingsAccounts';
 import AuditPackage from './pages/AuditPackage';
 import Login from './pages/Login';
 import type { User } from './types';
+import { LanguageProvider } from './contexts/LanguageContext';
 import './index.css';
+
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(() => {
@@ -33,48 +35,54 @@ const App: React.FC = () => {
   const closeSidebar = () => setSidebarOpen(false);
 
   if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <LanguageProvider>
+        <Login onLoginSuccess={handleLoginSuccess} />
+      </LanguageProvider>
+    );
   }
 
   return (
-    <BrowserRouter>
-      <div className="app-layout">
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <main className="main-content">
-          <Routes>
-            <Route
-              path="/"
-              element={<CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/savings-accounts"
-              element={<SavingsAccounts user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/creditbook"
-              element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/cashbook"
-              element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/debitbook"
-              element={<DebitBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/ledger"
-              element={<GeneralLedger user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route
-              path="/audit-package"
-              element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <div className="app-layout">
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <main className="main-content">
+            <Routes>
+              <Route
+                path="/"
+                element={<CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/savings-accounts"
+                element={<SavingsAccounts user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/creditbook"
+                element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/cashbook"
+                element={<CashBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/debitbook"
+                element={<DebitBook user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/ledger"
+                element={<GeneralLedger user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/audit-package"
+                element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 };
 

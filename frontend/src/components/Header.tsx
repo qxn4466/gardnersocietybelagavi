@@ -2,6 +2,8 @@ import React from 'react';
 import { Calendar, User as UserIcon, LogOut, Menu } from 'lucide-react';
 import PrintButton from './PrintButton';
 import type { User } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LANG_LABELS, type Lang } from '../i18n/translations';
 
 interface HeaderProps {
   title: string;
@@ -20,16 +22,27 @@ const LEVEL_LABELS: Record<number, string> = {
   3: 'Level 3 · General Ledger',
 };
 
+const LEVEL_LABELS_MR: Record<number, string> = {
+  1: 'स्तर १ · डेटा प्रविष्टी',
+  2: 'स्तर २ · दैनंदिन रोख वही',
+  3: 'स्तर ३ · सर्वसाधारण खातेवही',
+};
+
+const LANGS: Lang[] = ['en', 'mr'];
+
 const Header: React.FC<HeaderProps> = ({
   title, subtitle, level, showPrint = false, actions, user, onLogout, onToggleMobileMenu
 }) => {
+  const { lang, setLang } = useLanguage();
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', {
+  const dateStr = now.toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', {
     weekday: 'short',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
+
+  const levelLabels = lang === 'mr' ? LEVEL_LABELS_MR : LEVEL_LABELS;
 
   return (
     <header className="app-header">
@@ -53,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({
               fontWeight: 700,
             }}
           >
-            <Menu size={18} /> Menu
+            <Menu size={18} /> {lang === 'mr' ? 'मेनू' : 'Menu'}
           </button>
         )}
 
@@ -62,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({
             <h1 className="header-title">{title}</h1>
             {level && (
               <span className={`level-pill level-${level}`}>
-                {LEVEL_LABELS[level]}
+                {levelLabels[level]}
               </span>
             )}
           </div>
@@ -71,6 +84,22 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-right">
+        {/* ── Language Switcher ── */}
+        <div className="lang-switcher no-print" role="group" aria-label="Language selector">
+          {LANGS.map((l) => (
+            <button
+              key={l}
+              id={`lang-btn-${l}`}
+              onClick={() => setLang(l)}
+              className={`lang-btn${lang === l ? ' lang-btn--active' : ''}`}
+              title={l === 'en' ? 'Switch to English' : 'मराठीत स्विच करा'}
+              aria-pressed={lang === l}
+            >
+              {LANG_LABELS[l]}
+            </button>
+          ))}
+        </div>
+
         <div className="header-date">
           <Calendar size={14} />
           {dateStr}
@@ -104,7 +133,7 @@ const Header: React.FC<HeaderProps> = ({
             title="Sign out"
             style={{ padding: '6px 10px' }}
           >
-            <LogOut size={14} /> Logout
+            <LogOut size={14} /> {lang === 'mr' ? 'बाहेर पडा' : 'Logout'}
           </button>
         )}
 

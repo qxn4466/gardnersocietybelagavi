@@ -19,6 +19,7 @@ import type {
   User,
 } from '../types';
 import { CREDIT_BOOK_COLUMNS, DEBIT_BOOK_COLUMNS } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AuditPackageProps {
   user?: User | null;
@@ -27,6 +28,7 @@ interface AuditPackageProps {
 }
 
 const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMobileMenu }) => {
+  const { t, lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState('2026-06-01');
   const [endDate, setEndDate] = useState('2026-06-30');
@@ -116,12 +118,14 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
   return (
     <div className="page-container">
       <Header
-        title="Audit Package & Documents"
-        subtitle="Complete Financial Schedules Binder & Auditor Verification Reports"
+        title={t('audit_title')}
+        subtitle={lang === 'mr'
+          ? 'संपूर्ण आर्थिक वेळापत्रक बाइंडर आणि लेखापरीक्षक प्रमाणीकरण अहवाल'
+          : 'Complete Financial Schedules Binder & Auditor Verification Reports'}
         level={3}
         actions={
           <button className="btn btn-primary btn-lg no-print" onClick={handlePrint}>
-            <Printer size={18} /> Print Complete Audit Binder
+            <Printer size={18} /> {lang === 'mr' ? 'संपूर्ण लेखापरीक्षा बाइंडर मुद्रित करा' : 'Print Complete Audit Binder'}
           </button>
         }
         user={user}

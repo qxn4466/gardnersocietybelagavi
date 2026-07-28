@@ -5,10 +5,16 @@ import PrintButton from '../components/PrintButton';
 import PrintHeader from '../components/PrintHeader';
 import { fetchLedger, fetchAccounts } from '../api/client';
 import type { LedgerRow, AccountMaster, User } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 const months = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const monthsMr = [
+  '', 'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
+  'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'
 ];
 
 const fmtAmt = (v: number) =>
@@ -21,6 +27,7 @@ interface GeneralLedgerProps {
 }
 
 const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleMobileMenu }) => {
+  const { t, lang } = useTranslation();
   const now = new Date();
   const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
   const [year, setYear] = useState<string>(String(now.getFullYear()));
@@ -29,6 +36,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const [accounts, setAccounts] = useState<AccountMaster[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const monthNames = lang === 'mr' ? monthsMr : months;
 
   useEffect(() => {
     fetchAccounts().then(setAccounts).catch(() => {});
@@ -45,7 +54,9 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
       );
       setRows(data);
     } catch {
-      setError('Could not load Ledger data. Check backend connection.');
+      setError(lang === 'mr'
+        ? 'खातेवही डेटा लोड होऊ शकला नाही. बॅकएंड कनेक्शन तपासा.'
+        : 'Could not load Ledger data. Check backend connection.');
     } finally {
       setLoading(false);
     }
@@ -65,10 +76,12 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   return (
     <div className="page-container">
       <Header
-        title="General Ledger"
-        subtitle="The Belagavi Gardeners Co-Op Production"
+        title={t('ledger_title')}
+        subtitle={lang === 'mr'
+          ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन'
+          : 'The Belagavi Gardeners Co-Op Production'}
         level={3}
-        actions={<PrintButton label="Print Ledger" />}
+        actions={<PrintButton label={lang === 'mr' ? 'खातेवही मुद्रित करा' : 'Print Ledger'} />}
         user={user}
         onLogout={onLogout}
         onToggleMobileMenu={onToggleMobileMenu}
@@ -78,19 +91,19 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         {/* Stats */}
         <div className="stat-row no-print">
           <div className="stat-card">
-            <div className="stat-label">Total Receipt</div>
+            <div className="stat-label">{lang === 'mr' ? 'एकूण जमा' : 'Total Receipt'}</div>
             <div className="stat-value">₹{totalReceipt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Total Debit</div>
+            <div className="stat-label">{lang === 'mr' ? 'एकूण नावे' : 'Total Debit'}</div>
             <div className="stat-value">₹{totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Total Payable</div>
+            <div className="stat-label">{lang === 'mr' ? 'एकूण देणे' : 'Total Payable'}</div>
             <div className="stat-value">₹{totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Total Receivable</div>
+            <div className="stat-label">{lang === 'mr' ? 'एकूण घेणे' : 'Total Receivable'}</div>
             <div className="stat-value">₹{totalRcv.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
         </div>
@@ -98,35 +111,35 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         {/* Filter Bar */}
         <div className="filter-bar no-print">
           <div className="filter-group">
-            <span className="filter-label">Month</span>
+            <span className="filter-label">{t('lbl_month')}</span>
             <select
               id="ledger-month"
               className="filter-select"
               value={month}
               onChange={e => setMonth(e.target.value)}
             >
-              <option value="">All Months</option>
-              {months.slice(1).map((m, i) => (
+              <option value="">{lang === 'mr' ? 'सर्व महिने' : 'All Months'}</option>
+              {monthNames.slice(1).map((m, i) => (
                 <option key={i+1} value={String(i+1)}>{m}</option>
               ))}
             </select>
           </div>
           <div className="filter-group">
-            <span className="filter-label">Year</span>
+            <span className="filter-label">{t('lbl_year')}</span>
             <select
               id="ledger-year"
               className="filter-select"
               value={year}
               onChange={e => setYear(e.target.value)}
             >
-              <option value="">All Years</option>
+              <option value="">{lang === 'mr' ? 'सर्व वर्षे' : 'All Years'}</option>
               {yearOptions.map(y => (
                 <option key={y} value={String(y)}>{y}</option>
               ))}
             </select>
           </div>
           <div className="filter-group">
-            <span className="filter-label">Account</span>
+            <span className="filter-label">{t('ledger_lbl_account')}</span>
             <select
               id="ledger-account"
               className="filter-select"
@@ -134,23 +147,27 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
               onChange={e => setAccount(e.target.value)}
               style={{ minWidth: 200 }}
             >
-              <option value="">All Accounts</option>
+              <option value="">{lang === 'mr' ? 'सर्व खाती' : 'All Accounts'}</option>
               {accounts.map(a => (
                 <option key={a.id} value={a.account_name}>{a.account_name}</option>
               ))}
             </select>
           </div>
           <button className="btn btn-primary btn-sm" onClick={loadData} id="ledger-refresh">
-            <RefreshCw size={14} /> Load
+            <RefreshCw size={14} /> {lang === 'mr' ? 'लोड करा' : 'Load'}
           </button>
         </div>
 
         {/* Print Header Block */}
         <PrintHeader
-          documentTitle="G E N E R A L   L E D G E R"
-          subTitle={
-            account ? `A/C Account Filter: ${account} | Month: ${month ? months[parseInt(month)] : 'All'} ${year}` : `Monthly Balance Sheet — ${month ? months[parseInt(month)] : 'All'} ${year}`
-          }
+          documentTitle={lang === 'mr' ? 'सर्वसाधारण खातेवही' : 'G E N E R A L   L E D G E R'}
+          subTitle={lang === 'mr'
+            ? (account
+                ? `खाते फिल्टर: ${account} | महिना: ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`
+                : `मासिक शिल्लक पत्रक — ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`)
+            : (account
+                ? `A/C Account Filter: ${account} | Month: ${month ? months[parseInt(month)] : 'All'} ${year}`
+                : `Monthly Balance Sheet — ${month ? months[parseInt(month)] : 'All'} ${year}`)}
         />
 
         {error && (
@@ -162,25 +179,25 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
           <div className="table-wrapper">
             {loading ? (
               <div className="loading-overlay">
-                <span className="spinner" /> Loading ledger…
+                <span className="spinner" /> {lang === 'mr' ? 'खातेवही लोड होत आहे…' : 'Loading ledger…'}
               </div>
             ) : rows.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon"><BookMarked /></div>
-                <div className="empty-state-title">No ledger entries found</div>
-                <div className="empty-state-sub">Adjust the month/year filter or enter transactions via Level 1</div>
+                <div className="empty-state-title">{lang === 'mr' ? 'खातेवही नोंदी आढळल्या नाहीत' : 'No ledger entries found'}</div>
+                <div className="empty-state-sub">{lang === 'mr' ? 'महिना/वर्ष फिल्टर बदला किंवा स्तर १ मध्ये व्यवहार प्रविष्ट करा' : 'Adjust the month/year filter or enter transactions via Level 1'}</div>
               </div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Month &amp; Year</th>
-                    <th>A/C Name</th>
-                    <th style={{ textAlign: 'right' }}>Receipt</th>
-                    <th style={{ textAlign: 'right' }}>Debit</th>
-                    <th style={{ textAlign: 'right' }}>Payable</th>
-                    <th style={{ textAlign: 'right' }}>Receivable</th>
-                    <th>Remarks</th>
+                    <th>{t('ledger_lbl_month_year')}</th>
+                    <th>{lang === 'mr' ? 'खाते नाव' : 'A/C Name'}</th>
+                    <th style={{ textAlign: 'right' }}>{t('lbl_receipt')}</th>
+                    <th style={{ textAlign: 'right' }}>{t('lbl_debit')}</th>
+                    <th style={{ textAlign: 'right' }}>{t('ledger_lbl_payable')}</th>
+                    <th style={{ textAlign: 'right' }}>{t('ledger_lbl_receivable')}</th>
+                    <th>{t('lbl_remarks')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,7 +223,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={2} style={{ fontWeight: 700 }}>TOTALS</td>
+                    <td colSpan={2} style={{ fontWeight: 700 }}>{lang === 'mr' ? 'एकूण' : 'TOTALS'}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtAmt(totalReceipt)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtAmt(totalDebit)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtAmt(totalPayable)}</td>

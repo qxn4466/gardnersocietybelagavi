@@ -255,6 +255,48 @@ body {
   font-weight: 500;
 }
 
+/* ─── Language Switcher ───────────────────────────────────────────────────── */
+.lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.lang-btn {
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.lang-btn:hover:not(.lang-btn--active) {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--blue-700);
+}
+
+.lang-btn--active {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+@media print {
+  .lang-switcher { display: none !important; }
+}
+
+
 /* ─── Cards (White) ──────────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);

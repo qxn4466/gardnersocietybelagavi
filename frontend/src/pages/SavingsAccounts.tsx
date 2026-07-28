@@ -15,6 +15,7 @@ import {
   getFileUrl,
 } from '../api/client';
 import type { Customer, CustomerCreate, User } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SavingsAccountsProps {
   user?: User | null;
@@ -387,11 +388,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     navigate(`/?customer_id=${cust.customer_id}&customer_name=${encodeURIComponent(cust.full_name)}`);
   };
 
+  const { t, lang } = useTranslation();
+
   return (
     <div className="page-container">
       <Header
-        title="Customer Savings Accounts"
-        subtitle="Manage customer profiles, 10-Digit IDs, Aadhaar Front/Back &amp; PAN card scans"
+        title={t('savings_title')}
+        subtitle={lang === 'mr'
+          ? 'ग्राहक प्रोफाइल, १०-अंकी ओळख, आधार कार्ड आणि पॅन कार्ड म्यानेज करा'
+          : 'Manage customer profiles, 10-Digit IDs, Aadhaar Front/Back & PAN card scans'}
         level={1}
         user={user}
         onLogout={onLogout}

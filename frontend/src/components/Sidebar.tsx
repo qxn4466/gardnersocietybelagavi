@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, ClipboardCheck, X } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -8,6 +9,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { t, lang } = useTranslation();
+
+  const societyName = lang === 'mr'
+    ? <>बेळगाव गार्डनर्स<br />को-ऑप सोसायटी लि.</>
+    : <>Belagavi Gardeners<br />Co-op Society Ltd.</>;
+
   return (
     <>
       {isOpen && (
@@ -25,10 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="leaf-icon">🌿</div>
-            <div className="society-name">
-              Belagavi Gardeners<br />
-              Co-op Society Ltd.
-            </div>
+            <div className="society-name">{societyName}</div>
           </div>
           {onClose && (
             <button
@@ -49,8 +53,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <Users size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>Savings Accounts</span>
-              <span className="nav-level-badge">10-Digit ID &amp; KYC Docs</span>
+              <span>{t('nav_savings_accounts')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? '१०-अंकी ओळख व KYC कागदपत्रे' : '10-Digit ID & KYC Docs'}
+              </span>
             </div>
           </NavLink>
 
@@ -62,8 +68,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <FileText size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>Credit-Debit Account Form</span>
-              <span className="nav-level-badge">Level 1 · Data Entry</span>
+              <span>{lang === 'mr' ? 'जमा-नावे खाते फॉर्म' : 'Credit-Debit Account Form'}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'स्तर १ · डेटा प्रविष्टी' : 'Level 1 · Data Entry'}
+              </span>
             </div>
           </NavLink>
 
@@ -74,8 +82,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <TrendingUp size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>Credit Book</span>
-              <span className="nav-level-badge">Level 2 · Receipts &amp; Credits</span>
+              <span>{t('nav_credit_book')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'स्तर २ · जमा नोंदी' : 'Level 2 · Receipts & Credits'}
+              </span>
             </div>
           </NavLink>
 
@@ -86,8 +96,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <TrendingDown size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>Debit Book</span>
-              <span className="nav-level-badge">Level 2 · Payments &amp; Debits</span>
+              <span>{t('nav_debit_book')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'स्तर २ · नावे नोंदी' : 'Level 2 · Payments & Debits'}
+              </span>
             </div>
           </NavLink>
 
@@ -98,8 +110,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <BookMarked size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>General Ledger</span>
-              <span className="nav-level-badge">Level 3 · Monthly View</span>
+              <span>{t('nav_general_ledger')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'स्तर ३ · मासिक दृश्य' : 'Level 3 · Monthly View'}
+              </span>
             </div>
           </NavLink>
 
@@ -110,15 +124,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <ClipboardCheck size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>Audit Package</span>
-              <span className="nav-level-badge">Auditor Binder &amp; Schedules</span>
+              <span>{t('nav_audit_package')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'लेखापरीक्षक बाइंडर' : 'Auditor Binder & Schedules'}
+              </span>
             </div>
           </NavLink>
         </nav>
 
         <div className="sidebar-footer">
           <Leaf size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-          Belagavi, Karnataka
+          {lang === 'mr' ? 'बेळगाव, कर्नाटक' : 'Belagavi, Karnataka'}
         </div>
       </aside>
     </>

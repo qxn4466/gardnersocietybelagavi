@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Printer, X, CheckCircle } from 'lucide-react';
 import PrintHeader from './PrintHeader';
 import type { Transaction, OfficeMaster } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 // ─── Indian Currency Words Helper ─────────────────────────────────────────────
 const ONES = [
@@ -56,6 +57,7 @@ interface ReceiptModalProps {
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClose }) => {
+  const { lang } = useTranslation();
   React.useEffect(() => {
     if (transaction) {
       document.body.classList.add('receipt-open');
@@ -116,11 +118,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircle size={18} color="#2563eb" /> Cash Memo Receipt Preview ({transaction.cash_memo_no})
+            <CheckCircle size={18} color="#2563eb" />
+            {lang === 'mr' ? 'रोख मेमो पावती पूर्वावलोकन' : 'Cash Memo Receipt Preview'} ({transaction.cash_memo_no})
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button className="btn btn-primary btn-sm" onClick={handlePrint} id="modal-print-btn">
-              <Printer size={15} /> Print Receipt
+              <Printer size={15} /> {lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Receipt'}
             </button>
             <button
               onClick={onClose}
@@ -137,8 +140,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
 
           {/* Org Banner Header */}
           <PrintHeader
-            documentTitle="C A S H   M E M O   R E C E I P T"
-            subTitle={`Cash Memo No: ${transaction.cash_memo_no}`}
+            documentTitle={lang === 'mr' ? 'रोख  मेमो  पावती' : 'C A S H   M E M O   R E C E I P T'}
+            subTitle={lang === 'mr' ? `रोख मेमो क्र: ${transaction.cash_memo_no}` : `Cash Memo No: ${transaction.cash_memo_no}`}
           />
 
           {/* Transaction Metadata Grid */}
@@ -148,23 +151,23 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
             border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13,
           }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>ACCOUNT HOLDER NAME</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'खातेधारकाचे नाव' : 'ACCOUNT HOLDER NAME'}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{transaction.customer_name}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>TRANSACTION DATE</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'व्यवहाराची तारीख' : 'TRANSACTION DATE'}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{transaction.date}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>TRANSACTION TYPE</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'TRANSACTION TYPE'}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginTop: 2 }}>
-                {transaction.transaction_type?.name || 'Shares / Deposit'}
+                {transaction.transaction_type?.name || (lang === 'mr' ? 'समभाग / ठेव' : 'Shares / Deposit')}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>STATUS</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'स्थिती' : 'STATUS'}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: transaction.status === 'POSTED' ? '#15803d' : '#b45309', marginTop: 2 }}>
-                {transaction.status || 'POSTED'}
+                {transaction.status === 'POSTED' ? (lang === 'mr' ? 'नोंदवले' : 'POSTED') : transaction.status || 'POSTED'}
               </div>
             </div>
           </div>
@@ -175,13 +178,13 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
               <thead>
                 <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
                   <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Particulars / Item Description
+                    {lang === 'mr' ? 'तपशील / वस्तू वर्णन' : 'Particulars / Item Description'}
                   </th>
                   <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: 11, color: '#1e40af', fontWeight: 700, textTransform: 'uppercase', width: 100 }}>
-                    Rs.
+                    {lang === 'mr' ? 'रु.' : 'Rs.'}
                   </th>
                   <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: 11, color: '#1e40af', fontWeight: 700, textTransform: 'uppercase', width: 80 }}>
-                    Ps.
+                    {lang === 'mr' ? 'पै.' : 'Ps.'}
                   </th>
                 </tr>
               </thead>
@@ -197,7 +200,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
               <tfoot>
                 <tr style={{ background: '#eff6ff', borderTop: '2px solid #93c5fd' }}>
                   <td style={{ padding: '10px 12px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', fontSize: 12 }}>
-                    TOTAL AMOUNT
+                    {lang === 'mr' ? 'एकूण रक्कम' : 'TOTAL AMOUNT'}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#1d4ed8' }}>
                     {rsPart.toLocaleString('en-IN')}
@@ -215,7 +218,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
             padding: '10px 14px', background: '#f0f9ff', border: '1px solid #bae6fd',
             borderRadius: 8, fontSize: 13, marginBottom: 24, display: 'flex', gap: 8, alignItems: 'center',
           }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>₹ IN WORDS:</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>
+              {lang === 'mr' ? '₹ अक्षरी:' : '₹ IN WORDS:'}
+            </span>
             <span style={{ fontWeight: 600, color: '#0f172a' }}>{amountToWords(totalAmt)}</span>
           </div>
 
@@ -226,16 +231,16 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 4, fontSize: 11, color: '#475569', fontWeight: 600 }}>
-                Signature of Account Holder
+                {lang === 'mr' ? 'खातेधारकाची स्वाक्षरी' : 'Signature of Account Holder'}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 4, fontSize: 11, color: '#475569', fontWeight: 600 }}>
-                Accountant / Clerk
+                {lang === 'mr' ? 'लेखापाल / कारकून' : 'Accountant / Clerk'}
               </div>
             </div>
             <div style={{ textAlign: 'center', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10 }}>
-              <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 700 }}>GRAND TOTAL</div>
+              <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'एकूण बेरीज' : 'GRAND TOTAL'}</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', fontFamily: 'monospace' }}>
                 ₹ {totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>

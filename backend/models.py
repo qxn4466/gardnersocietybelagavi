@@ -2,7 +2,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy import (
     Column, Integer, String, Text, Date, Numeric,
-    ForeignKey, DateTime, func
+    ForeignKey, DateTime, func, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from database import Base
@@ -93,3 +93,13 @@ class Customer(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class TranslationCache(Base):
+    """Cache for IndicTrans2 translations to avoid repeated microservice calls."""
+    __tablename__ = "translation_cache"
+    __table_args__ = (UniqueConstraint("source_text", "target_lang", name="uq_translation"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_text = Column(Text, nullable=False, index=True)
+    target_lang = Column(String(20), nullable=False, default="mar_Deva")
+    translated_text = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())

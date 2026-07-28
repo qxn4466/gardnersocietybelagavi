@@ -130,3 +130,26 @@ export const uploadCustomerDocument = (file: File, docType: string): Promise<{ f
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(r => r.data);
 };
+
+// ─── Translations ─────────────────────────────────────────────────────────────
+/**
+ * Translate a single text string via the cache-first backend endpoint.
+ * Returns the translated text or the original if translation fails.
+ */
+export const translateText = (
+  text: string,
+  targetLang = 'mar_Deva',
+): Promise<{ source_text: string; translated_text: string; from_cache: boolean }> =>
+  api.post('/translations/translate', { text, target_lang: targetLang }).then(r => r.data);
+
+/**
+ * Batch translate multiple texts. Returns a map of { original: translated }.
+ */
+export const translateBatch = (
+  texts: string[],
+  targetLang = 'mar_Deva',
+): Promise<Record<string, string>> =>
+  api
+    .post('/translations/translate-batch', { texts, target_lang: targetLang })
+    .then(r => r.data.translations as Record<string, string>);
+

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Printer, X, FileText, CheckCircle } from 'lucide-react';
 import PrintHeader from './PrintHeader';
 import type { Transaction, OfficeMaster } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface CustomerStatementModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   office,
   onClose,
 }) => {
+  const { lang } = useTranslation();
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('receipt-open');
@@ -72,11 +74,12 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileText size={18} color="#2563eb" /> Customer Monthly Statement ({customerId || customerName || 'All Records'})
+            <FileText size={18} color="#2563eb" />
+            {lang === 'mr' ? 'ग्राहक मासिक विवरणपत्र' : 'Customer Monthly Statement'} ({customerId || customerName || (lang === 'mr' ? 'सर्व नोंदी' : 'All Records')})
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button className="btn btn-primary btn-sm" onClick={handlePrint} id="modal-stmt-print-btn">
-              <Printer size={15} /> Print Monthly Statement
+              <Printer size={15} /> {lang === 'mr' ? 'मासिक विवरणपत्र मुद्रित करा' : 'Print Monthly Statement'}
             </button>
             <button
               onClick={onClose}

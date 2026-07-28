@@ -23,6 +23,8 @@ import {
   clearJuneTestData,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { useTranslateData } from '../hooks/useTranslateData';
 
 // ─── Indian currency → words ─────────────────────────────────────────────────
 const ONES = [
@@ -123,6 +125,7 @@ interface CreditAccountFormProps {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, onToggleMobileMenu }) => {
+  const { t, lang } = useTranslation();
   const todayStr = new Date().toISOString().split('T')[0];
   const firstOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
@@ -131,6 +134,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [nextMemo, setNextMemo] = useState<string>('—');
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
+
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [savedMemo, setSavedMemo] = useState<string | null>(null);
@@ -492,8 +496,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   return (
     <div className="page-container">
       <Header
-        title="Credit-Debit Account Form"
-        subtitle="Belagavi Gardeners Co-op Production Supply and Sale Society Ltd."
+        title={t('credit_form_title')}
+        subtitle={lang === 'mr'
+          ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.'
+          : 'Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.'}
         level={1}
         showPrint={!!savedMemo}
         user={user}
@@ -546,27 +552,28 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         {/* ── Static Banner ── */}
         <div className="static-banner">
           <div className="org-title">
-            Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.<br />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>Belagavi, Karnataka</span>
+            {lang === 'mr'
+              ? <>बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>बेळगाव, कर्नाटक</span></>
+              : <>Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>Belagavi, Karnataka</span></>}
           </div>
           <div className="static-grid">
             <div className="static-field">
-              <label><Hash size={10} style={{ display: 'inline' }} /> GST Number</label>
+              <label><Hash size={10} style={{ display: 'inline' }} /> {lang === 'mr' ? 'GST क्रमांक' : 'GST Number'}</label>
               <span>{office?.gst_no ?? '—'}</span>
             </div>
             <div className="static-field">
-              <label><CreditCard size={10} style={{ display: 'inline' }} /> Cash Memo No.</label>
+              <label><CreditCard size={10} style={{ display: 'inline' }} /> {t('lbl_memo_no')}</label>
               <div className="memo-badge" style={{ marginTop: 2 }}>
                 <Hash size={12} /> {nextMemo}
               </div>
             </div>
             <div className="static-field">
-              <label><Phone size={10} style={{ display: 'inline' }} /> Phone Numbers</label>
+              <label><Phone size={10} style={{ display: 'inline' }} /> {lang === 'mr' ? 'दूरध्वनी क्रमांक' : 'Phone Numbers'}</label>
               <span>{office?.phone1 ?? '—'}{office?.phone2 ? ` / ${office.phone2}` : ''}</span>
             </div>
             <div className="static-field">
-              <label><Building2 size={10} style={{ display: 'inline' }} /> Office Address</label>
-              <span>{office?.address ?? 'Belagavi, Karnataka - 590001'}</span>
+              <label><Building2 size={10} style={{ display: 'inline' }} /> {lang === 'mr' ? 'कार्यालयाचा पत्ता' : 'Office Address'}</label>
+              <span>{office?.address ?? (lang === 'mr' ? 'बेळगाव, कर्नाटक - 590001' : 'Belagavi, Karnataka - 590001')}</span>
             </div>
           </div>
         </div>
@@ -576,18 +583,18 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                Transaction Entry
+                {lang === 'mr' ? 'व्यवहार नोंद' : 'Transaction Entry'}
                 {editingDraftId && (
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: '2px 8px',
                     background: '#fef3c7', color: '#b45309',
                     border: '1px solid #fde68a', borderRadius: 12,
                   }}>
-                    Editing #{editingDraftId}
+                    {lang === 'mr' ? 'संपादन #' : 'Editing #'}{editingDraftId}
                   </span>
                 )}
               </div>
-              <div className="card-subtitle">All fields marked with * are required</div>
+              <div className="card-subtitle">{lang === 'mr' ? '* चिन्हांकित सर्व राने अनिवार्य आहेत' : 'All fields marked with * are required'}</div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -602,9 +609,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
               {savedMemo && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div className="memo-badge">
-                    <CheckCircle size={13} /> Last saved: {savedMemo}
-                  </div>
+                <div className="memo-badge">
+                  <CheckCircle size={13} /> {lang === 'mr' ? 'शेवटचे जतन:' : 'Last saved:'} {savedMemo}
+                </div>
                   {lastSavedTxn && (
                     <button
                       type="button"
@@ -626,25 +633,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
                 {/* Date */}
                 <div className="form-group">
-                  <label className="form-label">Date <span className="required">*</span></label>
+                  <label className="form-label">{t('lbl_date')} <span className="required">*</span></label>
                   <input id="txn-date" type="date" className="form-input"
                     value={form.date} onChange={handleChange('date')} required />
                 </div>
 
                 {/* Customer ID */}
                 <div className="form-group">
-                  <label className="form-label">10-Digit Customer ID / Account No.</label>
+                  <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'}</label>
                   <input
                     id="customer-id"
                     type="text"
                     list="saved-customers-list"
                     className="form-input"
-                    placeholder="Search/Select 10-Digit ID (e.g. 1000000001)"
+                    placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. शोधा (e.g. 1000000001)' : 'Search/Select 10-Digit ID (e.g. 1000000001)'}
                     value={form.customer_id}
                     onChange={e => {
                       const val = e.target.value;
                       setForm(prev => ({ ...prev, customer_id: val }));
-                      // Find matching customer in customerList
                       const match = customerList.find(c => c.customer_id === val || c.full_name === val);
                       if (match) {
                         setForm(prev => ({
@@ -653,14 +659,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           salutation: match.salutation || 'Mr.',
                           customer_name: `${match.first_name}${match.middle_name ? ' ' + match.middle_name : ''} ${match.last_name}`.trim(),
                         }));
-                        setAlert({ type: 'success', msg: `Auto-filled customer: ${match.full_name}` });
+                        setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
                       }
                     }}
                   />
                   <datalist id="saved-customers-list">
                     {customerList.map(c => (
                       <option key={c.id} value={c.customer_id}>
-                        {c.full_name} ({c.mobile_no || 'No Mobile'})
+                        {c.full_name} ({c.mobile_no || (lang === 'mr' ? 'मोबाइल नाही' : 'No Mobile')})
                       </option>
                     ))}
                   </datalist>
@@ -668,15 +674,15 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
                 {/* Accountant */}
                 <div className="form-group">
-                  <label className="form-label">Accountant Name</label>
+                  <label className="form-label">{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</label>
                   <input id="created-by" type="text" className="form-input"
-                    placeholder="Accountant / clerk name"
+                    placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
                     value={form.created_by} onChange={handleChange('created_by')} />
                 </div>
 
                 {/* Customer Name */}
                 <div className="form-group full-width">
-                  <label className="form-label">Mr. / Mrs. Name <span className="required">*</span></label>
+                  <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select id="salutation" className="form-select"
                       style={{ width: 90, flexShrink: 0 }}
@@ -685,7 +691,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       <option>Dr.</option><option>Sri.</option><option>Smt.</option>
                     </select>
                     <input id="customer-name" type="text" className="form-input"
-                      placeholder="Full name of account holder"
+                      placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
                       value={form.customer_name} onChange={handleChange('customer_name')} required />
                   </div>
                 </div>
@@ -693,9 +699,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 {/* Entry Nature Toggle Switcher */}
                 <div className="form-group full-width" style={{ marginTop: 6, marginBottom: 6 }}>
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Transaction Nature / Book Type Entry <span className="required">*</span></span>
+                    <span>{lang === 'mr' ? 'व्यवहाराचे स्वरूप / वही प्रकार' : 'Transaction Nature / Book Type Entry'} <span className="required">*</span></span>
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      Select entry nature to filter matching heads
+                      {lang === 'mr' ? 'नोंदीचे स्वरूप निवडा' : 'Select entry nature to filter matching heads'}
                     </span>
                   </label>
                   <div className="nature-pill-container">
@@ -713,7 +719,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         }));
                       }}
                     >
-                      📥 CREDIT ENTRY (Receipt Inflow → Credit Book)
+                      {lang === 'mr' ? '१. ढ जमा नोंद (आवक आवत → जमा वही)' : '4஀ CREDIT ENTRY (Receipt Inflow → Credit Book)'}
                     </button>
                     <button
                       type="button"
@@ -729,7 +735,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         }));
                       }}
                     >
-                      📤 DEBIT ENTRY (Payment Outflow → Debit Book)
+                      {lang === 'mr' ? '२. ढ नावे नोंद (खर्च जात → नावे वही)' : '4எ DEBIT ENTRY (Payment Outflow → Debit Book)'}
                     </button>
                   </div>
                 </div>
