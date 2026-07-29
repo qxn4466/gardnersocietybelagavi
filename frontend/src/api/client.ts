@@ -11,25 +11,16 @@ import type {
 } from '../types';
 
 const getApiBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8002/api';
-    }
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return `http://${hostname}:8002/api`;
-    }
-  }
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  let url = 'https://gardnersocietybelagavi-production.up.railway.app/api';
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && envUrl.startsWith('http')) {
-    url = envUrl.trim();
+    let url = envUrl.trim().replace(/\/+$/, '');
+    if (!url.endsWith('/api')) url += '/api';
+    return url;
   }
-  url = url.replace(/\/+$/, '');
-  if (!url.endsWith('/api')) {
-    url += '/api';
+  if (typeof window !== 'undefined') {
+    return '/api';
   }
-  return url;
+  return 'http://localhost:8002/api';
 };
 
 const BASE_URL = getApiBaseUrl();
