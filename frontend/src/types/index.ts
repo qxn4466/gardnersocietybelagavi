@@ -205,6 +205,10 @@ export interface CashPaymentVoucher {
   amount_rs: number;
   amount_words?: string | null;
   receipt_doc_path?: string | null;
+  payment_mode?: string | null;
+  cheque_no?: string | null;
+  cheque_date?: string | null;
+  bank_name?: string | null;
   created_by?: string | null;
   status?: string;
   created_at?: string | null;
@@ -219,6 +223,10 @@ export interface CashPaymentVoucherCreate {
   amount_rs: number;
   amount_words?: string;
   receipt_doc_path?: string;
+  payment_mode?: string;
+  cheque_no?: string;
+  cheque_date?: string;
+  bank_name?: string;
   created_by?: string;
   status?: string;
 }
@@ -235,6 +243,10 @@ export interface CashReceiptVoucher {
   interest_amount: number;
   total_amount: number;
   receipt_doc_path?: string | null;
+  payment_mode?: string | null;
+  cheque_no?: string | null;
+  cheque_date?: string | null;
+  bank_name?: string | null;
   created_by?: string | null;
   status?: string;
   created_at?: string | null;
@@ -251,6 +263,10 @@ export interface CashReceiptVoucherCreate {
   interest_amount?: number;
   total_amount?: number;
   receipt_doc_path?: string;
+  payment_mode?: string;
+  cheque_no?: string;
+  cheque_date?: string;
+  bank_name?: string;
   created_by?: string;
   status?: string;
 }
@@ -316,6 +332,10 @@ export interface RentBill {
   cgst_amount: number;
   total_amount: number;
   tax_amount_words?: string | null;
+  payment_mode?: string | null;
+  cheque_no?: string | null;
+  cheque_date?: string | null;
+  bank_name?: string | null;
   created_by?: string | null;
   status?: string;
   created_at?: string | null;
@@ -338,6 +358,10 @@ export interface RentBillCreate {
   cgst_amount?: number;
   total_amount?: number;
   tax_amount_words?: string;
+  payment_mode?: string;
+  cheque_no?: string;
+  cheque_date?: string;
+  bank_name?: string;
   created_by?: string;
   status?: string;
 }

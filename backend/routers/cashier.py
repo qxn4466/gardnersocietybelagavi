@@ -125,10 +125,43 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
         amount_rs=payload.amount_rs,
         amount_words=payload.amount_words,
         receipt_doc_path=payload.receipt_doc_path,
+        payment_mode=payload.payment_mode or "CASH",
+        cheque_no=payload.cheque_no,
+        cheque_date=payload.cheque_date,
+        bank_name=payload.bank_name,
         created_by=payload.created_by,
         status=payload.status or "POSTED"
     )
     db.add(record)
+
+    # ── Auto-Post to Cash Scroll Book ──────────────────────────────────────────
+    is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
+    paid_amt = payload.amount_rs if not is_cheque else Decimal("0.00")
+    cheque_amt = payload.amount_rs if is_cheque else Decimal("0.00")
+
+    scroll_entry = CashScrollBookEntry(
+        date=payload.date,
+        voucher_no=v_no,
+        from_received_paid=f"Paid To: {payload.paid_to}",
+        received_amount=Decimal("0.00"),
+        paid_amount=paid_amt,
+        cheque_amount=cheque_amt,
+        created_by=payload.created_by
+    )
+    db.add(scroll_entry)
+
+    # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────────
+    if is_cheque and payload.cheque_no:
+        cheque_entry = ChequeIssueBookEntry(
+            issue_date=payload.cheque_date or payload.date,
+            name_to_whom_issued=payload.paid_to,
+            cheque_no=payload.cheque_no,
+            amount_rs=payload.amount_rs,
+            remarks=payload.purpose_remarks or f"Payment Voucher {v_no}",
+            created_by=payload.created_by
+        )
+        db.add(cheque_entry)
+
     db.commit()
     db.refresh(record)
     return record
@@ -174,10 +207,43 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         interest_amount=payload.interest_amount,
         total_amount=payload.total_amount,
         receipt_doc_path=payload.receipt_doc_path,
+        payment_mode=payload.payment_mode or "CASH",
+        cheque_no=payload.cheque_no,
+        cheque_date=payload.cheque_date,
+        bank_name=payload.bank_name,
         created_by=payload.created_by,
         status=payload.status or "POSTED"
     )
     db.add(record)
+
+    # ── Auto-Post to Cash Scroll Book ──────────────────────────────────────────
+    is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
+    rec_amt = payload.total_amount if not is_cheque else Decimal("0.00")
+    cheque_amt = payload.total_amount if is_cheque else Decimal("0.00")
+
+    scroll_entry = CashScrollBookEntry(
+        date=payload.date,
+        voucher_no=b_no,
+        from_received_paid=f"Received From: {payload.received_from}",
+        received_amount=rec_amt,
+        paid_amount=Decimal("0.00"),
+        cheque_amount=cheque_amt,
+        created_by=payload.created_by
+    )
+    db.add(scroll_entry)
+
+    # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────────
+    if is_cheque and payload.cheque_no:
+        cheque_entry = ChequeIssueBookEntry(
+            issue_date=payload.cheque_date or payload.date,
+            name_to_whom_issued=payload.received_from,
+            cheque_no=payload.cheque_no,
+            amount_rs=payload.total_amount,
+            remarks=payload.particulars or f"Receipt Voucher {b_no}",
+            created_by=payload.created_by
+        )
+        db.add(cheque_entry)
+
     db.commit()
     db.refresh(record)
     return record
@@ -230,13 +296,47 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         cgst_amount=payload.cgst_amount,
         total_amount=payload.total_amount,
         tax_amount_words=payload.tax_amount_words,
+        payment_mode=payload.payment_mode or "CASH",
+        cheque_no=payload.cheque_no,
+        cheque_date=payload.cheque_date,
+        bank_name=payload.bank_name,
         created_by=payload.created_by,
         status=payload.status or "POSTED"
     )
     db.add(record)
+
+    # ── Auto-Post to Cash Scroll Book ──────────────────────────────────────────
+    is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
+    rec_amt = payload.total_amount if not is_cheque else Decimal("0.00")
+    cheque_amt = payload.total_amount if is_cheque else Decimal("0.00")
+
+    scroll_entry = CashScrollBookEntry(
+        date=payload.date,
+        voucher_no=inv_no,
+        from_received_paid=f"Rent Bill: {payload.consignee_name}",
+        received_amount=rec_amt,
+        paid_amount=Decimal("0.00"),
+        cheque_amount=cheque_amt,
+        created_by=payload.created_by
+    )
+    db.add(scroll_entry)
+
+    # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────────
+    if is_cheque and payload.cheque_no:
+        cheque_entry = ChequeIssueBookEntry(
+            issue_date=payload.cheque_date or payload.date,
+            name_to_whom_issued=payload.consignee_name,
+            cheque_no=payload.cheque_no,
+            amount_rs=payload.total_amount,
+            remarks=payload.particulars or f"Rent Bill {inv_no}",
+            created_by=payload.created_by
+        )
+        db.add(cheque_entry)
+
     db.commit()
     db.refresh(record)
     return record
+
 
 
 @router.delete("/rent-bills/{id}")

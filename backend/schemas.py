@@ -173,6 +173,10 @@ class CashPaymentVoucherCreate(BaseModel):
     amount_rs: Decimal
     amount_words: Optional[str] = None
     receipt_doc_path: Optional[str] = None
+    payment_mode: Optional[str] = "CASH"
+    cheque_no: Optional[str] = None
+    cheque_date: Optional[date] = None
+    bank_name: Optional[str] = None
     created_by: Optional[str] = None
     status: Optional[str] = "POSTED"
 
@@ -196,6 +200,10 @@ class CashReceiptVoucherCreate(BaseModel):
     interest_amount: Decimal = Decimal("0.00")
     total_amount: Decimal = Decimal("0.00")
     receipt_doc_path: Optional[str] = None
+    payment_mode: Optional[str] = "CASH"
+    cheque_no: Optional[str] = None
+    cheque_date: Optional[date] = None
+    bank_name: Optional[str] = None
     created_by: Optional[str] = None
     status: Optional[str] = "POSTED"
 
@@ -205,7 +213,6 @@ class CashReceiptVoucherOut(CashReceiptVoucherCreate):
     id: int
     bill_no: str
     created_at: Optional[datetime] = None
-
 
 
 # 3. Rent Bill (Tax Invoice)
@@ -226,8 +233,13 @@ class RentBillCreate(BaseModel):
     cgst_amount: Decimal = Decimal("0.00")
     total_amount: Decimal = Decimal("0.00")
     tax_amount_words: Optional[str] = None
+    payment_mode: Optional[str] = "CASH"
+    cheque_no: Optional[str] = None
+    cheque_date: Optional[date] = None
+    bank_name: Optional[str] = None
     created_by: Optional[str] = None
     status: Optional[str] = "POSTED"
+
 
 
 class RentBillOut(RentBillCreate):

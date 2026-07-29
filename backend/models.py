@@ -120,6 +120,10 @@ class CashPaymentVoucher(Base):
     amount_rs = Column(Numeric(12, 2), nullable=False, default=0)
     amount_words = Column(Text, nullable=True)
     receipt_doc_path = Column(Text, nullable=True)
+    payment_mode = Column(String(20), nullable=False, default="CASH")
+    cheque_no = Column(String(50), nullable=True)
+    cheque_date = Column(Date, nullable=True)
+    bank_name = Column(String(150), nullable=True)
     created_by = Column(String(100), nullable=True)
     status = Column(String(20), nullable=False, default="POSTED")
     created_at = Column(DateTime, server_default=func.now())
@@ -140,10 +144,13 @@ class CashReceiptVoucher(Base):
     interest_amount = Column(Numeric(12, 2), nullable=False, default=0)
     total_amount = Column(Numeric(12, 2), nullable=False, default=0)
     receipt_doc_path = Column(Text, nullable=True)
+    payment_mode = Column(String(20), nullable=False, default="CASH")
+    cheque_no = Column(String(50), nullable=True)
+    cheque_date = Column(Date, nullable=True)
+    bank_name = Column(String(150), nullable=True)
     created_by = Column(String(100), nullable=True)
     status = Column(String(20), nullable=False, default="POSTED")
     created_at = Column(DateTime, server_default=func.now())
-
 
 
 class RentBill(Base):
@@ -167,9 +174,14 @@ class RentBill(Base):
     cgst_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     total_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     tax_amount_words = Column(Text, nullable=True)
+    payment_mode = Column(String(20), nullable=False, default="CASH")
+    cheque_no = Column(String(50), nullable=True)
+    cheque_date = Column(Date, nullable=True)
+    bank_name = Column(String(150), nullable=True)
     created_by = Column(String(100), nullable=True)
     status = Column(String(20), nullable=False, default="POSTED")
     created_at = Column(DateTime, server_default=func.now())
+
 
 
 class CashScrollBookEntry(Base):

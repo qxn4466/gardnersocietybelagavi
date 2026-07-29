@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Upload, FileText, Download, Eye } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote } from 'lucide-react';
 import { fetchNextPaymentVoucherNo, createPaymentVoucher, fetchPaymentVouchers, deletePaymentVoucher, uploadCashierReceipt, getFileUrl } from '../../api/client';
 import type { CashPaymentVoucher, User, VoucherItemRow } from '../../types';
 import { PAYMENT_PARTICULARS_OPTIONS } from '../../types';
@@ -41,6 +41,10 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const [voucherNo, setVoucherNo] = useState('');
   const [paidTo, setPaidTo] = useState('');
   const [purpose, setPurpose] = useState('');
+  const [paymentMode, setPaymentMode] = useState<'CASH' | 'CHEQUE'>('CASH');
+  const [chequeNo, setChequeNo] = useState('');
+  const [chequeDate, setChequeDate] = useState(today);
+  const [bankName, setBankName] = useState('');
   const [receiptDocPath, setReceiptDocPath] = useState('');
   const [uploading, setUploading] = useState(false);
 
@@ -134,6 +138,10 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
     setDate(today);
     setPaidTo('');
     setPurpose('');
+    setPaymentMode('CASH');
+    setChequeNo('');
+    setChequeDate(today);
+    setBankName('');
     setReceiptDocPath('');
     setItems([{ id: '1', particular: PAYMENT_PARTICULARS_OPTIONS[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }]);
     setMsg(null);
@@ -150,8 +158,11 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया किमान एका बाबीची रक्कम प्रविष्ट करा.' : 'Please enter amount for at least one item.' });
       return;
     }
+    if (paymentMode === 'CHEQUE' && !chequeNo.trim()) {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया चेक क्रमांक प्रविष्ट करा.' : 'Please enter Cheque Number for cheque payment.' });
+      return;
+    }
 
-    // Build expenditure details string from items
     const detailsStr = items.map((r, idx) => {
       const pName = lang === 'mr' ? (ITEM_TRANSLATIONS[r.particular] || r.particular) : r.particular;
       const ref = r.ref_no ? ` (${r.ref_no})` : '';
@@ -171,12 +182,20 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
         amount_rs: grandTotal,
         amount_words: amountWords,
         receipt_doc_path: receiptDocPath || undefined,
+        payment_mode: paymentMode,
+        cheque_no: paymentMode === 'CHEQUE' ? chequeNo.trim() : undefined,
+        cheque_date: paymentMode === 'CHEQUE' ? chequeDate : undefined,
+        bank_name: paymentMode === 'CHEQUE' ? bankName.trim() : undefined,
         created_by: user?.username || 'cashier',
       });
 
+      const modeNote = paymentMode === 'CHEQUE'
+        ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book & Cheque Issue Book!')
+        : (lang === 'mr' ? ' स्क्रोल पुस्तक (नावे/Paid) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
+
       setMsg({
         type: 'success',
-        text: lang === 'mr' ? `पेमेंट व्हाऊचर ${created.voucher_no} यशस्वीरित्या जतन केले!` : `Payment Voucher ${created.voucher_no} saved successfully!`
+        text: (lang === 'mr' ? `पेमेंट व्हाऊचर ${created.voucher_no} जतन केले!` : `Payment Voucher ${created.voucher_no} saved!`) + modeNote
       });
       setSelectedVoucher(created);
       loadHistory();
@@ -211,12 +230,19 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             1. {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर (Payment Voucher)' : 'Cash Payment Voucher (Payment Voucher)'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'संस्थेकडून खर्च केलेल्या रोख रकमेचे बहु-तपशील पेमेंट पावती व्हाऊचर तयार करा (CGST/SGST सह)' : 'Create multi-item expenditure cash payment voucher with CGST & SGST'}
+            {lang === 'mr' ? 'रोख/चेक पेमेंट व्हाऊचर नोंदवा (स्क्रोल पुस्तक व चेक बुकमध्ये ऑटो-अपडेट होईल)' : 'Record payment voucher (Auto-posts to Cash Scroll & Cheque Issue Book)'}
           </p>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-          <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {history.length > 0 && (
+            <button className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
+              <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print'}
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={handleReset}>
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
+          </button>
+        </div>
       </div>
 
       {msg && (
@@ -247,6 +273,72 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
               required
             />
           </div>
+        </div>
+
+        {/* Payment Mode (CASH vs CHEQUE) */}
+        <div style={{ background: '#f1f5f9', padding: 14, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16 }}>
+          <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
+            {lang === 'mr' ? 'पेमेंट प्रकार (Payment Mode):' : 'Payment Mode:'}
+          </label>
+          <div style={{ display: 'flex', gap: 20, marginBottom: paymentMode === 'CHEQUE' ? 12 : 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              <input
+                type="radio"
+                name="paymentMode"
+                value="CASH"
+                checked={paymentMode === 'CASH'}
+                onChange={() => setPaymentMode('CASH')}
+              />
+              <Banknote size={16} color="#16a34a" />
+              {lang === 'mr' ? 'रोख (Cash) → स्क्रोल बुकात (Paid) नोंद होईल' : 'Cash → Updates Cash Scroll (Paid)'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              <input
+                type="radio"
+                name="paymentMode"
+                value="CHEQUE"
+                checked={paymentMode === 'CHEQUE'}
+                onChange={() => setPaymentMode('CHEQUE')}
+              />
+              <CreditCard size={16} color="#2563eb" />
+              {lang === 'mr' ? 'चेक (Cheque) → स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट' : 'Cheque → Updates Scroll & Cheque Book'}
+            </label>
+          </div>
+
+          {paymentMode === 'CHEQUE' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. CHQ-48592"
+                  value={chequeNo}
+                  onChange={e => setChequeNo(e.target.value)}
+                  required={paymentMode === 'CHEQUE'}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक दिनांक' : 'Cheque Date'}</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={chequeDate}
+                  onChange={e => setChequeDate(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'बँकेचे नाव' : 'Bank Name'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. BDCC Bank Belagavi"
+                  value={bankName}
+                  onChange={e => setBankName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-group" style={{ marginBottom: 20 }}>
@@ -444,7 +536,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'व्हाऊचर क्र.' : 'Voucher No.'}</th>
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'पेमेंट दिले' : 'Paid To'}</th>
-                  <th>{lang === 'mr' ? 'तपशील' : 'Particulars Expenditure'}</th>
+                  <th>{lang === 'mr' ? 'प्रकार' : 'Mode'}</th>
                   <th>{lang === 'mr' ? 'पावती फाइल' : 'Receipt Doc'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम ₹' : 'Amount (₹)'}</th>
                   <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
@@ -456,7 +548,11 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                     <td style={{ fontWeight: 600 }}>{row.voucher_no}</td>
                     <td>{row.date}</td>
                     <td>{row.paid_to}</td>
-                    <td style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{row.details_of_expenditure || row.purpose_remarks || '-'}</td>
+                    <td>
+                      <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
+                        {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
+                      </span>
+                    </td>
                     <td>
                       {row.receipt_doc_path ? (
                         <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
@@ -518,8 +614,9 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                 <div><strong>Date:</strong> {selectedVoucher.date}</div>
               </div>
 
-              <div style={{ marginBottom: 10, fontSize: 14 }}>
-                <strong>Paid To:</strong> {selectedVoucher.paid_to}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14 }}>
+                <div><strong>Paid To:</strong> {selectedVoucher.paid_to}</div>
+                <div><strong>Payment Mode:</strong> {selectedVoucher.payment_mode || 'CASH'} {selectedVoucher.cheque_no ? `(Chq: ${selectedVoucher.cheque_no})` : ''}</div>
               </div>
 
               <div style={{ marginBottom: 10, fontSize: 14 }}>

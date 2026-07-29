@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Banknote, CreditCard } from 'lucide-react';
 import { fetchNextRentInvoiceNo, createRentBill, fetchRentBills, deleteRentBill } from '../../api/client';
 import type { RentBill, User } from '../../types';
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
@@ -48,6 +48,11 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const [qty, setQty] = useState<string>('1');
   const [rate, setRate] = useState<string>('');
   const [per, setPer] = useState('Month');
+
+  const [paymentMode, setPaymentMode] = useState<'CASH' | 'CHEQUE'>('CASH');
+  const [chequeNo, setChequeNo] = useState('');
+  const [chequeDate, setChequeDate] = useState(today);
+  const [bankName, setBankName] = useState('');
 
   // Calculated fields
   const [baseAmount, setBaseAmount] = useState<number>(0);
@@ -111,6 +116,10 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     setParticularsSelect(RENT_PARTICULARS_OPTIONS[0]);
     setCustomParticulars('');
     setRate('');
+    setPaymentMode('CASH');
+    setChequeNo('');
+    setChequeDate(today);
+    setBankName('');
     setMsg(null);
     loadNextInvoiceNo(today);
   };
@@ -123,6 +132,10 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     }
     if (baseAmount <= 0) {
       setMsg({ type: 'error', text: lang === 'mr' ? 'अमान्य भाडे रक्कम.' : 'Invalid Rent Rate / Amount.' });
+      return;
+    }
+    if (paymentMode === 'CHEQUE' && !chequeNo.trim()) {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया चेक क्रमांक प्रविष्ट करा.' : 'Please enter Cheque Number for cheque payment.' });
       return;
     }
 
@@ -150,12 +163,20 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
         cgst_amount: cgstAmount,
         total_amount: totalAmount,
         tax_amount_words: taxWords,
+        payment_mode: paymentMode,
+        cheque_no: paymentMode === 'CHEQUE' ? chequeNo.trim() : undefined,
+        cheque_date: paymentMode === 'CHEQUE' ? chequeDate : undefined,
+        bank_name: paymentMode === 'CHEQUE' ? bankName.trim() : undefined,
         created_by: user?.username || 'cashier',
       });
 
+      const modeNote = paymentMode === 'CHEQUE'
+        ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll & Cheque Book!')
+        : (lang === 'mr' ? ' स्क्रोल पुस्तक (जमा/Received) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
+
       setMsg({
         type: 'success',
-        text: lang === 'mr' ? `भाडे बिल टॅक्स इनव्हॉईस ${created.invoice_no} यशस्वीरित्या जतन केले!` : `Rent Bill Tax Invoice ${created.invoice_no} saved successfully!`
+        text: (lang === 'mr' ? `भाडे बिल टॅक्स इनव्हॉईस ${created.invoice_no} जतन केले!` : `Rent Bill Tax Invoice ${created.invoice_no} saved!`) + modeNote
       });
       setSelectedBill(created);
       loadHistory();
@@ -190,12 +211,19 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
             3. {lang === 'mr' ? 'भाडे बिल फॉर्म / टॅक्स इनव्हॉईस (Rent Bill Form)' : 'Rent Bill Form (Tax Invoice)'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'गाळा/दुकान भाड्याचे जीएसटी टॅक्स इनव्हॉईस बिल तयार करा' : 'Create GST Tax Invoice bill for shop / stall rent'}
+            {lang === 'mr' ? 'गाळा/दुकान भाड्याचे जीएसटी इनव्हॉईस (स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create GST Tax Invoice (Auto-posts to Cash Scroll & Cheque Book)'}
           </p>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-          <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {history.length > 0 && (
+            <button className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
+              <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print'}
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={handleReset}>
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
+          </button>
+        </div>
       </div>
 
       {msg && (
@@ -226,6 +254,72 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
               required
             />
           </div>
+        </div>
+
+        {/* Payment Mode (CASH vs CHEQUE) */}
+        <div style={{ background: '#f1f5f9', padding: 14, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16 }}>
+          <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
+            {lang === 'mr' ? 'भाडे स्वीकार प्रकार (Payment Mode):' : 'Payment Mode:'}
+          </label>
+          <div style={{ display: 'flex', gap: 20, marginBottom: paymentMode === 'CHEQUE' ? 12 : 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              <input
+                type="radio"
+                name="paymentModeRent"
+                value="CASH"
+                checked={paymentMode === 'CASH'}
+                onChange={() => setPaymentMode('CASH')}
+              />
+              <Banknote size={16} color="#16a34a" />
+              {lang === 'mr' ? 'रोख (Cash) → स्क्रोल बुकात जमा होईल' : 'Cash → Updates Cash Scroll (Received)'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              <input
+                type="radio"
+                name="paymentModeRent"
+                value="CHEQUE"
+                checked={paymentMode === 'CHEQUE'}
+                onChange={() => setPaymentMode('CHEQUE')}
+              />
+              <CreditCard size={16} color="#2563eb" />
+              {lang === 'mr' ? 'चेक (Cheque) → स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट' : 'Cheque → Updates Scroll & Cheque Book'}
+            </label>
+          </div>
+
+          {paymentMode === 'CHEQUE' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. CHQ-77201"
+                  value={chequeNo}
+                  onChange={e => setChequeNo(e.target.value)}
+                  required={paymentMode === 'CHEQUE'}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक दिनांक' : 'Cheque Date'}</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={chequeDate}
+                  onChange={e => setChequeDate(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'बँकेचे नाव' : 'Bank Name'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. SBI Belagavi"
+                  value={bankName}
+                  onChange={e => setBankName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-group" style={{ marginBottom: 16 }}>
@@ -341,6 +435,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'इनव्हॉईस क्र.' : 'Invoice No.'}</th>
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'भाडेकरू' : 'Consignee / Rentee'}</th>
+                  <th>{lang === 'mr' ? 'प्रकार' : 'Mode'}</th>
                   <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'मूलभूत रक्कम ₹' : 'Base Amt (₹)'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण इनव्हॉईस ₹' : 'Total Invoice (₹)'}</th>
@@ -353,6 +448,11 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                     <td style={{ fontWeight: 600 }}>{row.invoice_no}</td>
                     <td>{row.date}</td>
                     <td>{row.consignee_name}</td>
+                    <td>
+                      <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
+                        {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
+                      </span>
+                    </td>
                     <td>{lang === 'mr' ? (ITEM_TRANSLATIONS[row.particulars || ''] || row.particulars) : row.particulars}</td>
                     <td style={{ textAlign: 'right' }}>₹{Number(row.amount).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.total_amount).toFixed(2)}</td>
@@ -412,8 +512,9 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                 <div><strong>Date:</strong> {selectedBill.date}</div>
               </div>
 
-              <div style={{ marginBottom: 14, fontSize: 13, borderBottom: '1px solid #000', paddingBottom: 8 }}>
-                <strong>Consignee:</strong> {selectedBill.consignee_name} {selectedBill.consignee_address ? `(${selectedBill.consignee_address})` : ''}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, fontSize: 13, borderBottom: '1px solid #000', paddingBottom: 8 }}>
+                <div><strong>Consignee:</strong> {selectedBill.consignee_name} {selectedBill.consignee_address ? `(${selectedBill.consignee_address})` : ''}</div>
+                <div><strong>Mode:</strong> {selectedBill.payment_mode || 'CASH'} {selectedBill.cheque_no ? `(Chq: ${selectedBill.cheque_no})` : ''}</div>
               </div>
 
               {/* Items Table */}

@@ -633,6 +633,10 @@ CREATE TABLE public.cash_payment_vouchers (
     amount_rs numeric(12,2) DEFAULT 0 NOT NULL,
     amount_words text,
     receipt_doc_path text,
+    payment_mode character varying(20) DEFAULT 'CASH'::character varying NOT NULL,
+    cheque_no character varying(50),
+    cheque_date date,
+    bank_name character varying(150),
     created_by character varying(100),
     status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT now()
@@ -660,6 +664,10 @@ CREATE TABLE public.cash_receipt_vouchers (
     interest_amount numeric(12,2) DEFAULT 0 NOT NULL,
     total_amount numeric(12,2) DEFAULT 0 NOT NULL,
     receipt_doc_path text,
+    payment_mode character varying(20) DEFAULT 'CASH'::character varying NOT NULL,
+    cheque_no character varying(50),
+    cheque_date date,
+    bank_name character varying(150),
     created_by character varying(100),
     status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT now()
@@ -693,6 +701,10 @@ CREATE TABLE public.rent_bills (
     cgst_amount numeric(12,2) DEFAULT 0 NOT NULL,
     total_amount numeric(12,2) DEFAULT 0 NOT NULL,
     tax_amount_words text,
+    payment_mode character varying(20) DEFAULT 'CASH'::character varying NOT NULL,
+    cheque_no character varying(50),
+    cheque_date date,
+    bank_name character varying(150),
     created_by character varying(100),
     status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT now()

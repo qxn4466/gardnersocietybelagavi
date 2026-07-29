@@ -17,7 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
   const savedUser = localStorage.getItem('user');
   const user: User | null = propUser || (savedUser ? JSON.parse(savedUser) : null);
 
-  // Check if current user is Cashier (by role or username)
+  // Strict check if current user is Cashier (by role or username)
   const isCashier =
     user?.role?.toUpperCase() === 'CASHIER' ||
     user?.username?.toLowerCase() === 'cashier';
@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               </NavLink>
             </>
           ) : (
-            /* WHEN ACCOUNTANT LOGS IN: SHOW ACCOUNTANT MENU AS IN SCREENSHOT */
+            /* WHEN ACCOUNTANT LOGS IN: SHOW ONLY ACCOUNTANT MENU (NO CASHIER DASHBOARD LINK) */
             <>
               <NavLink
                 to="/savings-accounts"
@@ -241,22 +241,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                   <span>{t('nav_audit_package')}</span>
                   <span className="nav-level-badge">
                     {lang === 'mr' ? 'लेखापरीक्षक बाइंडर' : 'AUDITOR BINDER & SCHEDULES'}
-                  </span>
-                </div>
-              </NavLink>
-
-              {/* Cashier Dashboard Button for Accountants */}
-              <NavLink
-                to="/cashier?tab=payment-voucher"
-                onClick={onClose}
-                className={({ isActive }) => `sidebar-nav-item${isActive || location.pathname === '/cashier' ? ' active' : ''}`}
-                style={{ marginTop: 16, borderTop: '1px dashed var(--border-subtle)', paddingTop: 12 }}
-              >
-                <FileText size={18} className="nav-icon" style={{ color: 'var(--amber-400)' }} />
-                <div className="nav-label-group">
-                  <span>{t('nav_cashier_dashboard')}</span>
-                  <span className="nav-level-badge" style={{ background: 'var(--amber-500)', color: '#fff' }}>
-                    {lang === 'mr' ? '६ कॅशियर फॉर्म्स व ऑडिट' : '6 CASHIER FORMS & AUDIT'}
                   </span>
                 </div>
               </NavLink>
