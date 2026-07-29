@@ -620,8 +620,136 @@ ALTER TABLE ONLY public.transactions
 
 
 --
+-- Name: cash_payment_vouchers; Type: TABLE; Schema: public
+--
+
+CREATE TABLE public.cash_payment_vouchers (
+    id integer NOT NULL,
+    voucher_no character varying(50) NOT NULL,
+    date date NOT NULL,
+    paid_to character varying(250) NOT NULL,
+    purpose_remarks text,
+    details_of_expenditure text,
+    amount_rs numeric(12,2) DEFAULT 0 NOT NULL,
+    amount_words text,
+    receipt_doc_path text,
+    created_by character varying(100),
+    status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.cash_payment_vouchers_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.cash_payment_vouchers_id_seq OWNED BY public.cash_payment_vouchers.id;
+ALTER TABLE ONLY public.cash_payment_vouchers ALTER COLUMN id SET DEFAULT nextval('public.cash_payment_vouchers_id_seq'::regclass);
+ALTER TABLE ONLY public.cash_payment_vouchers ADD CONSTRAINT cash_payment_vouchers_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.cash_payment_vouchers ADD CONSTRAINT cash_payment_vouchers_voucher_no_key UNIQUE (voucher_no);
+
+--
+-- Name: cash_receipt_vouchers; Type: TABLE; Schema: public
+--
+
+CREATE TABLE public.cash_receipt_vouchers (
+    id integer NOT NULL,
+    bill_no character varying(50) NOT NULL,
+    date date NOT NULL,
+    gst_no character varying(30),
+    phone_no character varying(30),
+    received_from character varying(250) NOT NULL,
+    particulars text,
+    loan_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    interest_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    total_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    receipt_doc_path text,
+    created_by character varying(100),
+    status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.cash_receipt_vouchers_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.cash_receipt_vouchers_id_seq OWNED BY public.cash_receipt_vouchers.id;
+ALTER TABLE ONLY public.cash_receipt_vouchers ALTER COLUMN id SET DEFAULT nextval('public.cash_receipt_vouchers_id_seq'::regclass);
+ALTER TABLE ONLY public.cash_receipt_vouchers ADD CONSTRAINT cash_receipt_vouchers_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.cash_receipt_vouchers ADD CONSTRAINT cash_receipt_vouchers_bill_no_key UNIQUE (bill_no);
+
+--
+-- Name: rent_bills; Type: TABLE; Schema: public
+--
+
+CREATE TABLE public.rent_bills (
+    id integer NOT NULL,
+    invoice_no character varying(50) NOT NULL,
+    date date NOT NULL,
+    consignee_name character varying(250) NOT NULL,
+    consignee_address text,
+    particulars text,
+    hsn_sac character varying(50) DEFAULT '997212'::character varying,
+    gst_rate numeric(5,2) DEFAULT 18.0 NOT NULL,
+    qty numeric(10,2) DEFAULT 1.0 NOT NULL,
+    rate numeric(12,2) DEFAULT 0 NOT NULL,
+    per character varying(20) DEFAULT 'Month'::character varying,
+    amount numeric(12,2) DEFAULT 0 NOT NULL,
+    igst_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    sgst_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    cgst_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    total_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    tax_amount_words text,
+    created_by character varying(100),
+    status character varying(20) DEFAULT 'POSTED'::character varying NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.rent_bills_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.rent_bills_id_seq OWNED BY public.rent_bills.id;
+ALTER TABLE ONLY public.rent_bills ALTER COLUMN id SET DEFAULT nextval('public.rent_bills_id_seq'::regclass);
+ALTER TABLE ONLY public.rent_bills ADD CONSTRAINT rent_bills_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.rent_bills ADD CONSTRAINT rent_bills_invoice_no_key UNIQUE (invoice_no);
+
+--
+-- Name: cash_scroll_book; Type: TABLE; Schema: public
+--
+
+CREATE TABLE public.cash_scroll_book (
+    id integer NOT NULL,
+    date date NOT NULL,
+    page_no character varying(50),
+    voucher_no character varying(50),
+    from_received_paid character varying(250) NOT NULL,
+    received_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    paid_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    cheque_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.cash_scroll_book_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.cash_scroll_book_id_seq OWNED BY public.cash_scroll_book.id;
+ALTER TABLE ONLY public.cash_scroll_book ALTER COLUMN id SET DEFAULT nextval('public.cash_scroll_book_id_seq'::regclass);
+ALTER TABLE ONLY public.cash_scroll_book ADD CONSTRAINT cash_scroll_book_pkey PRIMARY KEY (id);
+
+--
+-- Name: cheque_issue_book; Type: TABLE; Schema: public
+--
+
+CREATE TABLE public.cheque_issue_book (
+    id integer NOT NULL,
+    issue_date date NOT NULL,
+    name_to_whom_issued character varying(250) NOT NULL,
+    cheque_no character varying(50) NOT NULL,
+    amount_rs numeric(12,2) DEFAULT 0 NOT NULL,
+    remarks text,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.cheque_issue_book_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.cheque_issue_book_id_seq OWNED BY public.cheque_issue_book.id;
+ALTER TABLE ONLY public.cheque_issue_book ALTER COLUMN id SET DEFAULT nextval('public.cheque_issue_book_id_seq'::regclass);
+ALTER TABLE ONLY public.cheque_issue_book ADD CONSTRAINT cheque_issue_book_pkey PRIMARY KEY (id);
+
+--
 -- PostgreSQL database dump complete
 --
 
 \unrestrict Bd18rmMkPs08IgSwNx799iL2dvROMsVS84MeLXTCb64hEwzrhcE2qc33p6kf2zG
+
 

@@ -160,3 +160,131 @@ class CustomerOut(CustomerBase):
     full_name: str
     created_at: Optional[datetime] = None
 
+
+# ─── Cashier Schemas ─────────────────────────────────────────────────────────
+
+# 1. Payment Voucher
+class CashPaymentVoucherCreate(BaseModel):
+    date: date
+    voucher_no: Optional[str] = None
+    paid_to: str
+    purpose_remarks: Optional[str] = None
+    details_of_expenditure: Optional[str] = None
+    amount_rs: Decimal
+    amount_words: Optional[str] = None
+    receipt_doc_path: Optional[str] = None
+    created_by: Optional[str] = None
+    status: Optional[str] = "POSTED"
+
+
+class CashPaymentVoucherOut(CashPaymentVoucherCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    voucher_no: str
+    created_at: Optional[datetime] = None
+
+
+# 2. Receipt Voucher (Cash Memo)
+class CashReceiptVoucherCreate(BaseModel):
+    date: date
+    bill_no: Optional[str] = None
+    gst_no: Optional[str] = None
+    phone_no: Optional[str] = None
+    received_from: str
+    particulars: Optional[str] = None
+    loan_amount: Decimal = Decimal("0.00")
+    interest_amount: Decimal = Decimal("0.00")
+    total_amount: Decimal = Decimal("0.00")
+    receipt_doc_path: Optional[str] = None
+    created_by: Optional[str] = None
+    status: Optional[str] = "POSTED"
+
+
+class CashReceiptVoucherOut(CashReceiptVoucherCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    bill_no: str
+    created_at: Optional[datetime] = None
+
+
+
+# 3. Rent Bill (Tax Invoice)
+class RentBillCreate(BaseModel):
+    date: date
+    invoice_no: Optional[str] = None
+    consignee_name: str
+    consignee_address: Optional[str] = None
+    particulars: Optional[str] = None
+    hsn_sac: Optional[str] = "997212"
+    gst_rate: Decimal = Decimal("18.00")
+    qty: Decimal = Decimal("1.00")
+    rate: Decimal = Decimal("0.00")
+    per: Optional[str] = "Month"
+    amount: Decimal = Decimal("0.00")
+    igst_amount: Decimal = Decimal("0.00")
+    sgst_amount: Decimal = Decimal("0.00")
+    cgst_amount: Decimal = Decimal("0.00")
+    total_amount: Decimal = Decimal("0.00")
+    tax_amount_words: Optional[str] = None
+    created_by: Optional[str] = None
+    status: Optional[str] = "POSTED"
+
+
+class RentBillOut(RentBillCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    invoice_no: str
+    created_at: Optional[datetime] = None
+
+
+# 4. Cash Scroll Book
+class CashScrollBookCreate(BaseModel):
+    date: date
+    page_no: Optional[str] = None
+    voucher_no: Optional[str] = None
+    from_received_paid: str
+    received_amount: Decimal = Decimal("0.00")
+    paid_amount: Decimal = Decimal("0.00")
+    cheque_amount: Decimal = Decimal("0.00")
+    created_by: Optional[str] = None
+
+
+class CashScrollBookOut(CashScrollBookCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: Optional[datetime] = None
+
+
+# 5. Cheque Issue Book
+class ChequeIssueBookCreate(BaseModel):
+    issue_date: date
+    name_to_whom_issued: str
+    cheque_no: str
+    amount_rs: Decimal
+    remarks: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class ChequeIssueBookOut(ChequeIssueBookCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: Optional[datetime] = None
+
+
+# 6. Cashier Audit Summary
+class CashierAuditSummary(BaseModel):
+    start_date: str
+    end_date: str
+    total_payment_vouchers_count: int
+    total_payment_amount: Decimal
+    total_receipt_vouchers_count: int
+    total_receipt_amount: Decimal
+    total_rent_bills_count: int
+    total_rent_bill_amount: Decimal
+    total_scroll_received: Decimal
+    total_scroll_paid: Decimal
+    total_scroll_cheque: Decimal
+    total_cheques_issued_count: int
+    total_cheques_issued_amount: Decimal
+
+

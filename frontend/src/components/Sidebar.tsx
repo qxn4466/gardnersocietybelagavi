@@ -130,6 +130,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </span>
             </div>
           </NavLink>
+
+          <NavLink
+            to="/cashier"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+            style={{ marginTop: 12, borderTop: '1px dashed var(--border-subtle)', paddingTop: 12 }}
+          >
+            <FileText size={18} className="nav-icon" style={{ color: 'var(--amber-400)' }} />
+            <div className="nav-label-group">
+              <span>{t('nav_cashier_dashboard')}</span>
+              <span className="nav-level-badge" style={{ background: 'var(--amber-500)', color: '#fff' }}>
+                {lang === 'mr' ? '६ कॅशियर फॉर्म्स व ऑडिट' : '6 Cashier Forms & Audit'}
+              </span>
+            </div>
+          </NavLink>
+
         </nav>
 
         <div className="sidebar-footer">

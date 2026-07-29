@@ -103,3 +103,101 @@ class TranslationCache(Base):
     target_lang = Column(String(20), nullable=False, default="mar_Deva")
     translated_text = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+
+
+# ─── Cashier Models ─────────────────────────────────────────────────────────────
+
+class CashPaymentVoucher(Base):
+    """1. Cash Payment Voucher (Payment Voucher)"""
+    __tablename__ = "cash_payment_vouchers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    voucher_no = Column(String(50), nullable=False, unique=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    paid_to = Column(String(250), nullable=False)
+    purpose_remarks = Column(Text, nullable=True)
+    details_of_expenditure = Column(Text, nullable=True)
+    amount_rs = Column(Numeric(12, 2), nullable=False, default=0)
+    amount_words = Column(Text, nullable=True)
+    receipt_doc_path = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    status = Column(String(20), nullable=False, default="POSTED")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class CashReceiptVoucher(Base):
+    """2. Cash Receipt Voucher (Receipt Voucher / Cash Memo)"""
+    __tablename__ = "cash_receipt_vouchers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bill_no = Column(String(50), nullable=False, unique=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    gst_no = Column(String(30), nullable=True)
+    phone_no = Column(String(30), nullable=True)
+    received_from = Column(String(250), nullable=False)
+    particulars = Column(Text, nullable=True)
+    loan_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    interest_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    receipt_doc_path = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    status = Column(String(20), nullable=False, default="POSTED")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+
+class RentBill(Base):
+    """3. Rent Bill Form (Tax Invoice)"""
+    __tablename__ = "rent_bills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_no = Column(String(50), nullable=False, unique=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    consignee_name = Column(String(250), nullable=False)
+    consignee_address = Column(Text, nullable=True)
+    particulars = Column(Text, nullable=True)
+    hsn_sac = Column(String(50), nullable=True, default="997212")
+    gst_rate = Column(Numeric(5, 2), nullable=False, default=18.0)
+    qty = Column(Numeric(10, 2), nullable=False, default=1.0)
+    rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    per = Column(String(20), nullable=True, default="Month")
+    amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    igst_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    sgst_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    cgst_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    tax_amount_words = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    status = Column(String(20), nullable=False, default="POSTED")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class CashScrollBookEntry(Base):
+    """4. Cash Scroll Book"""
+    __tablename__ = "cash_scroll_book"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    page_no = Column(String(50), nullable=True)
+    voucher_no = Column(String(50), nullable=True)
+    from_received_paid = Column(String(250), nullable=False)
+    received_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    paid_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    cheque_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ChequeIssueBookEntry(Base):
+    """5. Cheque Issue Book"""
+    __tablename__ = "cheque_issue_book"
+
+    id = Column(Integer, primary_key=True, index=True)
+    issue_date = Column(Date, nullable=False, default=date.today)
+    name_to_whom_issued = Column(String(250), nullable=False)
+    cheque_no = Column(String(50), nullable=False, index=True)
+    amount_rs = Column(Numeric(12, 2), nullable=False, default=0)
+    remarks = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+

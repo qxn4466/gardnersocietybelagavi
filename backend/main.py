@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
-from routers import masters, transactions, cashbook, ledger, auth, customers, translations
+from routers import masters, transactions, cashbook, ledger, auth, customers, translations, cashier
 
 app = FastAPI(
     title="Belagavi Gardeners Society — Accounting System",
@@ -49,6 +49,8 @@ app.include_router(cashbook.router, prefix="/api")
 app.include_router(ledger.router, prefix="/api")
 app.include_router(customers.router, prefix="/api")
 app.include_router(translations.router, prefix="/api")
+app.include_router(cashier.router, prefix="/api")
+
 
 
 @app.get("/")

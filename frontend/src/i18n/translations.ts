@@ -14,6 +14,13 @@ export type TranslationKey =
   | 'nav_debit_book'
   | 'nav_general_ledger'
   | 'nav_audit_package'
+  | 'nav_cashier_dashboard'
+  | 'nav_payment_voucher'
+  | 'nav_receipt_voucher'
+  | 'nav_rent_bill'
+  | 'nav_cash_scroll'
+  | 'nav_cheque_issue'
+  | 'nav_cashier_audit'
   // ── Header ────────────────────────────────────────────────────────────────
   | 'header_logout'
   | 'header_menu'
@@ -217,6 +224,14 @@ const en: Translations = {
   nav_debit_book: 'Debit Book',
   nav_general_ledger: 'General Ledger',
   nav_audit_package: 'Audit Package',
+  nav_cashier_dashboard: 'Cashier Dashboard',
+  nav_payment_voucher: '1. Cash Payment Voucher',
+  nav_receipt_voucher: '2. Cash Receipt Voucher',
+  nav_rent_bill: '3. Rent Bill Form',
+  nav_cash_scroll: '4. Cash Scroll Book',
+  nav_cheque_issue: '5. Cheque Issue Book',
+  nav_cashier_audit: '6. Cashier Audit Form',
+
   // Header
   header_logout: 'Logout',
   header_menu: 'Menu',
@@ -419,6 +434,14 @@ const mr: Translations = {
   nav_debit_book: 'नावे वही',
   nav_general_ledger: 'सर्वसाधारण खातेवही',
   nav_audit_package: 'लेखापरीक्षण पॅकेज',
+  nav_cashier_dashboard: 'कॅशियर डॅशबोर्ड',
+  nav_payment_voucher: '१. रोख पेमेंट व्हाऊचर',
+  nav_receipt_voucher: '२. रोख पावती व्हाऊचर',
+  nav_rent_bill: '३. भाडे बिल फॉर्म',
+  nav_cash_scroll: '४. रोख स्क्रोल पुस्तक',
+  nav_cheque_issue: '५. चेक देणे नोंद पुस्तक',
+  nav_cashier_audit: '६. कॅशियर लेखापरीक्षा फॉर्म',
+
   // Header
   header_logout: 'बाहेर पडा',
   header_menu: 'मेनू',
@@ -618,3 +641,44 @@ export const LANG_LABELS: Record<Lang, string> = {
   en: 'EN',
   mr: 'मराठी',
 };
+
+export const ITEM_TRANSLATIONS: Record<string, string> = {
+  // Rent Items
+  "Cold Storage Shop Rent": "शीतगृह दुकान भाडे",
+  "Head Office Building Rent": "प्रधान कार्यालय इमारत भाडे",
+  "Cold Storage Godown Rent": "शीतगृह गोदाम भाडे",
+  "Under Godown Rent": "अंडर गोदाम भाडे",
+  "Onion Market Godown Rent": "कांदा मार्केट गोदाम भाडे",
+  "New Shop Rent": "नवीन दुकान भाडे",
+  "Cold Storage Charges": "शीतगृह शुल्क",
+
+  // Receipt Items
+  "Advance a/c": "आगाऊ खाते",
+  "PF A/c": "पीएफ खाते",
+  "ESI a/c": "ईएसआय खाते",
+  "Staff Personal a/c": "कर्मचारी वैयक्तिक खाते",
+  "Sundrey a/c (debit and credit)": "विविध खाते (नावे व जमा)",
+  "Pesticide sale": "कीटकनाशक विक्री",
+  "Seed sale": "बियाणे विक्री",
+
+  // Payment Items
+  "Loan No": "कर्ज क्रमांक",
+  "Sundrey a/c (debit/credit)": "विविध खाते (नावे/जमा)",
+  "Incharge allowance a/c": "प्रभारी भत्ता खाते",
+  "Monthly allowance a/c": "मासिक भत्ता खाते",
+  "CC No": "सीसी क्रमांक",
+  "Daily wages pay": "दैनंदिन मजुरी वेतन",
+  "ESI": "ईएसआय खाते",
+  "Legal Fee": "कायदेशीर फी",
+  "IT returning fee": "आयटी विवरणपत्र फी",
+  "Weight and measurement": "वजन व मापे फी",
+  "License renewal fee": "परवाना नूतनीकरण फी",
+  "A/C no": "खाते क्रमांक",
+  "CA NO": "सीए क्रमांक",
+  "ESI and Other contribution": "ईएसआय आणि इतर योगदान",
+  "Seeds purchase a/c": "बियाणे खरेदी खाते",
+  "Electric power a/c": "वीज बिल खाते",
+  "Pesticide purchase a/c": "कीटकनाशक खरेदी खाते",
+  "Meeting": "सभा / बैठक खर्च",
+};
+

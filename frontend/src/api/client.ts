@@ -251,4 +251,81 @@ export const translateBatch = async (
   return result;
 };
 
+// ─── Cashier API ─────────────────────────────────────────────────────────────
+
+// Auto-number generators
+export const fetchNextPaymentVoucherNo = (date?: string): Promise<{ voucher_no: string }> =>
+  api.get('/cashier/next-payment-voucher-no', { params: { v_date: date } }).then(r => r.data);
+
+export const fetchNextReceiptBillNo = (date?: string): Promise<{ bill_no: string }> =>
+  api.get('/cashier/next-receipt-bill-no', { params: { v_date: date } }).then(r => r.data);
+
+export const fetchNextRentInvoiceNo = (date?: string): Promise<{ invoice_no: string }> =>
+  api.get('/cashier/next-rent-invoice-no', { params: { v_date: date } }).then(r => r.data);
+
+// Payment Vouchers
+export const fetchPaymentVouchers = (startDate?: string, endDate?: string): Promise<import('../types').CashPaymentVoucher[]> =>
+  api.get('/cashier/payment-vouchers', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createPaymentVoucher = (payload: import('../types').CashPaymentVoucherCreate): Promise<import('../types').CashPaymentVoucher> =>
+  api.post('/cashier/payment-vouchers', payload).then(r => r.data);
+
+export const deletePaymentVoucher = (id: number): Promise<void> =>
+  api.delete(`/cashier/payment-vouchers/${id}`).then(r => r.data);
+
+// Receipt Vouchers
+export const fetchReceiptVouchers = (startDate?: string, endDate?: string): Promise<import('../types').CashReceiptVoucher[]> =>
+  api.get('/cashier/receipt-vouchers', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createReceiptVoucher = (payload: import('../types').CashReceiptVoucherCreate): Promise<import('../types').CashReceiptVoucher> =>
+  api.post('/cashier/receipt-vouchers', payload).then(r => r.data);
+
+export const deleteReceiptVoucher = (id: number): Promise<void> =>
+  api.delete(`/cashier/receipt-vouchers/${id}`).then(r => r.data);
+
+// Rent Bills
+export const fetchRentBills = (startDate?: string, endDate?: string): Promise<import('../types').RentBill[]> =>
+  api.get('/cashier/rent-bills', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createRentBill = (payload: import('../types').RentBillCreate): Promise<import('../types').RentBill> =>
+  api.post('/cashier/rent-bills', payload).then(r => r.data);
+
+export const deleteRentBill = (id: number): Promise<void> =>
+  api.delete(`/cashier/rent-bills/${id}`).then(r => r.data);
+
+// Cash Scroll Book
+export const fetchCashScrollEntries = (startDate?: string, endDate?: string): Promise<import('../types').CashScrollBookEntry[]> =>
+  api.get('/cashier/cash-scroll-entries', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createCashScrollEntry = (payload: import('../types').CashScrollBookCreate): Promise<import('../types').CashScrollBookEntry> =>
+  api.post('/cashier/cash-scroll-entries', payload).then(r => r.data);
+
+export const deleteCashScrollEntry = (id: number): Promise<void> =>
+  api.delete(`/cashier/cash-scroll-entries/${id}`).then(r => r.data);
+
+// Cheque Issue Book
+export const fetchChequeIssueEntries = (startDate?: string, endDate?: string): Promise<import('../types').ChequeIssueBookEntry[]> =>
+  api.get('/cashier/cheque-issue-entries', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createChequeIssueEntry = (payload: import('../types').ChequeIssueBookCreate): Promise<import('../types').ChequeIssueBookEntry> =>
+  api.post('/cashier/cheque-issue-entries', payload).then(r => r.data);
+
+export const deleteChequeIssueEntry = (id: number): Promise<void> =>
+  api.delete(`/cashier/cheque-issue-entries/${id}`).then(r => r.data);
+
+// Cashier Audit Summary
+export const fetchCashierAuditSummary = (startDate: string, endDate: string): Promise<import('../types').CashierAuditSummary> =>
+  api.get('/cashier/audit-summary', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+// Upload Payment Receipt Document
+export const uploadCashierReceipt = (file: File): Promise<{ filename: string; filepath: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/cashier/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(r => r.data);
+};
+
+
+
 

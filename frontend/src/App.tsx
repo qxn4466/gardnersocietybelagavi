@@ -7,6 +7,7 @@ import DebitBook from './pages/DebitBook';
 import GeneralLedger from './pages/GeneralLedger';
 import SavingsAccounts from './pages/SavingsAccounts';
 import AuditPackage from './pages/AuditPackage';
+import CashierDashboard from './pages/CashierDashboard';
 import Login from './pages/Login';
 import type { User } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -42,6 +43,8 @@ const App: React.FC = () => {
     );
   }
 
+  const isCashier = user.role === 'CASHIER' || user.username.toLowerCase() === 'cashier';
+
   return (
     <LanguageProvider>
       <BrowserRouter>
@@ -51,7 +54,17 @@ const App: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={<CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+                element={
+                  isCashier ? (
+                    <Navigate to="/cashier" replace />
+                  ) : (
+                    <CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />
+                  )
+                }
+              />
+              <Route
+                path="/cashier"
+                element={<CashierDashboard user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
               />
               <Route
                 path="/savings-accounts"
@@ -77,7 +90,7 @@ const App: React.FC = () => {
                 path="/audit-package"
                 element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
               />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to={isCashier ? "/cashier" : "/"} replace />} />
             </Routes>
           </main>
         </div>
@@ -85,5 +98,6 @@ const App: React.FC = () => {
     </LanguageProvider>
   );
 };
+
 
 export default App;
