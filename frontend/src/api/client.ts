@@ -135,8 +135,12 @@ export const uploadCustomerDocument = (file: File, docType: string): Promise<{ f
 const translationCache: Record<string, string> = {};
 
 /**
- * Translate a single text string via cache-first backend endpoint.
- * Fallback to direct call to http://localhost:8001/translate if backend API fails.
+ * Smart translate single text string.
+ * Strategy:
+ * 1. Check in-memory cache
+ * 2. Try direct call to microservice http://localhost:8001/translate
+ * 3. Try Vite proxy /translate-microservice/translate
+ * 4. Try backend API /api/translations/translate
  */
 export const translateText = async (
   text: string,
@@ -151,7 +155,49 @@ export const translateText = async (
     return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
   }
 
-  // Attempt 1: Backend API /api/translations/translate
+  // Attempt 1: Direct microservice at http://localhost:8001/translate
+  try {
+    const directRes = await axios.post(
+      'http://localhost:8001/translate',
+      { text: trimmed, target_lang: targetLang },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
+    );
+    if (directRes.data) {
+      const translated =
+        typeof directRes.data === 'string'
+          ? directRes.data
+          : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
+      if (translated && translated !== trimmed) {
+        translationCache[cacheKey] = translated;
+        return { source_text: trimmed, translated_text: translated, from_cache: false };
+      }
+    }
+  } catch {
+    // Proceed to Attempt 2
+  }
+
+  // Attempt 2: Vite Proxy /translate-microservice/translate
+  try {
+    const proxyRes = await axios.post(
+      '/translate-microservice/translate',
+      { text: trimmed, target_lang: targetLang },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
+    );
+    if (proxyRes.data) {
+      const translated =
+        typeof proxyRes.data === 'string'
+          ? proxyRes.data
+          : proxyRes.data.translated_text || proxyRes.data.translation || proxyRes.data.output || trimmed;
+      if (translated && translated !== trimmed) {
+        translationCache[cacheKey] = translated;
+        return { source_text: trimmed, translated_text: translated, from_cache: false };
+      }
+    }
+  } catch {
+    // Proceed to Attempt 3
+  }
+
+  // Attempt 3: Backend API /api/translations/translate
   try {
     const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
     if (res.data && res.data.translated_text) {
@@ -159,26 +205,7 @@ export const translateText = async (
       return res.data;
     }
   } catch {
-    // Suppress error and proceed to attempt 2 fallback
-  }
-
-  // Attempt 2: Direct call to IndicTrans2 microservice on port 8001
-  try {
-    const directRes = await axios.post(
-      'http://localhost:8001/translate',
-      { text: trimmed, target_lang: targetLang },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
-    );
-    if (directRes.data) {
-      const translated =
-        typeof directRes.data === 'string'
-          ? directRes.data
-          : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
-      translationCache[cacheKey] = translated;
-      return { source_text: trimmed, translated_text: translated, from_cache: false };
-    }
-  } catch {
-    // If microservice also unreachable, return original text
+    // Suppress error
   }
 
   return { source_text: trimmed, translated_text: trimmed, from_cache: false };
