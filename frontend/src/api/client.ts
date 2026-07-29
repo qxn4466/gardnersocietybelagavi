@@ -155,24 +155,12 @@ export const translateText = async (
     return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
   }
 
-  // Attempt 1: Backend API /api/translations/translate (port 8002 -> microservice 8001 with logging & DB cache)
-  try {
-    const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
-    if (res.data && res.data.translated_text) {
-      translationCache[cacheKey] = res.data.translated_text;
-      return res.data;
-    }
-  } catch {
-    // Proceed to Attempt 2
-  }
-
-  // Attempt 2: Direct microservice at http://<hostname>:8001/translate
-  const host = typeof window !== 'undefined' && window.location && window.location.hostname ? window.location.hostname : 'localhost';
+  // Attempt 1: Direct public microservice endpoint at http://62.84.187.81:8001/translate
   try {
     const directRes = await axios.post(
-      `http://${host}:8001/translate`,
+      'http://62.84.187.81:8001/translate',
       { text: trimmed, target_lang: targetLang },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
+      { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
     );
     if (directRes.data) {
       const translated =
@@ -185,21 +173,33 @@ export const translateText = async (
       }
     }
   } catch {
+    // Proceed to Attempt 2
+  }
+
+  // Attempt 2: Backend API /api/translations/translate
+  try {
+    const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
+    if (res.data && res.data.translated_text) {
+      translationCache[cacheKey] = res.data.translated_text;
+      return res.data;
+    }
+  } catch {
     // Proceed to Attempt 3
   }
 
-  // Attempt 3: Vite Proxy /translate-microservice/translate
+  // Attempt 3: Local window.location hostname at http://<hostname>:8001/translate
+  const host = typeof window !== 'undefined' && window.location && window.location.hostname ? window.location.hostname : 'localhost';
   try {
-    const proxyRes = await axios.post(
-      '/translate-microservice/translate',
+    const hostRes = await axios.post(
+      `http://${host}:8001/translate`,
       { text: trimmed, target_lang: targetLang },
       { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
     );
-    if (proxyRes.data) {
+    if (hostRes.data) {
       const translated =
-        typeof proxyRes.data === 'string'
-          ? proxyRes.data
-          : proxyRes.data.translated_text || proxyRes.data.translation || proxyRes.data.output || trimmed;
+        typeof hostRes.data === 'string'
+          ? hostRes.data
+          : hostRes.data.translated_text || hostRes.data.translation || hostRes.data.output || trimmed;
       if (translated && translated !== trimmed) {
         translationCache[cacheKey] = translated;
         return { source_text: trimmed, translated_text: translated, from_cache: false };

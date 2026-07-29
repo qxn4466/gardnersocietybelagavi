@@ -391,6 +391,27 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
   const { t, lang } = useTranslation();
 
+  // Manual / OnBlur field translator
+  const translateSingleField = useCallback((field: 'first_name' | 'middle_name' | 'last_name' | 'address') => {
+    const val = form[field] ? String(form[field]).trim() : '';
+    if (val && /[a-zA-Z]/.test(val)) {
+      translateText(val)
+        .then(res => {
+          if (res && res.translated_text && res.translated_text !== val) {
+            setForm(prev => ({ ...prev, [field]: res.translated_text }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [form]);
+
+  // Translate all profile fields at once
+  const translateAllMemberFields = useCallback(() => {
+    (['first_name', 'middle_name', 'last_name', 'address'] as const).forEach(field => {
+      translateSingleField(field);
+    });
+  }, [translateSingleField]);
+
   // ── Debounced Live Translation for Member Profile & Address in Marathi ──
   const isMarathi = lang === 'mr';
   useEffect(() => {
@@ -557,6 +578,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <UserIcon size={18} color="var(--blue-700)" />
                   <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
+                  {isMarathi && (
+                    <button
+                      type="button"
+                      onClick={translateAllMemberFields}
+                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
+                    >
+                      <Sparkles size={13} /> मराठीत रूपांतरित करा
+                    </button>
+                  )}
                 </div>
 
                 <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -585,6 +615,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
                       value={form.first_name || ''}
                       onChange={e => handleInputChange('first_name', e.target.value)}
+                      onBlur={() => isMarathi && translateSingleField('first_name')}
                       style={{ background: '#ffffff' }}
                       required
                     />
@@ -598,6 +629,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
                       value={form.middle_name || ''}
                       onChange={e => handleInputChange('middle_name', e.target.value)}
+                      onBlur={() => isMarathi && translateSingleField('middle_name')}
                       style={{ background: '#ffffff' }}
                     />
                   </div>
@@ -610,6 +642,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
                       value={form.last_name || ''}
                       onChange={e => handleInputChange('last_name', e.target.value)}
+                      onBlur={() => isMarathi && translateSingleField('last_name')}
                       style={{ background: '#ffffff' }}
                       required
                     />
@@ -634,6 +667,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MapPin size={18} color="var(--blue-700)" />
                   <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
+                  {isMarathi && (
+                    <button
+                      type="button"
+                      onClick={() => translateSingleField('address')}
+                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
+                    >
+                      <Sparkles size={13} /> पत्ता मराठीत करा
+                    </button>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -643,6 +685,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                     placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code'}
                     value={form.address || ''}
                     onChange={e => handleInputChange('address', e.target.value)}
+                    onBlur={() => isMarathi && translateSingleField('address')}
                     style={{ background: '#ffffff' }}
                   />
                 </div>
