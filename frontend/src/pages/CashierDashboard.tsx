@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import PaymentVoucherForm from '../components/cashier/PaymentVoucherForm';
@@ -9,7 +9,7 @@ import ChequeIssueBookForm from '../components/cashier/ChequeIssueBookForm';
 import CashierAuditForm from '../components/cashier/CashierAuditForm';
 import type { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { FileCheck, FileText, Receipt, Landmark, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
+import { FileText, Receipt, Landmark, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
 
 interface CashierDashboardProps {
   user?: User | null;
@@ -20,11 +20,18 @@ interface CashierDashboardProps {
 export type CashierTab = 'payment-voucher' | 'receipt-voucher' | 'rent-bill' | 'cash-scroll' | 'cheque-issue' | 'audit-form';
 
 const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onToggleMobileMenu }) => {
-  const { lang, t } = useTranslation();
+  const { lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as CashierTab | null;
   const [activeTab, setActiveTab] = useState<CashierTab>(tabParam || 'payment-voucher');
+
+  // Sync activeTab whenever URL query parameter ?tab= changes!
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const handleTabChange = (tab: CashierTab) => {
     setActiveTab(tab);
@@ -83,7 +90,7 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
         onToggleMobileMenu={onToggleMobileMenu}
       />
 
-      {/* Tab Bar Navigation in strict requested order */}
+      {/* Tab Bar Navigation */}
       <div className="no-print" style={{
         display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 24,
         borderBottom: '2px solid var(--border-subtle)'
@@ -98,16 +105,15 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
               style={{
                 fontSize: 13, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8,
                 whiteSpace: 'nowrap', fontWeight: isActive ? 700 : 500,
-                borderRadius: '8px 8px 0 0',
-                borderBottom: isActive ? '3px solid var(--blue-600)' : 'none',
+                borderBottom: isActive ? '3px solid var(--blue-600)' : '1px solid var(--border-subtle)'
               }}
             >
               {tab.icon}
               {tab.label}
-              <span style={{
+              <span className="badge" style={{
                 fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--surface-subtle)',
-                color: isActive ? '#fff' : 'var(--text-muted)'
+                background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--surface-subtle)',
+                color: isActive ? '#fff' : 'var(--text-secondary)'
               }}>
                 {tab.badge}
               </span>
@@ -116,15 +122,13 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
         })}
       </div>
 
-      {/* Active Form Component Render */}
-      <div className="tab-content">
-        {activeTab === 'payment-voucher' && <PaymentVoucherForm user={user} />}
-        {activeTab === 'receipt-voucher' && <ReceiptVoucherForm user={user} />}
-        {activeTab === 'rent-bill' && <RentBillForm user={user} />}
-        {activeTab === 'cash-scroll' && <CashScrollBookForm user={user} />}
-        {activeTab === 'cheque-issue' && <ChequeIssueBookForm user={user} />}
-        {activeTab === 'audit-form' && <CashierAuditForm user={user} />}
-      </div>
+      {/* Render selected form component strictly based on activeTab */}
+      {activeTab === 'payment-voucher' && <PaymentVoucherForm user={user} />}
+      {activeTab === 'receipt-voucher' && <ReceiptVoucherForm user={user} />}
+      {activeTab === 'rent-bill' && <RentBillForm user={user} />}
+      {activeTab === 'cash-scroll' && <CashScrollBookForm user={user} />}
+      {activeTab === 'cheque-issue' && <ChequeIssueBookForm user={user} />}
+      {activeTab === 'audit-form' && <CashierAuditForm user={user} />}
     </div>
   );
 };
