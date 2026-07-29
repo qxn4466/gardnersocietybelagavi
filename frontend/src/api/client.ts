@@ -155,10 +155,11 @@ export const translateText = async (
     return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
   }
 
-  // Attempt 1: Direct microservice at http://localhost:8001/translate
+  // Attempt 1: Direct microservice at http://<hostname>:8001/translate
+  const host = typeof window !== 'undefined' && window.location && window.location.hostname ? window.location.hostname : 'localhost';
   try {
     const directRes = await axios.post(
-      'http://localhost:8001/translate',
+      `http://${host}:8001/translate`,
       { text: trimmed, target_lang: targetLang },
       { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
     );

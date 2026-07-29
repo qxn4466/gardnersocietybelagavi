@@ -31,8 +31,16 @@ class Base(DeclarativeBase):
 
 
 def get_db():
-    db = SessionLocal()
+    db = None
     try:
+        db = SessionLocal()
         yield db
+    except Exception as e:
+        print(f"[DB Warning] Database session creation failed: {e}")
+        yield None
     finally:
-        db.close()
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass

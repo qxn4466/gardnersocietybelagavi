@@ -8,11 +8,12 @@ Endpoints:
 """
 
 import os
-import httpx
+import json
+import urllib.request
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List, Optional
 from pydantic import BaseModel
 from database import get_db
 from models import TranslationCache
@@ -47,20 +48,20 @@ class BatchTranslateResponse(BaseModel):
 
 
 # ─── Helper: call IndicTrans2 microservice ────────────────────────────────────
-async def call_indictrans2(text: str, target_lang: str) -> str:
+def call_indictrans2(text: str, target_lang: str) -> str:
     """Call the IndicTrans2 service and return translated text."""
     if not text or not text.strip():
         return text
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                INDICTRANS2_URL,
-                json={"text": text, "target_lang": target_lang},
-                headers={"Content-Type": "application/json"},
-            )
-            response.raise_for_status()
-            data = response.json()
-            # IndicTrans2 may return {"translated_text": "..."} or {"translation": "..."} or plain string
+        req_data = json.dumps({"text": text, "target_lang": target_lang}).encode("utf-8")
+        req = urllib.request.Request(
+            INDICTRANS2_URL,
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
             if isinstance(data, dict):
                 return (
                     data.get("translated_text")
@@ -73,7 +74,6 @@ async def call_indictrans2(text: str, target_lang: str) -> str:
             return text
     except Exception as e:
         print(f"[TranslationService] IndicTrans2 call failed: {e}")
-        # Fallback: return original text if microservice is unavailable
         return text
 
 
@@ -128,48 +128,42 @@ async def translate_text(
             from_cache=False,
         )
 
-    # Step 1: Cache lookup
-    cached = (
-        db.query(TranslationCache)
-        .filter(
-            TranslationCache.source_text == text,
-            TranslationCache.target_lang == payload.target_lang,
-        )
-        .first()
-    )
-    if cached:
-        return TranslateResponse(
-            source_text=cached.source_text,
-            translated_text=cached.translated_text,
-            target_lang=cached.target_lang,
-            from_cache=True,
-        )
-
-    # Step 2: Call IndicTrans2 microservice
-    translated = await call_indictrans2(text, payload.target_lang)
-
-    # Step 3: Store in cache (ignore if duplicate race condition)
-    try:
-        entry = TranslationCache(
-            source_text=text,
-            target_lang=payload.target_lang,
-            translated_text=translated,
-        )
-        db.add(entry)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        # Another request already cached this — fetch the cached version
-        cached = (
-            db.query(TranslationCache)
-            .filter(
-                TranslationCache.source_text == text,
-                TranslationCache.target_lang == payload.target_lang,
+    # Step 1: Cache lookup (safe against DB errors)
+    if db is not None:
+        try:
+            cached = (
+                db.query(TranslationCache)
+                .filter(
+                    TranslationCache.source_text == text,
+                    TranslationCache.target_lang == payload.target_lang,
+                )
+                .first()
             )
-            .first()
-        )
-        if cached:
-            translated = cached.translated_text
+            if cached:
+                return TranslateResponse(
+                    source_text=cached.source_text,
+                    translated_text=cached.translated_text,
+                    target_lang=cached.target_lang,
+                    from_cache=True,
+                )
+        except Exception as db_err:
+            print(f"[TranslationService] DB lookup skipped: {db_err}")
+
+    # Step 2: Call IndicTrans2 microservice on port 8001
+    translated = call_indictrans2(text, payload.target_lang)
+
+    # Step 3: Store in cache
+    if db is not None:
+        try:
+            entry = TranslationCache(
+                source_text=text,
+                target_lang=payload.target_lang,
+                translated_text=translated,
+            )
+            db.add(entry)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     return TranslateResponse(
         source_text=text,
