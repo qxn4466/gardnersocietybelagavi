@@ -17,6 +17,25 @@ const monthsMr = [
   'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'
 ];
 
+const TXN_HEAD_MAP_MR: Record<string, string> = {
+  'Shares': 'समभाग',
+  'Purchases': 'खरेदी',
+  'Commissions': 'कमिशन',
+  'Loan a/c': 'कर्ज खाते',
+  'Interest': 'व्याज',
+  'Pigmi Comm.': 'पिगमी कमिशन',
+  'Bank Current': 'बँक चालू खाते',
+  'Advance': 'आगाऊ',
+  'Lakshmi Pigmi Deposit': 'लक्ष्मी पिगमी ठेव',
+  'Vegetable Comm.': 'भाजीपाला कमिशन',
+  'Sundary a/c': 'विविध खाते',
+  'Cash Sales': 'रोख विक्री',
+  'Pesticide Sales': 'कीटकनाशक विक्री',
+  'Cold Storage Adv': 'शीतगृह आगाऊ',
+  'Lakshmi Pigmi Loan': 'लक्ष्मी पिगमी कर्ज',
+  'Lakshmi Pigmi Interest': 'लक्ष्मी पिगमी व्याज',
+};
+
 const fmtAmt = (v: number) =>
   v === 0 ? '—' : `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
@@ -149,7 +168,9 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
             >
               <option value="">{lang === 'mr' ? 'सर्व खाती' : 'All Accounts'}</option>
               {accounts.map(a => (
-                <option key={a.id} value={a.account_name}>{a.account_name}</option>
+                <option key={a.id} value={a.account_name}>
+                  {lang === 'mr' ? (TXN_HEAD_MAP_MR[a.account_name] || a.account_name) : a.account_name}
+                </option>
               ))}
             </select>
           </div>
@@ -163,7 +184,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
           documentTitle={lang === 'mr' ? 'सर्वसाधारण खातेवही' : 'G E N E R A L   L E D G E R'}
           subTitle={lang === 'mr'
             ? (account
-                ? `खाते फिल्टर: ${account} | महिना: ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`
+                ? `खाते फिल्टर: ${TXN_HEAD_MAP_MR[account] || account} | महिना: ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`
                 : `मासिक शिल्लक पत्रक — ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`)
             : (account
                 ? `A/C Account Filter: ${account} | Month: ${month ? months[parseInt(month)] : 'All'} ${year}`
@@ -204,7 +225,9 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                   {rows.map((row, idx) => (
                     <tr key={idx}>
                       <td style={{ fontWeight: 600 }}>{row.month_year_label}</td>
-                      <td style={{ color: 'var(--text-brand)', fontWeight: 500 }}>{row.account}</td>
+                      <td style={{ color: 'var(--text-brand)', fontWeight: 500 }}>
+                        {lang === 'mr' ? (TXN_HEAD_MAP_MR[row.account] || row.account) : row.account}
+                      </td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', color: Number(row.receipt) > 0 ? 'var(--blue-400)' : 'var(--text-muted)' }}>
                         {fmtAmt(Number(row.receipt))}
                       </td>

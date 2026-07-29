@@ -27,6 +27,26 @@ import type { OfficeMaster, TransactionType, Transaction, User, Customer } from 
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
+// ─── Marathi Transaction Head Translations ───────────────────────────────────────
+const TXN_HEAD_MAP_MR: Record<string, string> = {
+  'Shares': 'समभाग (Shares)',
+  'Purchases': 'खरेदी (Purchases)',
+  'Commissions': 'कमिशन (Commissions)',
+  'Loan a/c': 'कर्ज खाते (Loan a/c)',
+  'Interest': 'व्याज (Interest)',
+  'Pigmi Comm.': 'पिगमी कमिशन (Pigmi Comm.)',
+  'Bank Current': 'बँक चालू खाते (Bank Current)',
+  'Advance': 'आगाऊ (Advance)',
+  'Lakshmi Pigmi Deposit': 'लक्ष्मी पिगमी ठेव (Lakshmi Pigmi Deposit)',
+  'Vegetable Comm.': 'भाजीपाला कमिशन (Vegetable Comm.)',
+  'Sundary a/c': 'विविध खाते (Sundary a/c)',
+  'Cash Sales': 'रोख विक्री (Cash Sales)',
+  'Pesticide Sales': 'कीटकनाशक विक्री (Pesticide Sales)',
+  'Cold Storage Adv': 'शीतगृह आगाऊ (Cold Storage Adv)',
+  'Lakshmi Pigmi Loan': 'लक्ष्मी पिगमी कर्ज (Lakshmi Pigmi Loan)',
+  'Lakshmi Pigmi Interest': 'लक्ष्मी पिगमी व्याज (Lakshmi Pigmi Interest)',
+};
+
 // ─── Indian currency → words ─────────────────────────────────────────────────
 const ONES = [
   '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
@@ -717,10 +737,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select id="salutation" className="form-select"
-                      style={{ width: 90, flexShrink: 0 }}
+                      style={{ width: 110, flexShrink: 0 }}
                       value={form.salutation} onChange={handleChange('salutation')}>
-                      <option>Mr.</option><option>Mrs.</option><option>Ms.</option>
-                      <option>Dr.</option><option>Sri.</option><option>Smt.</option>
+                      <option value="Mr.">{lang === 'mr' ? 'श्री. (Mr.)' : 'Mr.'}</option>
+                      <option value="Mrs.">{lang === 'mr' ? 'सौ. (Mrs.)' : 'Mrs.'}</option>
+                      <option value="Ms.">{lang === 'mr' ? 'कु. (Ms.)' : 'Ms.'}</option>
+                      <option value="Dr.">{lang === 'mr' ? 'डॉ. (Dr.)' : 'Dr.'}</option>
+                      <option value="Sri.">{lang === 'mr' ? 'श्री. (Sri.)' : 'Sri.'}</option>
+                      <option value="Smt.">{lang === 'mr' ? 'श्रीमती (Smt.)' : 'Smt.'}</option>
                     </select>
                     <input id="customer-name" type="text" className="form-input"
                       placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
@@ -775,8 +799,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 {/* ── 1. Transaction Type + Remarks ── */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{lang === 'mr' ? `व्यवहाराचा प्रकार (${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाती)` : `Transaction Type (${form.entry_nature} Heads)`} <span className="required">*</span></span>
-                    {form.transaction_type_id && (
+                    <span>
+                      {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते नाव (Head)` : `${form.entry_nature} Account Head`} <span className="required">*</span>
+                    </span>
+                    {form.entry_nature && (
                       <span style={{
                         fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
                         background: form.entry_nature === 'CREDIT' ? '#dcfce7' : '#fee2e2',
@@ -812,7 +838,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
                       .map(t => (
                         <option key={t.id} value={t.id}>
-                          {t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : t.entry_type})
+                          {lang === 'mr' ? (TXN_HEAD_MAP_MR[t.name] || t.name) : t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : (t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT'))})
                         </option>
                       ))}
                   </select>
@@ -1175,7 +1201,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
                   {txnTypes.map(t => (
                     <option key={t.id} value={t.id}>
-                      {t.name} ({t.entry_type})
+                      {lang === 'mr' ? (TXN_HEAD_MAP_MR[t.name] || t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
                     </option>
                   ))}
                 </select>
