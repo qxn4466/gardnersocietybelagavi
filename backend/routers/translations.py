@@ -139,7 +139,7 @@ async def translate_text(
                 )
                 .first()
             )
-            if cached:
+            if cached and cached.translated_text and cached.translated_text.strip() != text.strip():
                 return TranslateResponse(
                     source_text=cached.source_text,
                     translated_text=cached.translated_text,

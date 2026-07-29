@@ -136,11 +136,6 @@ const translationCache: Record<string, string> = {};
 
 /**
  * Smart translate single text string.
- * Strategy:
- * 1. Check in-memory cache
- * 2. Try direct call to microservice http://localhost:8001/translate
- * 3. Try Vite proxy /translate-microservice/translate
- * 4. Try backend API /api/translations/translate
  */
 export const translateText = async (
   text: string,
@@ -151,37 +146,41 @@ export const translateText = async (
     return { source_text: '', translated_text: '', from_cache: true };
   }
 
-  // Attempt 1: Direct public microservice endpoint at http://62.84.187.81:8001/translate
-  try {
-    const directRes = await axios.post(
-      'http://62.84.187.81:8001/translate',
-      { text: trimmed, target_lang: targetLang },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
-    );
-    if (directRes.data) {
-      const translated =
-        typeof directRes.data === 'string'
-          ? directRes.data
-          : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
-      if (translated && translated !== trimmed) {
-        return { source_text: trimmed, translated_text: translated, from_cache: false };
+  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+  if (!isHttps) {
+    // Attempt 1: Direct public microservice endpoint
+    try {
+      const directRes = await axios.post(
+        'http://62.84.187.81:8001/translate',
+        { text: trimmed, target_lang: targetLang },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
+      );
+      if (directRes.data) {
+        const translated =
+          typeof directRes.data === 'string'
+            ? directRes.data
+            : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
+        if (translated && translated !== trimmed) {
+          return { source_text: trimmed, translated_text: translated, from_cache: false };
+        }
       }
+    } catch {
+      // Proceed to Attempt 2
     }
-  } catch {
-    // Proceed to Attempt 2
   }
 
-  // Attempt 2: Backend API /api/translations/translate
+  // Attempt 2: Backend API /api/translations/translate (HTTPS compatible)
   try {
     const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
-    if (res.data && res.data.translated_text) {
+    if (res.data && res.data.translated_text && res.data.translated_text.trim() !== trimmed) {
       return res.data;
     }
   } catch {
     // Proceed to Attempt 3
   }
 
-  // Attempt 3: Local window.location hostname at http://<hostname>:8001/translate
+  // Attempt 3: Local fallback
   const host = typeof window !== 'undefined' && window.location && window.location.hostname ? window.location.hostname : 'localhost';
   try {
     const hostRes = await axios.post(
