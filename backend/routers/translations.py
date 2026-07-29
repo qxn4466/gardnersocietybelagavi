@@ -7,6 +7,7 @@ Endpoints:
   POST /api/translations/translate-batch — batch translate multiple texts
 """
 
+import os
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -18,7 +19,7 @@ from models import TranslationCache
 
 router = APIRouter(prefix="/translations", tags=["translations"])
 
-INDICTRANS2_URL = "http://localhost:8001/translate"
+INDICTRANS2_URL = os.getenv("INDICTRANS2_URL", "http://localhost:8001/translate")
 DEFAULT_TARGET_LANG = "mar_Deva"
 
 

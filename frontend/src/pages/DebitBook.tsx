@@ -22,6 +22,25 @@ interface DebitBookProps {
   onToggleMobileMenu?: () => void;
 }
 
+const COLUMN_LABELS_MR: Record<string, string> = {
+  shares: 'समभाग',
+  commissions: 'कमिशन',
+  interest: 'व्याज',
+  pigmi_comm: 'पिगमी कमिशन',
+  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेव',
+  vegetable_comm: 'भाजीपाला कमिशन',
+  cash_sales: 'रोख विक्री',
+  pesticide_sales: 'कीटकनाशक विक्री',
+  sundary_ac: 'विविध खाते',
+  purchases: 'खरेदी',
+  loan_ac: 'कर्ज खाते',
+  bank_current: 'बँक चालू खाते',
+  advance: 'आगाऊ',
+  cold_storage_adv: 'शीतगृह आगाऊ',
+  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी कर्ज',
+  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी व्याज',
+};
+
 const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const navigate = useNavigate();
   const { t, lang } = useTranslation();
@@ -107,6 +126,9 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
 
   const visibleColumns = showAllColumns || activeColumns.length === 0 ? DEBIT_BOOK_COLUMNS : activeColumns;
 
+  const getColLabel = (key: string, enLabel: string) =>
+    lang === 'mr' ? (COLUMN_LABELS_MR[key] || enLabel) : enLabel;
+
   return (
     <div className="page-container">
       <Header
@@ -175,9 +197,17 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
             <div className="no-print" style={{ padding: '12px 20px', borderBottom: '1px solid #fee2e2', background: '#fff5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ fontSize: 13, color: '#991b1b', fontWeight: 600 }}>
                 {visibleColumns.length < DEBIT_BOOK_COLUMNS.length ? (
-                  <span>Showing <strong style={{ color: '#b91c1c' }}>{visibleColumns.length} Active Columns</strong> ({DEBIT_BOOK_COLUMNS.length - visibleColumns.length} empty zero columns hidden)</span>
+                  <span>
+                    {lang === 'mr'
+                      ? <><strong style={{ color: '#b91c1c' }}>{visibleColumns.length} सक्रिय नावे स्तंभ</strong> दाखवत आहे ({DEBIT_BOOK_COLUMNS.length - visibleColumns.length} रिकामे स्तंभ लपवले)</>
+                      : <>Showing <strong style={{ color: '#b91c1c' }}>{visibleColumns.length} Active Columns</strong> ({DEBIT_BOOK_COLUMNS.length - visibleColumns.length} empty zero columns hidden)</>}
+                  </span>
                 ) : (
-                  <span>Showing All <strong>{DEBIT_BOOK_COLUMNS.length} Debit Book Spreadsheet Columns</strong></span>
+                  <span>
+                    {lang === 'mr'
+                      ? <>सर्व <strong>{DEBIT_BOOK_COLUMNS.length} नावे वही स्तंभ</strong> दाखवत आहे</>
+                      : <>Showing All <strong>{DEBIT_BOOK_COLUMNS.length} Debit Book Spreadsheet Columns</strong></>}
+                  </span>
                 )}
               </div>
               <button
@@ -186,7 +216,9 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                 onClick={() => setShowAllColumns(!showAllColumns)}
                 style={{ fontSize: 12, fontWeight: 700, borderColor: '#fca5a5', color: '#991b1b' }}
               >
-                {showAllColumns ? '👁️ Compact Active Columns' : `↔️ Expand All Columns (${DEBIT_BOOK_COLUMNS.length - visibleColumns.length} Hidden)`}
+                {showAllColumns
+                  ? (lang === 'mr' ? '👁️ संक्षिप्त स्तंभ' : '👁️ Compact Active Columns')
+                  : (lang === 'mr' ? `↔️ सर्व ${DEBIT_BOOK_COLUMNS.length} स्तंभ दाखवा` : `↔️ Expand All Columns (${DEBIT_BOOK_COLUMNS.length - visibleColumns.length} Hidden)`)}
               </button>
             </div>
           )}
@@ -194,13 +226,13 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
           <div className="table-wrapper">
             {loading ? (
               <div className="loading-overlay">
-                <span className="spinner" /> Loading debit book entries…
+                <span className="spinner" /> {lang === 'mr' ? 'नावे वही लोड होत आहे…' : 'Loading debit book entries…'}
               </div>
             ) : rows.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon"><TrendingDown color="#b91c1c" /></div>
-                <div className="empty-state-title">No debit transactions found</div>
-                <div className="empty-state-sub">Enter transactions in the Credit-Debit Account Form (Level 1)</div>
+                <div className="empty-state-title">{lang === 'mr' ? 'नावे व्यवहार आढळले नाहीत' : 'No debit transactions found'}</div>
+                <div className="empty-state-sub">{lang === 'mr' ? 'जमा-नावे खाते फॉर्म (स्तर १) मध्ये नावे व्यवहार प्रविष्ट करा' : 'Enter transactions in the Credit-Debit Account Form (Level 1)'}</div>
               </div>
             ) : (
               <table className="data-table">
@@ -212,7 +244,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                     <th>{t('lbl_name')}</th>
                     <th>{t('lbl_particulars')}</th>
                     {visibleColumns.map(col => (
-                      <th key={col.key} style={{ color: '#991b1b' }}>{col.label}</th>
+                      <th key={col.key} style={{ color: '#991b1b' }}>{getColLabel(col.key as string, col.label)}</th>
                     ))}
                     <th style={{ color: '#991b1b' }}>{t('lbl_total')}</th>
                     <th>{t('lbl_memo_no')}</th>

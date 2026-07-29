@@ -21,6 +21,7 @@ import {
   fetchCustomers,
   seedJuneTestData,
   clearJuneTestData,
+  translateText,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -253,6 +254,33 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   }, []);
 
   useEffect(() => { refreshMemo(form.date); }, [form.date, refreshMemo]);
+
+  // ── Debounced Live Particulars Translation via 8001 microservice & DB cache ──
+  const isMarathi = lang === 'mr';
+  useEffect(() => {
+    if (!isMarathi) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    rows.forEach((row) => {
+      const text = row.description.trim();
+      if (text && /[a-zA-Z]/.test(text)) {
+        const timer = setTimeout(() => {
+          translateText(text)
+            .then(res => {
+              if (res && res.translated_text && res.translated_text !== text) {
+                setRows(prev =>
+                  prev.map(r => (r.id === row.id && r.description === row.description ? { ...r, description: res.translated_text } : r))
+                );
+              }
+            })
+            .catch(() => {});
+        }, 350);
+        timers.push(timer);
+      }
+    });
+    return () => {
+      timers.forEach(t => clearTimeout(t));
+    };
+  }, [rows, isMarathi]);
 
   const handleChange =
     (field: keyof FormState) =>
@@ -516,8 +544,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12
         }}>
           <div>
-            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue-700)' }}>🧪 June 2026 Test Dataset Toolbar</span>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Add or clear 18 test transactions covering all 16 Credit & Debit heads</div>
+            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue-700)' }}>
+              {lang === 'mr' ? '🧪 जून २०२६ चाचणी डेटा संच टूलबार' : '🧪 June 2026 Test Dataset Toolbar'}
+            </span>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              {lang === 'mr' ? 'सर्व १६ जमा आणि नावे खात्यांच्या १८ चाचणी नोंदी जोडा किंवा साफ करा' : 'Add or clear 18 test transactions covering all 16 Credit & Debit heads'}
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button
@@ -527,7 +559,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={loading}
               style={{ background: 'var(--blue-700)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <PlusCircle size={14} /> ➕ Add June Test Records
+              <PlusCircle size={14} /> {lang === 'mr' ? '➕ जून चाचणी नोंदी जोडा' : '➕ Add June Test Records'}
             </button>
             <button
               type="button"
@@ -536,7 +568,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={loading}
               style={{ borderColor: 'var(--red-600)', color: 'var(--red-600)', background: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <Trash2 size={14} /> 🗑️ Delete June Test Records
+              <Trash2 size={14} /> {lang === 'mr' ? '🗑️ जून चाचणी नोंदी हटवा' : '🗑️ Delete June Test Records'}
             </button>
           </div>
         </div>
@@ -594,7 +626,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   </span>
                 )}
               </div>
-              <div className="card-subtitle">{lang === 'mr' ? '* चिन्हांकित सर्व राने अनिवार्य आहेत' : 'All fields marked with * are required'}</div>
+              <div className="card-subtitle">{lang === 'mr' ? '* चिन्हांकित सर्व रकाने अनिवार्य आहेत' : 'All fields marked with * are required'}</div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -604,7 +636,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 onClick={() => setShowDraftsModal(true)}
                 id="view-drafts-btn"
               >
-                <FolderOpen size={14} /> Saved Drafts ({drafts.length})
+                <FolderOpen size={14} /> {lang === 'mr' ? `जतन केलेले मसुदे (${drafts.length})` : `Saved Drafts (${drafts.length})`}
               </button>
 
               {savedMemo && (
@@ -619,7 +651,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       onClick={() => setPrintingTxn(lastSavedTxn)}
                       id="print-last-saved-btn"
                     >
-                      <Printer size={14} /> Print Bill Receipt
+                      <Printer size={14} /> {lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
                     </button>
                   )}
                 </div>
@@ -719,7 +751,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         }));
                       }}
                     >
-                      {lang === 'mr' ? '१. ढ जमा नोंद (आवक आवत → जमा वही)' : '4஀ CREDIT ENTRY (Receipt Inflow → Credit Book)'}
+                      {lang === 'mr' ? '१. जमा नोंद (आवक → जमा वही)' : 'CREDIT ENTRY (Receipt Inflow → Credit Book)'}
                     </button>
                     <button
                       type="button"
@@ -735,7 +767,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         }));
                       }}
                     >
-                      {lang === 'mr' ? '२. ढ नावे नोंद (खर्च जात → नावे वही)' : '4எ DEBIT ENTRY (Payment Outflow → Debit Book)'}
+                      {lang === 'mr' ? '२. नावे नोंद (जावक → नावे वही)' : 'DEBIT ENTRY (Payment Outflow → Debit Book)'}
                     </button>
                   </div>
                 </div>
@@ -743,7 +775,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 {/* ── 1. Transaction Type + Remarks ── */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Transaction Type ({form.entry_nature} Heads) <span className="required">*</span></span>
+                    <span>{lang === 'mr' ? `व्यवहाराचा प्रकार (${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाती)` : `Transaction Type (${form.entry_nature} Heads)`} <span className="required">*</span></span>
                     {form.transaction_type_id && (
                       <span style={{
                         fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
@@ -751,7 +783,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         color: form.entry_nature === 'CREDIT' ? '#15803d' : '#b91c1c',
                         border: form.entry_nature === 'CREDIT' ? '1px solid #86efac' : '1px solid #fca5a5',
                       }}>
-                        {form.entry_nature} BOOK
+                        {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} वही` : `${form.entry_nature} BOOK`}
                       </span>
                     )}
                   </label>
@@ -775,12 +807,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     }}
                     required
                   >
-                    <option value="">— Select {form.entry_nature} Head —</option>
+                    <option value="">— {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते निवडा` : `Select ${form.entry_nature} Head`} —</option>
                     {txnTypes
                       .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
                       .map(t => (
                         <option key={t.id} value={t.id}>
-                          {t.name} ({t.entry_type === 'BOTH' ? 'Configurable Credit/Debit' : t.entry_type})
+                          {t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : t.entry_type})
                         </option>
                       ))}
                   </select>
@@ -791,7 +823,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     if (selType && selType.entry_type === 'BOTH') {
                       return (
                         <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>Entry Nature:</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'नोंदीचे स्वरूप:' : 'Entry Nature:'}</span>
                           <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <input
                               type="radio"
@@ -800,7 +832,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               checked={form.entry_nature === 'CREDIT'}
                               onChange={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
                             />
-                            Credit Book (Receipt)
+                            {lang === 'mr' ? 'जमा वही (पावती)' : 'Credit Book (Receipt)'}
                           </label>
                           <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <input
@@ -810,7 +842,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               checked={form.entry_nature === 'DEBIT'}
                               onChange={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
                             />
-                            Debit Book (Payment)
+                            {lang === 'mr' ? 'नावे वही (खर्च)' : 'Debit Book (Payment)'}
                           </label>
                         </div>
                       );
@@ -820,9 +852,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Remarks</label>
+                  <label className="form-label">{lang === 'mr' ? 'शेरा' : 'Remarks'}</label>
                   <input id="remarks" type="text" className="form-input"
-                    placeholder="Optional remarks"
+                    placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
                     value={form.remarks} onChange={handleChange('remarks')} />
                 </div>
 
@@ -832,11 +864,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <label className="form-label" style={{ margin: 0 }}>
-                    Particulars <span className="required">*</span>
+                    {lang === 'mr' ? 'तपशील' : 'Particulars'} <span className="required">*</span>
                   </label>
                   <button type="button" className="btn btn-primary btn-sm"
                     onClick={addRow} id="add-particular-btn">
-                    <PlusCircle size={14} /> Add Item
+                    <PlusCircle size={14} /> {lang === 'mr' ? 'ओळ जोडा' : 'Add Item'}
                   </button>
                 </div>
 
@@ -847,9 +879,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     background: 'linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)',
                     padding: '8px 12px', borderBottom: '1px solid var(--border-muted)',
                   }}>
-                    <ColHeader label="Particular / Item Description" />
-                    <ColHeader label="Rs." align="right" />
-                    <ColHeader label="Ps." align="right" />
+                    <ColHeader label={lang === 'mr' ? 'तपशील / वस्तूचे वर्णन' : 'Particular / Item Description'} />
+                    <ColHeader label={lang === 'mr' ? 'रु.' : 'Rs.'} align="right" />
+                    <ColHeader label={lang === 'mr' ? 'पै.' : 'Ps.'} align="right" />
                     <span />
                   </div>
 
@@ -863,7 +895,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     }}>
                       <div style={{ padding: '6px 8px 6px 12px', borderRight: '1px solid var(--border-subtle)' }}>
                         <input id={`pdesc-${idx}`} type="text" className="form-input" style={gridInput}
-                          placeholder={`Item ${idx + 1} description`}
+                          placeholder={lang === 'mr' ? `बाब ${idx + 1} विवरण` : `Item ${idx + 1} description`}
                           value={row.description}
                           onChange={e => updateRow(row.id, 'description', e.target.value)} />
                       </div>
@@ -882,7 +914,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <button type="button" onClick={() => removeRow(row.id)}
                           disabled={rows.length === 1}
-                          id={`remove-row-${idx}`} title="Remove item"
+                          id={`remove-row-${idx}`} title={lang === 'mr' ? 'ओळ हटवा' : 'Remove item'}
                           style={{
                             background: 'none', border: 'none', padding: 6, borderRadius: 6,
                             cursor: rows.length === 1 ? 'not-allowed' : 'pointer',
@@ -903,7 +935,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     padding: '9px 12px', alignItems: 'center',
                   }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-                      SUB-TOTAL ({rows.length} item{rows.length !== 1 ? 's' : ''})
+                      {lang === 'mr' ? `उप-एकूण (${rows.length} बाबी)` : `SUB-TOTAL (${rows.length} item${rows.length !== 1 ? 's' : ''})`}
                     </span>
                     <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 15, color: 'var(--blue-700)', textAlign: 'right', paddingRight: 10 }}>
                       {Math.floor(particularsTotal).toLocaleString('en-IN')}
@@ -922,7 +954,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     background: '#fffbeb',
                   }}>
                     <div style={{ padding: '6px 8px 6px 12px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>CGST</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'केंद्रीय GST' : 'CGST'}</span>
                     </div>
                     <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
                       <input id="cgst-rs" type="number" min="0" step="any"
@@ -947,7 +979,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     background: '#fffbeb',
                   }}>
                     <div style={{ padding: '6px 8px 6px 12px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>SGST</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'राज्य GST' : 'SGST'}</span>
                     </div>
                     <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
                       <input id="sgst-rs" type="number" min="0" step="any"
@@ -972,7 +1004,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     padding: '10px 12px', alignItems: 'center',
                   }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      Grand Total
+                      {lang === 'mr' ? 'एकूण बेरीज' : 'Grand Total'}
                     </span>
                     <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 17, color: 'var(--blue-700)', textAlign: 'right', paddingRight: 10 }}>
                       {grandRs.toLocaleString('en-IN')}
@@ -987,7 +1019,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
               {/* ── 5. Received Amount in Words (auto) ── */}
               <div style={{ marginTop: 16 }}>
-                <label className="form-label">Received Amount (in Words)</label>
+                <label className="form-label">{lang === 'mr' ? 'रक्कम (अक्षरी)' : 'Received Amount (in Words)'}</label>
                 <div style={{
                   padding: '12px 16px',
                   background: 'linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)',
@@ -999,7 +1031,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   minHeight: 46,
                 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-800)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    ₹ IN WORDS:
+                    {lang === 'mr' ? '₹ अक्षरी:' : '₹ IN WORDS:'}
                   </span>
                   <span id="amount-in-words" style={{
                     fontSize: 14,
@@ -1008,7 +1040,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     fontStyle: grandTotal > 0 ? 'normal' : 'italic',
                     flex: 1,
                   }}>
-                    {grandTotal > 0 ? amountInWords : 'Enter particulars to auto-calculate…'}
+                    {grandTotal > 0 ? amountInWords : (lang === 'mr' ? 'अक्षरी गणनेसाठी तपशील व रक्कम टाका…' : 'Enter particulars to auto-calculate…')}
                   </span>
                 </div>
               </div>
@@ -1017,14 +1049,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               <div className="bill-footer" style={{ marginTop: 24 }}>
                 <div className="signature-block">
                   <div className="signature-line" />
-                  <div className="signature-label">Signature of Account Holder</div>
+                  <div className="signature-label">{lang === 'mr' ? 'खातेधारकाची स्वाक्षरी' : 'Signature of Account Holder'}</div>
                 </div>
                 <div className="signature-block">
                   <div className="signature-line" />
-                  <div className="signature-label">Accountant</div>
+                  <div className="signature-label">{lang === 'mr' ? 'लेखापाल' : 'Accountant'}</div>
                 </div>
                 <div className="total-amount-box">
-                  <div className="label">TOTAL AMOUNT</div>
+                  <div className="label">{lang === 'mr' ? 'एकूण रक्कम' : 'TOTAL AMOUNT'}</div>
                   <div className="value">
                     ₹ {grandRs.toLocaleString('en-IN')}.{String(grandPs).padStart(2, '0')}
                   </div>
@@ -1034,7 +1066,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               {/* ── Action Buttons ── */}
               <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-end' }} className="no-print">
                 <button type="button" className="btn btn-secondary" onClick={handleReset} id="reset-btn">
-                  <RotateCcw size={15} /> Reset
+                  <RotateCcw size={15} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
                 </button>
 
                 <button
@@ -1045,12 +1077,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   disabled={loading}
                   id="save-draft-btn"
                 >
-                  <FileEdit size={16} /> Save as Draft
+                  <FileEdit size={16} /> {lang === 'mr' ? 'मसुदा जतन करा' : 'Save as Draft'}
                 </button>
 
                 <button type="submit" className="btn btn-primary btn-lg" disabled={loading} id="save-btn">
                   {loading ? <span className="spinner" /> : <Save size={16} />}
-                  {loading ? 'Posting…' : 'Save & Post Transaction'}
+                  {loading ? (lang === 'mr' ? 'जतन होत आहे…' : 'Posting…') : (lang === 'mr' ? 'जतन करा आणि पोस्ट करा' : 'Save & Post Transaction')}
                 </button>
               </div>
             </form>
@@ -1062,9 +1094,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Table size={18} color="var(--blue-700)" /> Customer Period Search & Monthly Account Statement
+                <Table size={18} color="var(--blue-700)" /> {lang === 'mr' ? 'ग्राहक कालावधी शोध आणि मासिक खाते विवरणपत्र' : 'Customer Period Search & Monthly Account Statement'}
               </div>
-              <div className="card-subtitle">Search by Customer ID / Name for any period to view &amp; print complete monthly statement</div>
+              <div className="card-subtitle">{lang === 'mr' ? 'कोणत्याही कालावधीसाठी संपूर्ण मासिक विवरणपत्र पाहण्यासाठी व मुद्रित करण्यासाठी शोध घ्या' : 'Search by Customer ID / Name for any period to view & print complete monthly statement'}</div>
             </div>
 
             <button
@@ -1074,7 +1106,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={historyList.length === 0}
               id="print-monthly-stmt-btn"
             >
-              <Printer size={14} /> Print Customer Monthly Statement
+              <Printer size={14} /> {lang === 'mr' ? 'मासिक खाते विवरणपत्र मुद्रित करा' : 'Print Customer Monthly Statement'}
             </button>
           </div>
 
@@ -1082,12 +1114,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             {/* Filter Bar */}
             <div className="filter-bar" style={{ boxShadow: 'none', background: '#f8fafc', marginBottom: 20 }}>
               <div className="filter-group">
-                <span className="filter-label">Customer ID / Name:</span>
+                <span className="filter-label">{lang === 'mr' ? 'ग्राहक आयडी / नाव:' : 'Customer ID / Name:'}</span>
                 <input
                   id="hist-cust-id"
                   type="text"
                   className="filter-input"
-                  placeholder="e.g. CUST-1001 or Name"
+                  placeholder={lang === 'mr' ? 'उदा. CUST-1001 किंवा नाव' : 'e.g. CUST-1001 or Name'}
                   value={hCustomerId}
                   onChange={e => setHCustomerId(e.target.value)}
                   style={{ minWidth: 160 }}
@@ -1095,7 +1127,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">From Date:</span>
+                <span className="filter-label">{lang === 'mr' ? 'सुरुवातीची तारीख:' : 'From Date:'}</span>
                 <input
                   id="hist-start"
                   type="date"
@@ -1106,7 +1138,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">To Date:</span>
+                <span className="filter-label">{lang === 'mr' ? 'शेवटची तारीख:' : 'To Date:'}</span>
                 <input
                   id="hist-end"
                   type="date"
@@ -1117,7 +1149,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">Book Entry Nature:</span>
+                <span className="filter-label">{lang === 'mr' ? 'वही नोंदीचे स्वरूप:' : 'Book Entry Nature:'}</span>
                 <select
                   id="hist-nature"
                   className="filter-select"
@@ -1125,14 +1157,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   onChange={e => setHNature(e.target.value)}
                   style={{ minWidth: 160, fontWeight: 700 }}
                 >
-                  <option value="">— All (Credit &amp; Debit) —</option>
-                  <option value="CREDIT">📥 CREDIT Receipts Only</option>
-                  <option value="DEBIT">📤 DEBIT Payments Only</option>
+                  <option value="">— {lang === 'mr' ? 'सर्व (जमा आणि नावे)' : 'All (Credit & Debit)'} —</option>
+                  <option value="CREDIT">📥 {lang === 'mr' ? 'केवळ जमा पावत्या' : 'CREDIT Receipts Only'}</option>
+                  <option value="DEBIT">📤 {lang === 'mr' ? 'केवळ नावे खर्च' : 'DEBIT Payments Only'}</option>
                 </select>
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">Transaction Type:</span>
+                <span className="filter-label">{lang === 'mr' ? 'व्यवहाराचा प्रकार:' : 'Transaction Type:'}</span>
                 <select
                   id="hist-type"
                   className="filter-select"
@@ -1140,7 +1172,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   onChange={e => setHTxnTypeId(e.target.value)}
                   style={{ minWidth: 160 }}
                 >
-                  <option value="">— All Types —</option>
+                  <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
                   {txnTypes.map(t => (
                     <option key={t.id} value={t.id}>
                       {t.name} ({t.entry_type})
@@ -1150,44 +1182,44 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">Status:</span>
+                <span className="filter-label">{lang === 'mr' ? 'स्थिती:' : 'Status:'}</span>
                 <select
                   id="hist-status"
                   className="filter-select"
                   value={hStatus}
                   onChange={e => setHStatus(e.target.value)}
                 >
-                  <option value="">— All Statuses —</option>
-                  <option value="POSTED">Posted Only</option>
-                  <option value="DRAFT">Drafts Only</option>
+                  <option value="">— {lang === 'mr' ? 'सर्व स्थिती' : 'All Statuses'} —</option>
+                  <option value="POSTED">{lang === 'mr' ? 'केवळ पोस्ट केलेले' : 'Posted Only'}</option>
+                  <option value="DRAFT">{lang === 'mr' ? 'केवळ मसुदे' : 'Drafts Only'}</option>
                 </select>
               </div>
 
               <button className="btn btn-primary btn-sm" onClick={loadHistory} id="hist-refresh-btn">
-                <RefreshCw size={14} /> Filter Records
+                <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
               </button>
             </div>
 
             {/* Total Amount & Count Summary Banner */}
             <div className="stat-row" style={{ marginBottom: 20 }}>
               <div className="stat-card" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
-                <div className="stat-label" style={{ color: '#1e40af' }}>Total Records Found</div>
+                <div className="stat-label" style={{ color: '#1e40af' }}>{lang === 'mr' ? 'एकूण सापडलेल्या नोंदी' : 'Total Records Found'}</div>
                 <div className="stat-value" style={{ color: '#1d4ed8' }}>{displayedHistoryList.length}</div>
               </div>
               <div className="stat-card" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                <div className="stat-label" style={{ color: '#166534' }}>Total Credit Receipts</div>
+                <div className="stat-label" style={{ color: '#166534' }}>{lang === 'mr' ? 'एकूण जमा पावत्या' : 'Total Credit Receipts'}</div>
                 <div className="stat-value" style={{ color: '#15803d', fontSize: 18 }}>
                   ₹ {historyCreditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
               <div className="stat-card" style={{ background: '#fef2f2', borderColor: '#fecaca' }}>
-                <div className="stat-label" style={{ color: '#991b1b' }}>Total Debit Payments</div>
+                <div className="stat-label" style={{ color: '#991b1b' }}>{lang === 'mr' ? 'एकूण नावे खर्च' : 'Total Debit Payments'}</div>
                 <div className="stat-value" style={{ color: '#b91c1c', fontSize: 18 }}>
                   ₹ {historyDebitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
               <div className="stat-card" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderColor: '#93c5fd' }}>
-                <div className="stat-label" style={{ color: '#1e40af' }}>Total Period Amount</div>
+                <div className="stat-label" style={{ color: '#1e40af' }}>{lang === 'mr' ? 'कालावधीची एकूण रक्कम' : 'Total Period Amount'}</div>
                 <div className="stat-value" style={{ color: '#1d4ed8', fontSize: 20 }}>
                   ₹ {historyTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
@@ -1198,27 +1230,27 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             <div className="table-wrapper">
               {hLoading ? (
                 <div className="loading-overlay">
-                  <span className="spinner" /> Loading period records…
+                  <span className="spinner" /> {lang === 'mr' ? 'कालावधीच्या नोंदी लोड होत आहेत…' : 'Loading period records…'}
                 </div>
               ) : displayedHistoryList.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon"><Filter /></div>
-                  <div className="empty-state-title">No matching transactions found</div>
-                  <div className="empty-state-sub">Try adjusting Customer ID, date range, book entry nature, or transaction type filter above</div>
+                  <div className="empty-state-title">{lang === 'mr' ? 'कोणतेही जुळणारे व्यवहार आढळले नाहीत' : 'No matching transactions found'}</div>
+                  <div className="empty-state-sub">{lang === 'mr' ? 'कृपया वरील ग्राहक आयडी, तारीख श्रेणी किंवा फिल्टर बदलून पहा' : 'Try adjusting Customer ID, date range, book entry nature, or transaction type filter above'}</div>
                 </div>
               ) : (
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Customer ID</th>
-                      <th>Date</th>
-                      <th>Cash Memo No.</th>
-                      <th>Customer Name</th>
-                      <th>Transaction Type</th>
-                      <th>Particulars</th>
-                      <th style={{ textAlign: 'right' }}>Amount (Rs.Ps)</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{lang === 'mr' ? 'ग्राहक आयडी' : 'Customer ID'}</th>
+                      <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                      <th>{lang === 'mr' ? 'रोख मेमो क्र.' : 'Cash Memo No.'}</th>
+                      <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
+                      <th>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'Transaction Type'}</th>
+                      <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                      <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम (रु.पै)' : 'Amount (Rs.Ps)'}</th>
+                      <th>{lang === 'mr' ? 'स्थिती' : 'Status'}</th>
+                      <th>{lang === 'mr' ? 'क्रिया' : 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1238,7 +1270,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               fontSize: 12, fontWeight: 700,
                               color: nature === 'DEBIT' ? '#b91c1c' : 'var(--blue-700)'
                             }}>
-                              {txn.transaction_type?.name || '—'} ({nature})
+                              {txn.transaction_type?.name || '—'} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
                             </span>
                           </td>
                           <td
@@ -1255,7 +1287,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                             </div>
                             {txn.particulars && txn.particulars.length > 25 && (
                               <span style={{ fontSize: 10, color: 'var(--blue-700)', fontWeight: 700, display: 'block', marginTop: 2 }}>
-                                {expandedParticularsId === txn.id ? '▲ Collapse' : '▼ Expand Items'}
+                                {expandedParticularsId === txn.id ? (lang === 'mr' ? '▲ कमी करा' : '▲ Collapse') : (lang === 'mr' ? '▼ अधिक पहा' : '▼ Expand Items')}
                               </span>
                             )}
                           </td>
@@ -1269,7 +1301,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               color: txn.status === 'POSTED' ? '#15803d' : '#b45309',
                               border: txn.status === 'POSTED' ? '1px solid #86efac' : '1px solid #fde68a',
                             }}>
-                              {txn.status || 'POSTED'}
+                              {txn.status === 'POSTED' ? (lang === 'mr' ? 'पोस्ट केलेले' : 'POSTED') : (lang === 'mr' ? 'मसुदा' : 'DRAFT')}
                             </span>
                           </td>
                           <td>
@@ -1278,7 +1310,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                 type="button"
                                 onClick={() => setPrintingTxn(txn)}
                                 style={{ background: 'none', border: 'none', color: 'var(--blue-600)', cursor: 'pointer', padding: 4 }}
-                                title="Print Bill Receipt"
+                                title={lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
                               >
                                 <Printer size={15} />
                               </button>
@@ -1286,7 +1318,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                 type="button"
                                 onClick={() => loadDraftIntoForm(txn)}
                                 style={{ background: 'none', border: 'none', color: 'var(--blue-600)', cursor: 'pointer', padding: 4 }}
-                                title="Edit Transaction"
+                                title={lang === 'mr' ? 'व्यवहार संपादन करा' : 'Edit Transaction'}
                               >
                                 <Edit3 size={15} />
                               </button>
@@ -1294,7 +1326,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                 type="button"
                                 onClick={() => handleDeleteTransaction(txn.id, txn.cash_memo_no)}
                                 style={{ background: 'none', border: 'none', color: 'var(--red-600)', cursor: 'pointer', padding: 4 }}
-                                title="Delete Transaction"
+                                title={lang === 'mr' ? 'व्यवहार हटवा' : 'Delete Transaction'}
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -1306,7 +1338,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={6} style={{ fontWeight: 700 }}>PERIOD TOTAL ({historyList.length} Transactions)</td>
+                      <td colSpan={6} style={{ fontWeight: 700 }}>{lang === 'mr' ? `कालावधी एकूण (${historyList.length} व्यवहार)` : `PERIOD TOTAL (${historyList.length} Transactions)`}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: 'var(--blue-800)' }}>
                         ₹ {historyTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
@@ -1324,21 +1356,21 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             zIndex: 1000, padding: 20,
           }}>
             <div style={{
               background: '#ffffff', border: '1px solid var(--border-muted)',
               borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 700,
               maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.2)', margin: '0 auto',
             }}>
               <div style={{
                 padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FolderOpen size={18} color="var(--amber-500)" /> Saved Drafts ({drafts.length})
+                  <FolderOpen size={18} color="var(--amber-500)" /> {lang === 'mr' ? `जतन केलेले मसुदे (${drafts.length})` : `Saved Drafts (${drafts.length})`}
                 </div>
                 <button
                   onClick={() => setShowDraftsModal(false)}
@@ -1351,7 +1383,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
                 {drafts.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                    No saved drafts found. Use "Save as Draft" to store work in progress.
+                    {lang === 'mr' ? 'कोणतेही जतन केलेले मसुदे आढळले नाहीत.' : 'No saved drafts found.'}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1362,10 +1394,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       }}>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {d.customer_name || 'Unnamed Customer'}
+                            {d.customer_name || (lang === 'mr' ? 'अनामित ग्राहक' : 'Unnamed Customer')}
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                            Memo: {d.cash_memo_no} | Date: {d.date} | Particulars: {d.particulars || 'None'}
+                            {lang === 'mr' ? 'मेमो:' : 'Memo:'} {d.cash_memo_no} | {lang === 'mr' ? 'तारीख:' : 'Date:'} {d.date} | {lang === 'mr' ? 'तपशील:' : 'Particulars:'} {d.particulars || '—'}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue-700)', marginTop: 4 }}>
                             ₹ {Number(d.amount_rs).toLocaleString('en-IN')}.{String(d.amount_ps).padStart(2, '0')}
@@ -1376,15 +1408,15 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           <button
                             className="btn btn-secondary btn-sm"
                             onClick={() => setPrintingTxn(d)}
-                            title="Print Bill Receipt"
+                            title={lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
                           >
-                            <Printer size={14} /> Print
+                            <Printer size={14} /> {lang === 'mr' ? 'मुद्रण' : 'Print'}
                           </button>
                           <button
                             className="btn btn-primary btn-sm"
                             onClick={() => loadDraftIntoForm(d)}
                           >
-                            Load Draft
+                            {lang === 'mr' ? 'लोड करा' : 'Load Draft'}
                           </button>
                           <button
                             className="btn btn-danger btn-sm"

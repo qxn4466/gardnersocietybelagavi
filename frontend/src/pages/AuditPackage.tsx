@@ -27,6 +27,25 @@ interface AuditPackageProps {
   onToggleMobileMenu?: () => void;
 }
 
+const COLUMN_LABELS_MR: Record<string, string> = {
+  shares: 'समभाग',
+  commissions: 'कमिशन',
+  interest: 'व्याज',
+  pigmi_comm: 'पिगमी कमिशन',
+  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेव',
+  vegetable_comm: 'भाजीपाला कमिशन',
+  cash_sales: 'रोख विक्री',
+  pesticide_sales: 'कीटकनाशक विक्री',
+  sundary_ac: 'विविध खाते',
+  purchases: 'खरेदी',
+  loan_ac: 'कर्ज खाते',
+  bank_current: 'बँक चालू खाते',
+  advance: 'आगाऊ',
+  cold_storage_adv: 'शीतगृह आगाऊ',
+  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी कर्ज',
+  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी व्याज',
+};
+
 const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { t, lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
@@ -140,9 +159,9 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Calendar size={18} color="var(--blue-700)" /> Select Audit Period &amp; Document Schedules
+                <Calendar size={18} color="var(--blue-700)" /> {lang === 'mr' ? 'लेखापरीक्षा कालावधी आणि दस्तऐवज सूची निवडा' : 'Select Audit Period & Document Schedules'}
               </div>
-              <div className="card-subtitle">Choose date range and toggle schedules to include in the printed binder</div>
+              <div className="card-subtitle">{lang === 'mr' ? 'तारीख श्रेणी निवडा आणि मुद्रित बाइंडरमध्ये समाविष्ट करण्यासाठी सूची निवडा' : 'Choose date range and toggle schedules to include in the printed binder'}</div>
             </div>
           </div>
 
@@ -150,7 +169,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
             {/* Date Range Inputs */}
             <div className="filter-bar" style={{ boxShadow: 'none', background: '#f8fafc', marginBottom: 20 }}>
               <div className="filter-group">
-                <span className="filter-label">Audit From:</span>
+                <span className="filter-label">{lang === 'mr' ? 'लेखापरीक्षा सुरुवातीची तारीख:' : 'Audit From:'}</span>
                 <input
                   type="date"
                   className="filter-input"
@@ -160,7 +179,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
               </div>
 
               <div className="filter-group">
-                <span className="filter-label">Audit To:</span>
+                <span className="filter-label">{lang === 'mr' ? 'लेखापरीक्षा शेवटची तारीख:' : 'Audit To:'}</span>
                 <input
                   type="date"
                   className="filter-input"
@@ -170,46 +189,46 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
               </div>
 
               <button className="btn btn-primary btn-sm" onClick={loadAuditData}>
-                <RefreshCw size={14} /> Load Audit Schedules
+                <RefreshCw size={14} /> {lang === 'mr' ? 'लेखापरीक्षा नोंदी लोड करा' : 'Load Audit Schedules'}
               </button>
 
               <button className="btn btn-secondary btn-sm" onClick={handlePresetJune}>
-                June 2026
+                {lang === 'mr' ? 'जून २०२६' : 'June 2026'}
               </button>
 
               <button className="btn btn-secondary btn-sm" onClick={handlePresetToday}>
-                Today
+                {lang === 'mr' ? 'आज' : 'Today'}
               </button>
             </div>
 
             {/* Schedule Checklist */}
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>
-              Schedules Included in Print Package:
+              {lang === 'mr' ? 'मुद्रण पॅकेजमध्ये समाविष्ट केलेली पत्रके:' : 'Schedules Included in Print Package:'}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, background: '#ffffff', padding: 14, border: '1px solid #cbd5e1', borderRadius: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <input type="checkbox" checked={includeCover} onChange={e => setIncludeCover(e.target.checked)} />
-                1. Cover Sheet &amp; Financial Summary
+                {lang === 'mr' ? '१. मुख्य मुखपृष्ठ आणि आर्थिक सारांश' : '1. Cover Sheet & Financial Summary'}
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <input type="checkbox" checked={includeCreditBook} onChange={e => setIncludeCreditBook(e.target.checked)} />
-                2. Credit Book Schedule ({creditRows.length} txns)
+                {lang === 'mr' ? `२. जमा वही पत्रक (${creditRows.length} व्यवहार)` : `2. Credit Book Schedule (${creditRows.length} txns)`}
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <input type="checkbox" checked={includeDebitBook} onChange={e => setIncludeDebitBook(e.target.checked)} />
-                3. Debit Book Schedule ({debitRows.length} txns)
+                {lang === 'mr' ? `३. नावे वही पत्रक (${debitRows.length} व्यवहार)` : `3. Debit Book Schedule (${debitRows.length} txns)`}
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <input type="checkbox" checked={includeLedger} onChange={e => setIncludeLedger(e.target.checked)} />
-                4. General Ledger Summary ({ledgerRows.length} accounts)
+                {lang === 'mr' ? `४. सर्वसाधारण खातेवही सारांश (${ledgerRows.length} खाती)` : `4. General Ledger Summary (${ledgerRows.length} accounts)`}
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <input type="checkbox" checked={includeCustomers} onChange={e => setIncludeCustomers(e.target.checked)} />
-                5. Customer Accounts &amp; KYC Directory ({customers.length} members)
+                {lang === 'mr' ? `५. ग्राहक खाती आणि KYC निर्देशिका (${customers.length} सदस्य)` : `5. Customer Accounts & KYC Directory (${customers.length} members)`}
               </label>
             </div>
           </div>
@@ -228,34 +247,34 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
               }}>
                 <PrintHeader
-                  documentTitle="F I N A N C I A L   A U D I T   P A C K A G E"
-                  subTitle={`Audit Period: ${startDate} to ${endDate}`}
+                  documentTitle={lang === 'mr' ? 'आर्थिक लेखापरीक्षा पॅकेज' : 'F I N A N C I A L   A U D I T   P A C K A G E'}
+                  subTitle={lang === 'mr' ? `लेखापरीक्षा कालावधी: ${startDate} ते ${endDate}` : `Audit Period: ${startDate} to ${endDate}`}
                 />
 
                 {/* Audit Key Metric Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 24, textAlign: 'left' }}>
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 14 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>Total Credit Receipts</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण जमा पावत्या' : 'Total Credit Receipts'}</div>
                     <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', marginTop: 4 }}>
                       ₹{creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 11, color: '#166534', marginTop: 4 }}>{creditRows.length} Credit Transactions</div>
+                    <div style={{ fontSize: 11, color: '#166534', marginTop: 4 }}>{creditRows.length} {lang === 'mr' ? 'जमा व्यवहार' : 'Credit Transactions'}</div>
                   </div>
 
                   <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 14 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>Total Debit Payments</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण नावे खर्च' : 'Total Debit Payments'}</div>
                     <div style={{ fontSize: 20, fontWeight: 900, color: '#b91c1c', marginTop: 4 }}>
                       ₹{debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 11, color: '#991b1b', marginTop: 4 }}>{debitRows.length} Debit Transactions</div>
+                    <div style={{ fontSize: 11, color: '#991b1b', marginTop: 4 }}>{debitRows.length} {lang === 'mr' ? 'नावे व्यवहार' : 'Debit Transactions'}</div>
                   </div>
 
                   <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 14 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#1e40af', textTransform: 'uppercase' }}>Member Accounts &amp; KYC</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#1e40af', textTransform: 'uppercase' }}>{lang === 'mr' ? 'सदस्य खाती आणि KYC' : 'Member Accounts & KYC'}</div>
                     <div style={{ fontSize: 20, fontWeight: 900, color: '#1d4ed8', marginTop: 4 }}>
-                      {customers.length} Members
+                      {customers.length} {lang === 'mr' ? 'सदस्य' : 'Members'}
                     </div>
-                    <div style={{ fontSize: 11, color: '#1e40af', marginTop: 4 }}>10-Digit ID &amp; KYC Verified</div>
+                    <div style={{ fontSize: 11, color: '#1e40af', marginTop: 4 }}>{lang === 'mr' ? '१०-अंकी आयडी आणि KYC पडताळणीकृत' : '10-Digit ID & KYC Verified'}</div>
                   </div>
                 </div>
 
@@ -266,14 +285,14 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <CheckCircle2 size={16} color="#16a34a" /> Level 1 → Level 2 → Level 3 Reconciliation Status
+                      <CheckCircle2 size={16} color="#16a34a" /> {lang === 'mr' ? 'स्तर १ → स्तर २ → स्तर ३ ताळमेळ स्थिती' : 'Level 1 → Level 2 → Level 3 Reconciliation Status'}
                     </div>
                     <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                      All Credit Receipts, Debit Payments, and General Ledger accounts fully reconciled.
+                      {lang === 'mr' ? 'सर्व जमा पावत्या, नावे देणे आणि सर्वसाधारण खातेवही खाती पूर्णपणे जुळलेली आहेत.' : 'All Credit Receipts, Debit Payments, and General Ledger accounts fully reconciled.'}
                     </div>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '4px 10px', borderRadius: 6 }}>
-                    RECONCILED &amp; VERIFIED ✅
+                    {lang === 'mr' ? 'ताळमेळ पूर्ण आणि पडताळणीकृत ✅' : 'RECONCILED & VERIFIED ✅'}
                   </span>
                 </div>
 
@@ -281,15 +300,15 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 30, marginTop: 40, paddingTop: 30, borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
                   <div>
                     <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Prepared By (Accounts Officer)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तयार केले (लेखापाल अधिकारी)' : 'Prepared By (Accounts Officer)'}</div>
                   </div>
                   <div>
                     <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Verified By (Internal Auditor)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तपासले (अंतर्गत लेखापरीक्षक)' : 'Verified By (Internal Auditor)'}</div>
                   </div>
                   <div>
                     <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Approved By (Statutory Auditor)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'मंजूर केले (वैधानिक लेखापरीक्षक)' : 'Approved By (Statutory Auditor)'}</div>
                   </div>
                 </div>
 
@@ -304,23 +323,23 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
             <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>SCHEDULE II: CREDIT BOOK RECEIPTS AUDIT SCHEDULE</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Period: {startDate} to {endDate}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता २: जमा वही पावत्या लेखापरीक्षा तक्ता' : 'SCHEDULE II: CREDIT BOOK RECEIPTS AUDIT SCHEDULE'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'} {startDate} {lang === 'mr' ? 'ते' : 'to'} {endDate}</div>
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
-                  Total Receipts: ₹{creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {lang === 'mr' ? 'एकूण पावत्या:' : 'Total Receipts:'} ₹{creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
 
               <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
                 <thead>
                   <tr style={{ background: '#f0fdf4' }}>
-                    <th>Date</th>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
                     <th>L.F</th>
-                    <th>Account Holder Name</th>
-                    {CREDIT_BOOK_COLUMNS.map(col => <th key={col.key} style={{ textAlign: 'right' }}>{col.label}</th>)}
-                    <th style={{ textAlign: 'right' }}>Total Amount</th>
-                    <th>Memo No.</th>
+                    <th>{lang === 'mr' ? 'खातेदाराचे नाव' : 'Account Holder Name'}</th>
+                    {CREDIT_BOOK_COLUMNS.map(col => <th key={col.key} style={{ textAlign: 'right' }}>{lang === 'mr' ? (COLUMN_LABELS_MR[col.key as string] || col.label) : col.label}</th>)}
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                    <th>{lang === 'mr' ? 'मेमो क्र.' : 'Memo No.'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -343,7 +362,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 </tbody>
                 <tfoot>
                   <tr style={{ background: '#dcfce7', fontWeight: 800 }}>
-                    <td colSpan={3}>CREDIT TOTALS</td>
+                    <td colSpan={3}>{lang === 'mr' ? 'जमा एकूण' : 'CREDIT TOTALS'}</td>
                     {CREDIT_BOOK_COLUMNS.map(col => (
                       <td key={col.key} style={{ textAlign: 'right', fontFamily: 'monospace' }}>
                         {creditColTotals[col.key as string] > 0 ? `₹${creditColTotals[col.key as string].toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
@@ -366,23 +385,23 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
             <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>SCHEDULE III: DEBIT BOOK PAYMENTS AUDIT SCHEDULE</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Period: {startDate} to {endDate}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता ३: नावे वही खर्च लेखापरीक्षा तक्ता' : 'SCHEDULE III: DEBIT BOOK PAYMENTS AUDIT SCHEDULE'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'} {startDate} {lang === 'mr' ? 'ते' : 'to'} {endDate}</div>
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c' }}>
-                  Total Payments: ₹{debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {lang === 'mr' ? 'एकूण खर्च:' : 'Total Payments:'} ₹{debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
 
               <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
                 <thead>
                   <tr style={{ background: '#fef2f2' }}>
-                    <th>Date</th>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
                     <th>L.F</th>
-                    <th>Account Holder Name</th>
-                    {DEBIT_BOOK_COLUMNS.map(col => <th key={col.key} style={{ textAlign: 'right', color: '#991b1b' }}>{col.label}</th>)}
-                    <th style={{ textAlign: 'right', color: '#991b1b' }}>Total Amount</th>
-                    <th>Memo No.</th>
+                    <th>{lang === 'mr' ? 'खातेदाराचे नाव' : 'Account Holder Name'}</th>
+                    {DEBIT_BOOK_COLUMNS.map(col => <th key={col.key} style={{ textAlign: 'right', color: '#991b1b' }}>{lang === 'mr' ? (COLUMN_LABELS_MR[col.key as string] || col.label) : col.label}</th>)}
+                    <th style={{ textAlign: 'right', color: '#991b1b' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                    <th>{lang === 'mr' ? 'मेमो क्र.' : 'Memo No.'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -405,7 +424,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 </tbody>
                 <tfoot>
                   <tr style={{ background: '#fee2e2', fontWeight: 800 }}>
-                    <td colSpan={3} style={{ color: '#991b1b' }}>DEBIT TOTALS</td>
+                    <td colSpan={3} style={{ color: '#991b1b' }}>{lang === 'mr' ? 'नावे एकूण' : 'DEBIT TOTALS'}</td>
                     {DEBIT_BOOK_COLUMNS.map(col => (
                       <td key={col.key} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#991b1b' }}>
                         {debitColTotals[col.key as string] > 0 ? `₹${debitColTotals[col.key as string].toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
@@ -428,20 +447,20 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
             <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>SCHEDULE IV: GENERAL LEDGER ACCOUNT BALANCES SHEET</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Level 3 Monthly Ledger Summaries</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता ४: सर्वसाधारण खातेवही शिल्लक पत्रक' : 'SCHEDULE IV: GENERAL LEDGER ACCOUNT BALANCES SHEET'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'स्तर ३ मासिक खातेवही सारांश' : 'Level 3 Monthly Ledger Summaries'}</div>
                 </div>
               </div>
 
               <table className="data-table" style={{ width: '100%', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th>Month &amp; Year</th>
-                    <th>Ledger Account Name</th>
-                    <th style={{ textAlign: 'right' }}>Receipt (₹)</th>
-                    <th style={{ textAlign: 'right' }}>Debit (₹)</th>
-                    <th style={{ textAlign: 'right' }}>Payable (₹)</th>
-                    <th style={{ textAlign: 'right' }}>Receivable (₹)</th>
+                    <th>{lang === 'mr' ? 'महिना आणि वर्ष' : 'Month & Year'}</th>
+                    <th>{lang === 'mr' ? 'खातेवही नाव' : 'Ledger Account Name'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'जमा (₹)' : 'Receipt (₹)'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'नावे (₹)' : 'Debit (₹)'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'देणे (₹)' : 'Payable (₹)'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'घेणे (₹)' : 'Receivable (₹)'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -466,7 +485,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 </tbody>
                 <tfoot>
                   <tr style={{ background: '#f1f5f9', fontWeight: 800 }}>
-                    <td colSpan={2}>GENERAL LEDGER TOTALS</td>
+                    <td colSpan={2}>{lang === 'mr' ? 'खातेवही एकूण' : 'GENERAL LEDGER TOTALS'}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>₹{totalLedgerReceipt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>₹{totalLedgerDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>₹{totalLedgerPayable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -484,24 +503,24 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
             <div className="audit-page-section" style={{ marginBottom: 40 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>SCHEDULE V: CUSTOMER SAVINGS ACCOUNTS &amp; KYC DIRECTORY</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>10-Digit Customer IDs, Aadhaar &amp; PAN Verification List</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता ५: ग्राहक बचत खाती आणि KYC निर्देशिका' : 'SCHEDULE V: CUSTOMER SAVINGS ACCOUNTS & KYC DIRECTORY'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी, आधार आणि पॅन पडताळणी सूची' : '10-Digit Customer IDs, Aadhaar & PAN Verification List'}</div>
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-700)' }}>
-                  Total Registered: {customers.length} Members
+                  {lang === 'mr' ? `एकूण नोंदणीकृत: ${customers.length} सदस्य` : `Total Registered: ${customers.length} Members`}
                 </div>
               </div>
 
               <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th>10-Digit ID</th>
-                    <th>Member Full Name</th>
-                    <th>Mobile No</th>
-                    <th>Residential Address</th>
-                    <th>Aadhaar Number</th>
-                    <th>PAN Number</th>
-                    <th style={{ textAlign: 'right' }}>Opening Balance</th>
+                    <th>{lang === 'mr' ? '१०-अंकी आयडी' : '10-Digit ID'}</th>
+                    <th>{lang === 'mr' ? 'सदस्याचे पूर्ण नाव' : 'Member Full Name'}</th>
+                    <th>{lang === 'mr' ? 'मोबाईल क्र' : 'Mobile No'}</th>
+                    <th>{lang === 'mr' ? 'रहिवासी पत्ता' : 'Residential Address'}</th>
+                    <th>{lang === 'mr' ? 'आधार क्रमांक' : 'Aadhaar Number'}</th>
+                    <th>{lang === 'mr' ? 'पॅन क्रमांक' : 'PAN Number'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'प्रारंभिक शिल्लक' : 'Opening Balance'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -511,8 +530,8 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                       <td style={{ fontWeight: 700 }}>{c.full_name}</td>
                       <td>{c.mobile_no || '—'}</td>
                       <td style={{ fontSize: 11, maxWidth: 180 }}>{c.address || '—'}</td>
-                      <td>{c.aadhaar_no || '—'} {c.aadhaar_doc_path ? '✓ Scan' : ''}</td>
-                      <td>{c.pan_no || '—'} {c.pan_doc_path ? '✓ Scan' : ''}</td>
+                      <td>{c.aadhaar_no || '—'} {c.aadhaar_doc_path ? (lang === 'mr' ? '✓ स्कॅन' : '✓ Scan') : ''}</td>
+                      <td>{c.pan_no || '—'} {c.pan_doc_path ? (lang === 'mr' ? '✓ स्कॅन' : '✓ Scan') : ''}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
                         ₹{Number(c.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>

@@ -426,16 +426,18 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ffffff', fontSize: 18 }}>
                 <UserPlus size={22} color="#60a5fa" />
-                {editingId ? `Edit Customer Profile (${form.customer_id})` : 'New Savings Account Registration Form'}
+                {editingId
+                  ? (lang === 'mr' ? `ग्राहक प्रोफाइल संपादन (${form.customer_id})` : `Edit Customer Profile (${form.customer_id})`)
+                  : (lang === 'mr' ? 'नवीन बचत खाते नोंदणी अर्ज' : 'New Savings Account Registration Form')}
               </div>
               <div className="card-subtitle" style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
-                Fill out the member identity details and attach 3-Document KYC Scans
+                {lang === 'mr' ? 'सदस्याची माहिती भरा आणि ३ कागदपत्रे KYC अपलोड करा' : 'Fill out the member identity details and attach 3-Document KYC Scans'}
               </div>
             </div>
 
             {editingId && (
               <button className="btn btn-secondary btn-sm" onClick={handleReset} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
-                + Reset &amp; Register New Account
+                + {lang === 'mr' ? 'रीसेट आणि नवीन खाते नोंदवा' : 'Reset & Register New Account'}
               </button>
             )}
           </div>
@@ -447,7 +449,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Hash size={18} color="var(--blue-700)" />
-                  <span>1. Account Identity &amp; Initial Deposit</span>
+                  <span>{lang === 'mr' ? '१. खाते ओळख आणि प्राथमिक ठेव' : '1. Account Identity & Initial Deposit'}</span>
                 </div>
 
                 <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -455,13 +457,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   {/* Customer ID */}
                   <div className="form-group">
                     <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700 }}>10-Digit Customer ID <span className="required">*</span></span>
+                      <span style={{ fontWeight: 700 }}>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी' : '10-Digit Customer ID'} <span className="required">*</span></span>
                       <button
                         type="button"
                         onClick={loadNextId}
                         style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: 'var(--blue-700)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                       >
-                        <Sparkles size={11} /> Auto-Generate
+                        <Sparkles size={11} /> {lang === 'mr' ? 'आपोआप तयार करा' : 'Auto-Generate'}
                       </button>
                     </label>
                     <input
@@ -470,29 +472,29 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em', background: '#ffffff' }}
                       value={form.customer_id || ''}
                       onChange={e => handleInputChange('customer_id', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="e.g. 5839204192"
+                      placeholder={lang === 'mr' ? 'उदा. 5839204192' : 'e.g. 5839204192'}
                       required
                     />
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Unique 10-digit random account identifier</div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>{lang === 'mr' ? 'अनन्य १०-अंकी खाते ओळख क्रमांक' : 'Unique 10-digit random account identifier'}</div>
                   </div>
 
-                  {/* Mobile Number (10 digits only) */}
+                  {/* Mobile Number */}
                   <div className="form-group">
                     <label className="form-label" style={{ fontWeight: 700 }}>
                       <Phone size={13} style={{ display: 'inline', marginRight: 4 }} />
-                      Mobile Number (10 Digits)
+                      {lang === 'mr' ? 'मोबाईल नंबर (१० अंकी)' : 'Mobile Number (10 Digits)'}
                     </label>
                     <input
                       type="tel"
                       className="form-input"
-                      placeholder="10-digit mobile number"
+                      placeholder={lang === 'mr' ? '१०-अंकी मोबाईल नंबर' : '10-digit mobile number'}
                       value={form.mobile_no || ''}
                       onChange={e => handleMobileChange(e.target.value)}
                       maxLength={10}
                       style={{ background: '#ffffff' }}
                     />
                     <div style={{ fontSize: 10, color: form.mobile_no && form.mobile_no.length !== 10 ? '#b91c1c' : '#64748b', marginTop: 4, fontWeight: form.mobile_no && form.mobile_no.length !== 10 ? 700 : 400 }}>
-                      {form.mobile_no ? `${form.mobile_no.length}/10 digits entered` : 'Exactly 10 digits required'}
+                      {form.mobile_no ? (lang === 'mr' ? `${form.mobile_no.length}/१० अंक प्रविष्ट केले` : `${form.mobile_no.length}/10 digits entered`) : (lang === 'mr' ? 'नेमके १० अंक आवश्यक' : 'Exactly 10 digits required')}
                     </div>
                   </div>
 
@@ -500,7 +502,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   <div className="form-group">
                     <label className="form-label" style={{ fontWeight: 700 }}>
                       <Wallet size={13} style={{ display: 'inline', marginRight: 4 }} />
-                      Opening Savings Deposit (₹)
+                      {lang === 'mr' ? 'प्रारंभिक बचत ठेव (₹)' : 'Opening Savings Deposit (₹)'}
                     </label>
                     <input
                       type="number"
@@ -511,7 +513,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
                       style={{ background: '#ffffff' }}
                     />
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Initial savings balance credited</div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>{lang === 'mr' ? 'खात्यात जमा केलेली सुरुवातीची बचत रक्कम' : 'Initial savings balance credited'}</div>
                   </div>
 
                 </div>
@@ -521,13 +523,13 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <UserIcon size={18} color="var(--blue-700)" />
-                  <span>2. Member Personal Profile</span>
+                  <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
                 </div>
 
                 <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
                   
                   <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>Salutation</label>
+                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'संबोधन' : 'Salutation'}</label>
                     <select
                       className="form-select"
                       value={form.salutation || 'Mr.'}
@@ -543,11 +545,11 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>First Name <span className="required">*</span></label>
+                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'पहिले नाव' : 'First Name'} <span className="required">*</span></label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="First name"
+                      placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
                       value={form.first_name || ''}
                       onChange={e => handleInputChange('first_name', e.target.value)}
                       style={{ background: '#ffffff' }}
@@ -556,11 +558,11 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>Middle Name</label>
+                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'मधले नाव' : 'Middle Name'}</label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="Middle name"
+                      placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
                       value={form.middle_name || ''}
                       onChange={e => handleInputChange('middle_name', e.target.value)}
                       style={{ background: '#ffffff' }}
@@ -568,11 +570,11 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>Last Name <span className="required">*</span></label>
+                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'आडनाव' : 'Last Name'} <span className="required">*</span></label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="Last / Surname"
+                      placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
                       value={form.last_name || ''}
                       onChange={e => handleInputChange('last_name', e.target.value)}
                       style={{ background: '#ffffff' }}
@@ -588,7 +590,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                     padding: '10px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
                     borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10
                   }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>FULL NAME:</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'mr' ? 'पूर्ण नाव:' : 'FULL NAME:'}</span>
                     <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 15 }}>{composedFullName}</span>
                   </div>
                 )}
@@ -598,14 +600,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MapPin size={18} color="var(--blue-700)" />
-                  <span>3. Residential Address</span>
+                  <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
                 </div>
 
                 <div className="form-group">
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code"
+                    placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code'}
                     value={form.address || ''}
                     onChange={e => handleInputChange('address', e.target.value)}
                     style={{ background: '#ffffff' }}
@@ -613,14 +615,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 </div>
               </div>
 
-              {/* ── Section 4: 3-Document KYC Verification (With Camera Scan & File Upload) ── */}
+              {/* ── Section 4: 3-Document KYC Verification ── */}
               <div style={{
                 background: '#f8fafc', border: '1px solid #e2e8f0',
                 borderRadius: 12, padding: 18, marginBottom: 24
               }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <ShieldCheck size={18} color="var(--blue-700)" />
-                  <span>4. 3-Document KYC Verification (Camera Scan &amp; File Upload)</span>
+                  <span>{lang === 'mr' ? '४. ३-कागदपत्रे KYC पडताळणी (कॅमेरा स्कॅन आणि फाईल अपलोड)' : '4. 3-Document KYC Verification (Camera Scan & File Upload)'}</span>
                 </div>
 
                 <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -629,29 +631,28 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>1. Aadhaar Card (Front)</span>
-                        <span style={{ fontSize: 10, color: '#64748b' }}>12 Digits</span>
+                        <span>{lang === 'mr' ? '१. आधार कार्ड (समोरील)' : '1. Aadhaar Card (Front)'}</span>
+                        <span style={{ fontSize: 10, color: '#64748b' }}>{lang === 'mr' ? '१२ अंक' : '12 Digits'}</span>
                       </div>
                       
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="12-digit Aadhaar Number"
+                        placeholder={lang === 'mr' ? '१२-अंकी आधार क्रमांक' : '12-digit Aadhaar Number'}
                         value={form.aadhaar_no || ''}
                         onChange={e => handleAadhaarChange(e.target.value)}
                         maxLength={12}
                         style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700 }}
                       />
                       <div style={{ fontSize: 10, color: form.aadhaar_no && form.aadhaar_no.length !== 12 ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.aadhaar_no && form.aadhaar_no.length !== 12 ? 700 : 400 }}>
-                        {form.aadhaar_no ? `${form.aadhaar_no.length}/12 digits` : '12-digit number'}
+                        {form.aadhaar_no ? `${form.aadhaar_no.length}/12` : (lang === 'mr' ? '१२-अंकी क्रमांक' : '12-digit number')}
                       </div>
                     </div>
 
                     <div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        {/* Option 1: Mobile Camera Scan */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> Camera
+                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
                           <input
                             type="file"
                             accept="image/*"
@@ -661,9 +662,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           />
                         </label>
 
-                        {/* Option 2: File Upload (PDF/Image) */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> Upload File
+                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
                           <input
                             type="file"
                             accept="image/*,.pdf,.doc,.docx"
@@ -676,10 +676,10 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: lang === 'mr' ? 'आधार कार्ड (समोरील स्कॅन)' : 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
                             style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
                           >
-                            <Eye size={13} /> View
+                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
                           </button>
                         )}
                       </div>
@@ -687,7 +687,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       {form.aadhaar_doc_path && (
                         <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> Front Scan attached
+                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'समोरील बाजू जोडली' : 'Front Scan attached'}
                           </div>
                           <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             📄 {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}
@@ -700,15 +700,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   {/* Doc 2: Aadhaar Back Upload Box */}
                   <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>2. Aadhaar Card (Back)</div>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>Address &amp; QR Code Side Scan</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>{lang === 'mr' ? '२. आधार कार्ड (मागील)' : '2. Aadhaar Card (Back)'}</div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>{lang === 'mr' ? 'पत्ता आणि QR कोड बाजू स्कॅन' : 'Address & QR Code Side Scan'}</div>
                     </div>
 
                     <div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        {/* Option 1: Mobile Camera Scan */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> Camera
+                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
                           <input
                             type="file"
                             accept="image/*"
@@ -718,9 +717,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           />
                         </label>
 
-                        {/* Option 2: File Upload (PDF/Image) */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> Upload File
+                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
                           <input
                             type="file"
                             accept="image/*,.pdf,.doc,.docx"
@@ -733,10 +731,10 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: lang === 'mr' ? 'आधार कार्ड (मागील स्कॅन)' : 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
                             style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
                           >
-                            <Eye size={13} /> View
+                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
                           </button>
                         )}
                       </div>
@@ -744,7 +742,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       {form.aadhaar_back_doc_path && (
                         <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> Back Scan attached
+                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'मागील बाजू जोडली' : 'Back Scan attached'}
                           </div>
                           <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             📄 {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}
@@ -758,29 +756,28 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>3. PAN Card Scan</span>
+                        <span>{lang === 'mr' ? '३. पॅन कार्ड स्कॅन' : '3. PAN Card Scan'}</span>
                         <span style={{ fontSize: 10, color: '#64748b' }}>ABCDE1234F</span>
                       </div>
                       
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="e.g. ABCDE1234F"
+                        placeholder={lang === 'mr' ? 'उदा. ABCDE1234F' : 'e.g. ABCDE1234F'}
                         value={form.pan_no || ''}
                         onChange={e => handlePanChange(e.target.value)}
                         maxLength={10}
                         style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700, textTransform: 'uppercase' }}
                       />
                       <div style={{ fontSize: 10, color: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? 700 : 400 }}>
-                        {form.pan_no ? `Format: 5 Letters + 4 Digits + 1 Letter` : '10-character PAN'}
+                        {form.pan_no ? (lang === 'mr' ? 'स्वरूप: ५ अक्षरे + ४ अंक + १ अक्षर' : 'Format: 5 Letters + 4 Digits + 1 Letter') : (lang === 'mr' ? '१०-अक्षरी पॅन' : '10-character PAN')}
                       </div>
                     </div>
 
                     <div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        {/* Option 1: Mobile Camera Scan */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> Camera
+                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
                           <input
                             type="file"
                             accept="image/*"
@@ -790,9 +787,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           />
                         </label>
 
-                        {/* Option 2: File Upload (PDF/Image) */}
                         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> Upload File
+                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
                           <input
                             type="file"
                             accept="image/*,.pdf,.doc,.docx"
@@ -805,10 +801,10 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: 'PAN Card Scan', docType: 'pan' })}
+                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: lang === 'mr' ? 'पॅन कार्ड स्कॅन' : 'PAN Card Scan', docType: 'pan' })}
                             style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
                           >
-                            <Eye size={13} /> View
+                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
                           </button>
                         )}
                       </div>
@@ -816,7 +812,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       {form.pan_doc_path && (
                         <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> PAN Card scan attached
+                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'पॅन कार्ड जोडले' : 'PAN Card scan attached'}
                           </div>
                           <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             📄 {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}
@@ -837,7 +833,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   onClick={handleSaveDraftExplicitly}
                   style={{ background: '#f8fafc', borderColor: '#cbd5e1', color: '#334155', fontSize: 14, fontWeight: 700 }}
                 >
-                  💾 Save Draft
+                  💾 {lang === 'mr' ? 'मसुदा जतन करा' : 'Save Draft'}
                 </button>
 
                 <button
@@ -846,12 +842,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   onClick={handleReset}
                   style={{ background: '#fff1f2', borderColor: '#fecdd3', color: '#be123c', fontSize: 14, fontWeight: 700 }}
                 >
-                  Clear Form
+                  {lang === 'mr' ? 'फॉर्म साफ करा' : 'Clear Form'}
                 </button>
 
                 <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ padding: '12px 24px', fontSize: 15, fontWeight: 800 }}>
                   {loading ? <span className="spinner" /> : <UserPlus size={20} />}
-                  {editingId ? 'Update Customer Savings Account' : 'Register Customer Savings Account'}
+                  {editingId
+                    ? (lang === 'mr' ? 'ग्राहक बचत खाते अद्ययावत करा' : 'Update Customer Savings Account')
+                    : (lang === 'mr' ? 'ग्राहक बचत खाते नोंदवा' : 'Register Customer Savings Account')}
                 </button>
               </div>
 
@@ -863,8 +861,8 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Customer Savings Accounts Directory</div>
-              <div className="card-subtitle">Showing all registered member accounts &amp; 3-document KYC scans</div>
+              <div className="card-title">{lang === 'mr' ? 'बचत खाती निर्देशिका' : 'Customer Savings Accounts Directory'}</div>
+              <div className="card-subtitle">{lang === 'mr' ? 'नोंदणीकृत सदस्यांची खाती आणि ३ कागदपत्रे KYC स्कॅन' : 'Showing all registered member accounts & 3-document KYC scans'}</div>
             </div>
 
             {/* Search Bar */}
@@ -873,7 +871,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 <input
                   type="text"
                   className="filter-input"
-                  placeholder="Search by ID, Name, Mobile, Aadhaar, PAN…"
+                  placeholder={lang === 'mr' ? 'आयडी, नाव, मोबाईल, आधार, पॅनने शोधा…' : 'Search by ID, Name, Mobile, Aadhaar, PAN…'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   style={{ width: '100%', paddingLeft: 30 }}
@@ -882,7 +880,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               </div>
 
               <button type="submit" className="btn btn-primary btn-sm">
-                Search
+                {lang === 'mr' ? 'शोधा' : 'Search'}
               </button>
 
               <button
@@ -890,7 +888,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 className="btn btn-secondary btn-sm"
                 onClick={() => { setSearchQuery(''); loadCustomers(''); }}
               >
-                <RefreshCw size={14} /> Reset
+                <RefreshCw size={14} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
               </button>
             </form>
           </div>
@@ -899,26 +897,26 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
           <div className="table-wrapper">
             {loading ? (
               <div className="loading-overlay">
-                <span className="spinner" /> Loading customer accounts…
+                <span className="spinner" /> {lang === 'mr' ? 'खाती लोड होत आहेत…' : 'Loading customer accounts…'}
               </div>
             ) : customers.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon"><UserPlus /></div>
-                <div className="empty-state-title">No customer savings accounts found</div>
-                <div className="empty-state-sub">Create a new customer account using the registration form above</div>
+                <div className="empty-state-title">{lang === 'mr' ? 'कोणतेही बचत खाते आढळले नाही' : 'No customer savings accounts found'}</div>
+                <div className="empty-state-sub">{lang === 'mr' ? 'वरील अर्जाचा वापर करून नवीन खाते तयार करा' : 'Create a new customer account using the registration form above'}</div>
               </div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Customer ID</th>
-                    <th>Full Name</th>
-                    <th>Mobile Number</th>
-                    <th>Residential Address</th>
-                    <th>Aadhaar No / 2 Scans</th>
-                    <th>PAN No / Scan</th>
-                    <th style={{ textAlign: 'right' }}>Opening Balance</th>
-                    <th>Actions</th>
+                    <th>{lang === 'mr' ? 'ग्राहक आयडी' : 'Customer ID'}</th>
+                    <th>{lang === 'mr' ? 'पूर्ण नाव' : 'Full Name'}</th>
+                    <th>{lang === 'mr' ? 'मोबाईल नंबर' : 'Mobile Number'}</th>
+                    <th>{lang === 'mr' ? 'रहिवासी पत्ता' : 'Residential Address'}</th>
+                    <th>{lang === 'mr' ? 'आधार क्र. / २ स्कॅन' : 'Aadhaar No / 2 Scans'}</th>
+                    <th>{lang === 'mr' ? 'पॅन क्र. / स्कॅन' : 'PAN No / Scan'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'प्रारंभिक शिल्लक' : 'Opening Balance'}</th>
+                    <th>{lang === 'mr' ? 'क्रिया' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -944,7 +942,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                                 title={getDocFileName(c.aadhaar_doc_path, 'Aadhaar_Front')}
                               >
-                                <ImageIcon size={10} /> {getDocFileName(c.aadhaar_doc_path, 'Front Scan')}
+                                <ImageIcon size={10} /> {lang === 'mr' ? 'समोरील स्कॅन' : 'Front Scan'}
                               </button>
                             )}
                             {c.aadhaar_back_doc_path && (
@@ -953,7 +951,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                                 title={getDocFileName(c.aadhaar_back_doc_path, 'Aadhaar_Back')}
                               >
-                                <ImageIcon size={10} /> {getDocFileName(c.aadhaar_back_doc_path, 'Back Scan')}
+                                <ImageIcon size={10} /> {lang === 'mr' ? 'मागील स्कॅन' : 'Back Scan'}
                               </button>
                             )}
                           </div>
@@ -968,7 +966,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
                               title={getDocFileName(c.pan_doc_path, 'PAN_Scan')}
                             >
-                              <ImageIcon size={10} /> {getDocFileName(c.pan_doc_path, 'PAN Scan')}
+                              <ImageIcon size={10} /> {lang === 'mr' ? 'पॅन स्कॅन' : 'PAN Scan'}
                             </button>
                           )}
                         </div>
@@ -982,17 +980,17 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                             className="btn btn-secondary btn-sm"
                             style={{ fontSize: 11, padding: '4px 8px' }}
                             onClick={() => handleEdit(c)}
-                            title="Edit Customer Profile"
+                            title={lang === 'mr' ? 'प्रोफाइल संपादन करा' : 'Edit Customer Profile'}
                           >
-                            Edit Profile
+                            {lang === 'mr' ? 'संपादन' : 'Edit Profile'}
                           </button>
                           <button
                             className="btn btn-primary btn-sm"
                             style={{ fontSize: 11, padding: '4px 8px' }}
                             onClick={() => handleNewTransactionForCustomer(c)}
-                            title="Create Credit Account Transaction for this Customer"
+                            title={lang === 'mr' ? 'या ग्राहकासाठी नवीन नोंद करा' : 'Create Credit Account Transaction for this Customer'}
                           >
-                            Entry <ArrowRight size={12} />
+                            {lang === 'mr' ? 'नवीन नोंद' : 'Entry'} <ArrowRight size={12} />
                           </button>
                         </div>
                       </td>

@@ -95,8 +95,8 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
           {/* Header Banner */}
           <PrintHeader
-            documentTitle="C U S T O M E R   M O N T H L Y   A C C O U N T   S T A T E M E N T"
-            subTitle={`Passbook Statement Period: ${startDate} to ${endDate}`}
+            documentTitle={lang === 'mr' ? 'ग्राहक  मासिक  खाते  विवरणपत्र' : 'C U S T O M E R   M O N T H L Y   A C C O U N T   S T A T E M E N T'}
+            subTitle={lang === 'mr' ? `पासबुक विवरणपत्र कालावधी: ${startDate} ते ${endDate}` : `Passbook Statement Period: ${startDate} to ${endDate}`}
           />
 
           {/* Customer Metadata Bar */}
@@ -106,21 +106,21 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13,
           }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CUSTOMER ID</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'ग्राहक आयडी' : 'CUSTOMER ID'}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#1d4ed8', fontFamily: 'monospace', marginTop: 2 }}>
                 {customerId || '—'}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CUSTOMER NAME</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'CUSTOMER NAME'}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
-                {customerName || 'All Customers'}
+                {customerName || (lang === 'mr' ? 'सर्व ग्राहक' : 'All Customers')}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>STATEMENT PERIOD</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'विवरणपत्र कालावधी' : 'STATEMENT PERIOD'}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
-                {startDate} to {endDate}
+                {startDate} {lang === 'mr' ? 'ते' : 'to'} {endDate}
               </div>
             </div>
           </div>
@@ -130,30 +130,31 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Date</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Memo No.</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Transaction Type</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Particulars</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Status</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>Amount (Rs.Ps)</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'मेमो क्र.' : 'Memo No.'}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'Transaction Type'}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'स्थिती' : 'Status'}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: 11, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'रक्कम (रु.पै)' : 'Amount (Rs.Ps)'}</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>
-                      No transactions found for this customer in the selected period.
+                      {lang === 'mr' ? 'निवडलेल्या कालावधीत या ग्राहकासाठी कोणतेही व्यवहार आढळले नाहीत.' : 'No transactions found for this customer in the selected period.'}
                     </td>
                   </tr>
                 ) : (
                   transactions.map((t, idx) => {
                     const amt = Number(t.amount_rs) + Number(t.amount_ps) / 100;
+                    const nature = t.entry_nature || t.transaction_type?.entry_type || 'CREDIT';
                     return (
                       <tr key={t.id} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                         <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{t.date}</td>
                         <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{t.cash_memo_no}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 600, color: (t.entry_nature || t.transaction_type?.entry_type) === 'DEBIT' ? '#b91c1c' : '#1d4ed8' }}>
-                          {t.transaction_type?.name || '—'} ({t.entry_nature || t.transaction_type?.entry_type || 'CREDIT'})
+                        <td style={{ padding: '8px 12px', fontWeight: 600, color: nature === 'DEBIT' ? '#b91c1c' : '#1d4ed8' }}>
+                          {t.transaction_type?.name || '—'} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
                         </td>
                         <td style={{ padding: '8px 12px', maxWidth: 220, fontSize: 11 }}>{t.particulars || '—'}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>
@@ -162,7 +163,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                             background: t.status === 'POSTED' ? '#dcfce7' : '#fef3c7',
                             color: t.status === 'POSTED' ? '#15803d' : '#b45309',
                           }}>
-                            {t.status || 'POSTED'}
+                            {t.status === 'POSTED' ? (lang === 'mr' ? 'पोस्ट केले' : 'POSTED') : (t.status || 'POSTED')}
                           </span>
                         </td>
                         <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#1d4ed8' }}>
@@ -176,7 +177,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               <tfoot>
                 <tr style={{ background: '#eff6ff', borderTop: '2px solid #93c5fd' }}>
                   <td colSpan={5} style={{ padding: '10px 12px', fontWeight: 800, color: '#0f172a', fontSize: 12 }}>
-                    TOTAL STATEMENT AMOUNT ({transactions.length} Transactions)
+                    {lang === 'mr' ? `विवरणपत्र एकूण रक्कम (${transactions.length} व्यवहार)` : `TOTAL STATEMENT AMOUNT (${transactions.length} Transactions)`}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#1d4ed8' }}>
                     ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -193,16 +194,16 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 4, fontSize: 11, color: '#475569', fontWeight: 600 }}>
-                Signature of Customer
+                {lang === 'mr' ? 'ग्राहकाची स्वाक्षरी' : 'Signature of Customer'}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 4, fontSize: 11, color: '#475569', fontWeight: 600 }}>
-                Accountant / Officer
+                {lang === 'mr' ? 'लेखापाल / अधिकारी' : 'Accountant / Officer'}
               </div>
             </div>
             <div style={{ textAlign: 'center', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10 }}>
-              <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 700 }}>STATEMENT TOTAL</div>
+              <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 700 }}>{lang === 'mr' ? 'विवरणपत्र एकूण' : 'STATEMENT TOTAL'}</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', fontFamily: 'monospace' }}>
                 ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
