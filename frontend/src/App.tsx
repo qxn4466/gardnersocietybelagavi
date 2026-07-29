@@ -49,7 +49,7 @@ const App: React.FC = () => {
     <LanguageProvider>
       <BrowserRouter>
         <div className="app-layout">
-          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <Sidebar user={user} isOpen={sidebarOpen} onClose={closeSidebar} />
           <main className="main-content">
             <Routes>
               <Route
