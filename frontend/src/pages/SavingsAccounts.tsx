@@ -391,58 +391,36 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
   const { t, lang } = useTranslation();
 
-  // Manual / OnBlur field translator
-  const translateSingleField = useCallback((field: 'first_name' | 'middle_name' | 'last_name' | 'address') => {
-    const val = form[field] ? String(form[field]).trim() : '';
-    if (val && /[a-zA-Z]/.test(val)) {
-      translateText(val)
-        .then(res => {
+  const [translating, setTranslating] = useState(false);
+
+  const translateAllMemberFields = async () => {
+    setTranslating(true);
+    try {
+      const fields: ('first_name' | 'middle_name' | 'last_name' | 'address')[] = ['first_name', 'middle_name', 'last_name', 'address'];
+      const updates: Partial<CustomerCreate> = {};
+
+      for (const field of fields) {
+        const val = form[field] ? String(form[field]).trim() : '';
+        if (val && /[a-zA-Z]/.test(val)) {
+          const res = await translateText(val);
           if (res && res.translated_text && res.translated_text !== val) {
-            setForm(prev => ({ ...prev, [field]: res.translated_text }));
+            updates[field] = res.translated_text;
           }
-        })
-        .catch(() => {});
-    }
-  }, [form]);
-
-  // Translate all profile fields at once
-  const translateAllMemberFields = useCallback(() => {
-    (['first_name', 'middle_name', 'last_name', 'address'] as const).forEach(field => {
-      translateSingleField(field);
-    });
-  }, [translateSingleField]);
-
-  // ── Debounced Live Translation for Member Profile & Address in Marathi ──
-  const isMarathi = lang === 'mr';
-  useEffect(() => {
-    if (!isMarathi) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    const checkAndTranslate = (field: 'first_name' | 'middle_name' | 'last_name' | 'address') => {
-      const val = form[field] ? String(form[field]).trim() : '';
-      if (val && /[a-zA-Z]/.test(val)) {
-        const timer = setTimeout(() => {
-          translateText(val)
-            .then(res => {
-              if (res && res.translated_text && res.translated_text !== val) {
-                setForm(prev => (prev[field] === val ? { ...prev, [field]: res.translated_text } : prev));
-              }
-            })
-            .catch(() => {});
-        }, 350);
-        timers.push(timer);
+        }
       }
-    };
 
-    checkAndTranslate('first_name');
-    checkAndTranslate('middle_name');
-    checkAndTranslate('last_name');
-    checkAndTranslate('address');
-
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-    };
-  }, [form.first_name, form.middle_name, form.last_name, form.address, isMarathi]);
+      if (Object.keys(updates).length > 0) {
+        setForm(prev => ({ ...prev, ...updates }));
+        setAlert({ type: 'success', msg: 'मराठीत यशस्वीरित्या रूपांतरित झाले! (Translated to Marathi successfully)' });
+      } else {
+        setAlert({ type: 'success', msg: 'मराठीत रूपांतरित करण्यासाठी नवीन इंग्रजी मजकूर नाही (No untranslated text found)' });
+      }
+    } catch {
+      setAlert({ type: 'error', msg: 'भाषांतर करताना अडचण आली (Translation failed)' });
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   return (
     <div className="page-container">
@@ -578,15 +556,14 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <UserIcon size={18} color="var(--blue-700)" />
                   <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
-                  {isMarathi && (
-                    <button
-                      type="button"
-                      onClick={translateAllMemberFields}
-                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
-                    >
-                      <Sparkles size={13} /> मराठीत रूपांतरित करा
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={translateAllMemberFields}
+                    disabled={translating}
+                    style={{ background: translating ? '#cbd5e1' : '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: translating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
+                  >
+                    <Sparkles size={14} /> {translating ? (lang === 'mr' ? 'भाषांतर करत आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
+                  </button>
                 </div>
 
                 <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -615,7 +592,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
                       value={form.first_name || ''}
                       onChange={e => handleInputChange('first_name', e.target.value)}
-                      onBlur={() => isMarathi && translateSingleField('first_name')}
                       style={{ background: '#ffffff' }}
                       required
                     />
@@ -629,7 +605,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
                       value={form.middle_name || ''}
                       onChange={e => handleInputChange('middle_name', e.target.value)}
-                      onBlur={() => isMarathi && translateSingleField('middle_name')}
                       style={{ background: '#ffffff' }}
                     />
                   </div>
@@ -642,7 +617,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                       placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
                       value={form.last_name || ''}
                       onChange={e => handleInputChange('last_name', e.target.value)}
-                      onBlur={() => isMarathi && translateSingleField('last_name')}
                       style={{ background: '#ffffff' }}
                       required
                     />
@@ -667,15 +641,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MapPin size={18} color="var(--blue-700)" />
                   <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
-                  {isMarathi && (
-                    <button
-                      type="button"
-                      onClick={() => translateSingleField('address')}
-                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
-                    >
-                      <Sparkles size={13} /> पत्ता मराठीत करा
-                    </button>
-                  )}
                 </div>
 
                 <div className="form-group">
@@ -685,7 +650,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                     placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code'}
                     value={form.address || ''}
                     onChange={e => handleInputChange('address', e.target.value)}
-                    onBlur={() => isMarathi && translateSingleField('address')}
                     style={{ background: '#ffffff' }}
                   />
                 </div>

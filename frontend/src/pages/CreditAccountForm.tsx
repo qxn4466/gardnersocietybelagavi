@@ -3,7 +3,7 @@ import {
   Save, RotateCcw, CheckCircle, XCircle,
   Hash, Phone, Building2, CreditCard,
   PlusCircle, Trash2, FileEdit, FolderOpen,
-  RefreshCw, Edit3, Filter, Table, Printer, User as UserIcon,
+  RefreshCw, Edit3, Filter, Table, Printer, User as UserIcon, Sparkles,
 } from 'lucide-react';
 import Header from '../components/Header';
 import ReceiptModal from '../components/ReceiptModal';
@@ -275,55 +275,53 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   useEffect(() => { refreshMemo(form.date); }, [form.date, refreshMemo]);
 
-  // ── Debounced Live Particulars, Customer Name & Remarks Translation via 8001 microservice & DB cache ──
-  const isMarathi = lang === 'mr';
-  useEffect(() => {
-    if (!isMarathi) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
+  const [translatingForm, setTranslatingForm] = useState(false);
 
-    // Translate row descriptions
-    rows.forEach((row) => {
-      const text = row.description.trim();
-      if (text && /[a-zA-Z]/.test(text)) {
-        const timer = setTimeout(() => {
-          translateText(text)
-            .then(res => {
-              if (res && res.translated_text && res.translated_text !== text) {
-                setRows(prev =>
-                  prev.map(r => (r.id === row.id && r.description === row.description ? { ...r, description: res.translated_text } : r))
-                );
-              }
-            })
-            .catch(() => {});
-        }, 350);
-        timers.push(timer);
+  const translateFormToMarathi = async () => {
+    setTranslatingForm(true);
+    try {
+      let updatedCount = 0;
+
+      // 1. Translate Customer Name & Remarks
+      const formUpdates: Partial<FormState> = {};
+      for (const field of ['customer_name', 'remarks'] as const) {
+        const val = form[field] ? String(form[field]).trim() : '';
+        if (val && /[a-zA-Z]/.test(val)) {
+          const res = await translateText(val);
+          if (res && res.translated_text && res.translated_text !== val) {
+            formUpdates[field] = res.translated_text;
+            updatedCount++;
+          }
+        }
       }
-    });
-
-    // Translate customer_name and remarks inputs
-    const checkFormField = (field: 'customer_name' | 'remarks') => {
-      const val = form[field] ? String(form[field]).trim() : '';
-      if (val && /[a-zA-Z]/.test(val)) {
-        const timer = setTimeout(() => {
-          translateText(val)
-            .then(res => {
-              if (res && res.translated_text && res.translated_text !== val) {
-                setForm(prev => (prev[field] === val ? { ...prev, [field]: res.translated_text } : prev));
-              }
-            })
-            .catch(() => {});
-        }, 350);
-        timers.push(timer);
+      if (Object.keys(formUpdates).length > 0) {
+        setForm(prev => ({ ...prev, ...formUpdates }));
       }
-    };
 
-    checkFormField('customer_name');
-    checkFormField('remarks');
-
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-    };
-  }, [rows, form.customer_name, form.remarks, isMarathi]);
+      // 2. Translate Particulars Rows Descriptions
+      const updatedRows = [...rows];
+      for (let i = 0; i < updatedRows.length; i++) {
+        const desc = updatedRows[i].description ? updatedRows[i].description.trim() : '';
+        if (desc && /[a-zA-Z]/.test(desc)) {
+          const res = await translateText(desc);
+          if (res && res.translated_text && res.translated_text !== desc) {
+            updatedRows[i] = { ...updatedRows[i], description: res.translated_text };
+            updatedCount++;
+          }
+        }
+      }
+      if (updatedCount > 0) {
+        setRows(updatedRows);
+        setAlert({ type: 'success', msg: 'मराठीत यशस्वीरित्या रूपांतरित झाले! (Form translated to Marathi successfully)' });
+      } else {
+        setAlert({ type: 'success', msg: 'मराठीत रूपांतरित करण्यासाठी नवीन मजकूर नाही (No untranslated text found)' });
+      }
+    } catch {
+      setAlert({ type: 'error', msg: 'भाषांतर करताना अडचण आली (Translation failed)' });
+    } finally {
+      setTranslatingForm(false);
+    }
+  };
 
   const handleChange =
     (field: keyof FormState) =>
@@ -673,6 +671,27 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={translateFormToMarathi}
+                disabled={translatingForm}
+                style={{
+                  background: translatingForm ? '#cbd5e1' : '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d4ed8',
+                  borderRadius: 8,
+                  padding: '6px 14px',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: translatingForm ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Sparkles size={14} /> {translatingForm ? (lang === 'mr' ? 'भाषांतर करत आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
+              </button>
+
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
