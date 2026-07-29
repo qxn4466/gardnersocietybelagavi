@@ -13,6 +13,7 @@ import {
   updateCustomer,
   uploadCustomerDocument,
   getFileUrl,
+  translateText,
 } from '../api/client';
 import type { Customer, CustomerCreate, User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -389,6 +390,38 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
   };
 
   const { t, lang } = useTranslation();
+
+  // ── Debounced Live Translation for Member Profile & Address in Marathi ──
+  const isMarathi = lang === 'mr';
+  useEffect(() => {
+    if (!isMarathi) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    const checkAndTranslate = (field: 'first_name' | 'middle_name' | 'last_name' | 'address') => {
+      const val = form[field] ? String(form[field]).trim() : '';
+      if (val && /[a-zA-Z]/.test(val)) {
+        const timer = setTimeout(() => {
+          translateText(val)
+            .then(res => {
+              if (res && res.translated_text && res.translated_text !== val) {
+                setForm(prev => (prev[field] === val ? { ...prev, [field]: res.translated_text } : prev));
+              }
+            })
+            .catch(() => {});
+        }, 350);
+        timers.push(timer);
+      }
+    };
+
+    checkAndTranslate('first_name');
+    checkAndTranslate('middle_name');
+    checkAndTranslate('last_name');
+    checkAndTranslate('address');
+
+    return () => {
+      timers.forEach(t => clearTimeout(t));
+    };
+  }, [form.first_name, form.middle_name, form.last_name, form.address, isMarathi]);
 
   return (
     <div className="page-container">

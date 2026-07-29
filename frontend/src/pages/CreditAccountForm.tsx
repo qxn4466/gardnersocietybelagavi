@@ -275,11 +275,13 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   useEffect(() => { refreshMemo(form.date); }, [form.date, refreshMemo]);
 
-  // ── Debounced Live Particulars Translation via 8001 microservice & DB cache ──
+  // ── Debounced Live Particulars, Customer Name & Remarks Translation via 8001 microservice & DB cache ──
   const isMarathi = lang === 'mr';
   useEffect(() => {
     if (!isMarathi) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // Translate row descriptions
     rows.forEach((row) => {
       const text = row.description.trim();
       if (text && /[a-zA-Z]/.test(text)) {
@@ -297,10 +299,31 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         timers.push(timer);
       }
     });
+
+    // Translate customer_name and remarks inputs
+    const checkFormField = (field: 'customer_name' | 'remarks') => {
+      const val = form[field] ? String(form[field]).trim() : '';
+      if (val && /[a-zA-Z]/.test(val)) {
+        const timer = setTimeout(() => {
+          translateText(val)
+            .then(res => {
+              if (res && res.translated_text && res.translated_text !== val) {
+                setForm(prev => (prev[field] === val ? { ...prev, [field]: res.translated_text } : prev));
+              }
+            })
+            .catch(() => {});
+        }, 350);
+        timers.push(timer);
+      }
+    };
+
+    checkFormField('customer_name');
+    checkFormField('remarks');
+
     return () => {
       timers.forEach(t => clearTimeout(t));
     };
-  }, [rows, isMarathi]);
+  }, [rows, form.customer_name, form.remarks, isMarathi]);
 
   const handleChange =
     (field: keyof FormState) =>

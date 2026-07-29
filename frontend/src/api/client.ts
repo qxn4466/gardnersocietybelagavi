@@ -132,24 +132,103 @@ export const uploadCustomerDocument = (file: File, docType: string): Promise<{ f
 };
 
 // ─── Translations ─────────────────────────────────────────────────────────────
+const translationCache: Record<string, string> = {};
+
 /**
- * Translate a single text string via the cache-first backend endpoint.
- * Returns the translated text or the original if translation fails.
+ * Translate a single text string via cache-first backend endpoint.
+ * Fallback to direct call to http://localhost:8001/translate if backend API fails.
  */
-export const translateText = (
+export const translateText = async (
   text: string,
   targetLang = 'mar_Deva',
-): Promise<{ source_text: string; translated_text: string; from_cache: boolean }> =>
-  api.post('/translations/translate', { text, target_lang: targetLang }).then(r => r.data);
+): Promise<{ source_text: string; translated_text: string; from_cache: boolean }> => {
+  const trimmed = text ? text.trim() : '';
+  if (!trimmed) {
+    return { source_text: '', translated_text: '', from_cache: true };
+  }
+  const cacheKey = `${trimmed}_${targetLang}`;
+  if (translationCache[cacheKey]) {
+    return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
+  }
+
+  // Attempt 1: Backend API /api/translations/translate
+  try {
+    const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
+    if (res.data && res.data.translated_text) {
+      translationCache[cacheKey] = res.data.translated_text;
+      return res.data;
+    }
+  } catch {
+    // Suppress error and proceed to attempt 2 fallback
+  }
+
+  // Attempt 2: Direct call to IndicTrans2 microservice on port 8001
+  try {
+    const directRes = await axios.post(
+      'http://localhost:8001/translate',
+      { text: trimmed, target_lang: targetLang },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
+    );
+    if (directRes.data) {
+      const translated =
+        typeof directRes.data === 'string'
+          ? directRes.data
+          : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
+      translationCache[cacheKey] = translated;
+      return { source_text: trimmed, translated_text: translated, from_cache: false };
+    }
+  } catch {
+    // If microservice also unreachable, return original text
+  }
+
+  return { source_text: trimmed, translated_text: trimmed, from_cache: false };
+};
 
 /**
  * Batch translate multiple texts. Returns a map of { original: translated }.
  */
-export const translateBatch = (
+export const translateBatch = async (
   texts: string[],
   targetLang = 'mar_Deva',
-): Promise<Record<string, string>> =>
-  api
-    .post('/translations/translate-batch', { texts, target_lang: targetLang })
-    .then(r => r.data.translations as Record<string, string>);
+): Promise<Record<string, string>> => {
+  const result: Record<string, string> = {};
+  const missing: string[] = [];
+
+  for (const t of texts) {
+    const trimmed = t ? t.trim() : '';
+    if (!trimmed) continue;
+    const cacheKey = `${trimmed}_${targetLang}`;
+    if (translationCache[cacheKey]) {
+      result[trimmed] = translationCache[cacheKey];
+    } else {
+      missing.push(trimmed);
+    }
+  }
+
+  if (missing.length === 0) return result;
+
+  try {
+    const res = await api.post('/translations/translate-batch', { texts: missing, target_lang: targetLang });
+    if (res.data && res.data.translations) {
+      Object.assign(result, res.data.translations);
+      Object.entries(res.data.translations).forEach(([src, trans]) => {
+        translationCache[`${src}_${targetLang}`] = trans as string;
+      });
+      return result;
+    }
+  } catch {
+    // Fall back to individual translateText calls
+  }
+
+  await Promise.all(
+    missing.map(m =>
+      translateText(m, targetLang).then(r => {
+        result[m] = r.translated_text;
+      })
+    )
+  );
+
+  return result;
+};
+
 
