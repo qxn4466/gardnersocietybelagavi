@@ -139,13 +139,20 @@ async def translate_text(
                 )
                 .first()
             )
-            if cached and cached.translated_text and cached.translated_text.strip() != text.strip():
-                return TranslateResponse(
-                    source_text=cached.source_text,
-                    translated_text=cached.translated_text,
-                    target_lang=cached.target_lang,
-                    from_cache=True,
-                )
+            if cached:
+                if cached.translated_text and cached.translated_text.strip() != text.strip():
+                    return TranslateResponse(
+                        source_text=cached.source_text,
+                        translated_text=cached.translated_text,
+                        target_lang=cached.target_lang,
+                        from_cache=True,
+                    )
+                else:
+                    try:
+                        db.delete(cached)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
         except Exception as db_err:
             print(f"[TranslationService] DB lookup skipped: {db_err}")
 
