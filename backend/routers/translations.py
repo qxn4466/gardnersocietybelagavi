@@ -52,29 +52,36 @@ def call_indictrans2(text: str, target_lang: str) -> str:
     """Call the IndicTrans2 service and return translated text."""
     if not text or not text.strip():
         return text
-    try:
-        req_data = json.dumps({"text": text, "target_lang": target_lang}).encode("utf-8")
-        req = urllib.request.Request(
-            INDICTRANS2_URL,
-            data=req_data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if isinstance(data, dict):
-                return (
-                    data.get("translated_text")
-                    or data.get("translation")
-                    or data.get("output")
-                    or text
-                )
-            elif isinstance(data, str):
-                return data
-            return text
-    except Exception as e:
-        print(f"[TranslationService] IndicTrans2 call failed: {e}")
-        return text
+    urls = [
+        "http://127.0.0.1:8001/translate",
+        "http://localhost:8001/translate",
+        "http://62.84.187.81:8001/translate",
+    ]
+    for url in urls:
+        try:
+            req_data = json.dumps({"text": text, "target_lang": target_lang}).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=req_data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if isinstance(data, dict):
+                    res = (
+                        data.get("translated_text")
+                        or data.get("translation")
+                        or data.get("output")
+                        or text
+                    )
+                    if res and res != text:
+                        return res
+                elif isinstance(data, str) and data != text:
+                    return data
+        except Exception as e:
+            print(f"[TranslationService] Call to {url} failed: {e}")
+    return text
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
