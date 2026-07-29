@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+      },
       '/translate-microservice': {
         target: 'http://localhost:8001',
         changeOrigin: true,

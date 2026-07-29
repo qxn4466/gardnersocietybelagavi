@@ -11,6 +11,15 @@ import type {
 } from '../types';
 
 const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8002/api';
+    }
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      return `http://${hostname}:8002/api`;
+    }
+  }
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   let url = 'https://gardnersocietybelagavi-production.up.railway.app/api';
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && envUrl.startsWith('http')) {
@@ -155,7 +164,18 @@ export const translateText = async (
     return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
   }
 
-  // Attempt 1: Direct microservice at http://<hostname>:8001/translate
+  // Attempt 1: Backend API /api/translations/translate (port 8002 -> microservice 8001 with logging & DB cache)
+  try {
+    const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
+    if (res.data && res.data.translated_text) {
+      translationCache[cacheKey] = res.data.translated_text;
+      return res.data;
+    }
+  } catch {
+    // Proceed to Attempt 2
+  }
+
+  // Attempt 2: Direct microservice at http://<hostname>:8001/translate
   const host = typeof window !== 'undefined' && window.location && window.location.hostname ? window.location.hostname : 'localhost';
   try {
     const directRes = await axios.post(
@@ -174,10 +194,10 @@ export const translateText = async (
       }
     }
   } catch {
-    // Proceed to Attempt 2
+    // Proceed to Attempt 3
   }
 
-  // Attempt 2: Vite Proxy /translate-microservice/translate
+  // Attempt 3: Vite Proxy /translate-microservice/translate
   try {
     const proxyRes = await axios.post(
       '/translate-microservice/translate',
@@ -193,17 +213,6 @@ export const translateText = async (
         translationCache[cacheKey] = translated;
         return { source_text: trimmed, translated_text: translated, from_cache: false };
       }
-    }
-  } catch {
-    // Proceed to Attempt 3
-  }
-
-  // Attempt 3: Backend API /api/translations/translate
-  try {
-    const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
-    if (res.data && res.data.translated_text) {
-      translationCache[cacheKey] = res.data.translated_text;
-      return res.data;
     }
   } catch {
     // Suppress error
