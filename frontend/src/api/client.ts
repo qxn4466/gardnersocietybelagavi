@@ -150,10 +150,6 @@ export const translateText = async (
   if (!trimmed) {
     return { source_text: '', translated_text: '', from_cache: true };
   }
-  const cacheKey = `${trimmed}_${targetLang}`;
-  if (translationCache[cacheKey]) {
-    return { source_text: trimmed, translated_text: translationCache[cacheKey], from_cache: true };
-  }
 
   // Attempt 1: Direct public microservice endpoint at http://62.84.187.81:8001/translate
   try {
@@ -168,7 +164,6 @@ export const translateText = async (
           ? directRes.data
           : directRes.data.translated_text || directRes.data.translation || directRes.data.output || trimmed;
       if (translated && translated !== trimmed) {
-        translationCache[cacheKey] = translated;
         return { source_text: trimmed, translated_text: translated, from_cache: false };
       }
     }
@@ -180,7 +175,6 @@ export const translateText = async (
   try {
     const res = await api.post('/translations/translate', { text: trimmed, target_lang: targetLang });
     if (res.data && res.data.translated_text) {
-      translationCache[cacheKey] = res.data.translated_text;
       return res.data;
     }
   } catch {
@@ -201,7 +195,6 @@ export const translateText = async (
           ? hostRes.data
           : hostRes.data.translated_text || hostRes.data.translation || hostRes.data.output || trimmed;
       if (translated && translated !== trimmed) {
-        translationCache[cacheKey] = translated;
         return { source_text: trimmed, translated_text: translated, from_cache: false };
       }
     }
