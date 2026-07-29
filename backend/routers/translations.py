@@ -20,7 +20,7 @@ from models import TranslationCache
 
 router = APIRouter(prefix="/translations", tags=["translations"])
 
-INDICTRANS2_URL = os.getenv("INDICTRANS2_URL", "http://localhost:8001/translate")
+INDICTRANS2_URL = os.getenv("INDICTRANS2_URL", "http://62.84.187.81:8001/translate")
 DEFAULT_TARGET_LANG = "mar_Deva"
 
 
