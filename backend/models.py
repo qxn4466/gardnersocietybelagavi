@@ -291,3 +291,15 @@ class PesticideSaleEntry(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class PesticideProductMaster(Base):
+    """Product Master Table storing English and Marathi Product Names"""
+    __tablename__ = "pesticide_product_master"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(100), nullable=True, default="General")
+    name_en = Column(String(200), nullable=False, unique=True, index=True)
+    name_mr = Column(String(200), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+

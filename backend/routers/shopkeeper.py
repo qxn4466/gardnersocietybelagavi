@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from models import ShopSellingRateEntry, ShopTaxInvoice, ShopRetailBill, PesticideSaleEntry
+from models import ShopSellingRateEntry, ShopTaxInvoice, ShopRetailBill, PesticideSaleEntry, PesticideProductMaster
 from schemas import (
     ShopSellingRateCreate, ShopSellingRateOut,
     ShopTaxInvoiceCreate, ShopTaxInvoiceOut,
     ShopRetailBillCreate, ShopRetailBillOut,
     PesticideSaleEntryCreate, PesticideSaleEntryOut,
-    ShopkeeperAuditSummary
+    ShopkeeperAuditSummary, PesticideProductCreate, PesticideProductOut
 )
 
 router = APIRouter(prefix="/shopkeeper", tags=["shopkeeper"])
@@ -423,3 +423,155 @@ def get_shopkeeper_audit_summary(
         total_pesticide_sale_amount=Decimal(str(pest_sum)),
         grand_shop_sales_total=grand_total
     )
+
+
+# ─── 6. Product Master Endpoints & Seeding ─────────────────────────────────────
+
+DEFAULT_PESTICIDE_PRODUCTS = [
+    # Insecticides (कीटकनाशके)
+    {"category": "Insecticides", "name_en": "Chlorpyriphos", "name_mr": "क्लोरपायरीफॉस"},
+    {"category": "Insecticides", "name_en": "Imidacloprid", "name_mr": "इमिडाक्लोप्रिड"},
+    {"category": "Insecticides", "name_en": "Thiamethoxam", "name_mr": "थायमेथॉक्साम"},
+    {"category": "Insecticides", "name_en": "Acetamiprid", "name_mr": "अॅसिटामिप्रिड"},
+    {"category": "Insecticides", "name_en": "Fipronil", "name_mr": "फिप्रोनिल"},
+    {"category": "Insecticides", "name_en": "Lambda Cyhalothrin", "name_mr": "लॅम्ब्डा सायहॅलोथ्रीन"},
+    {"category": "Insecticides", "name_en": "Cypermethrin", "name_mr": "सायपरमेथ्रीन"},
+    {"category": "Insecticides", "name_en": "Profenofos", "name_mr": "प्रोफेनोफॉस"},
+    {"category": "Insecticides", "name_en": "Emamectin Benzoate", "name_mr": "इमामेक्टीन बेन्झोएट"},
+    {"category": "Insecticides", "name_en": "Spinosad", "name_mr": "स्पिनोसॅड"},
+    {"category": "Insecticides", "name_en": "Indoxacarb", "name_mr": "इंडॉक्साकार्ब"},
+    {"category": "Insecticides", "name_en": "Cartap Hydrochloride", "name_mr": "कार्टॅप हायड्रोक्लोराईड"},
+    {"category": "Insecticides", "name_en": "Diafenthiuron", "name_mr": "डायाफेन्थीयुरॉन"},
+    {"category": "Insecticides", "name_en": "Buprofezin", "name_mr": "बुप्रोफेझिन"},
+    {"category": "Insecticides", "name_en": "Dinotefuran", "name_mr": "डिनोटेफ्युरान"},
+    {"category": "Insecticides", "name_en": "Clothianidin", "name_mr": "क्लोथियानिडीन"},
+    {"category": "Insecticides", "name_en": "Acephate", "name_mr": "अॅसिफेट"},
+    {"category": "Insecticides", "name_en": "Quinalphos", "name_mr": "क्विनालफॉस"},
+    {"category": "Insecticides", "name_en": "Novaluron", "name_mr": "नोव्हॅल्युरॉन"},
+    {"category": "Insecticides", "name_en": "Tolfenpyrad", "name_mr": "टॉल्फेनपायरॅड"},
+    {"category": "Insecticides", "name_en": "Monocrotophos 36% SL", "name_mr": "मोनोक्रोटोफॉस ३६% एसएल"},
+    {"category": "Insecticides", "name_en": "Malathion 50% EC", "name_mr": "मॅलाथिऑन ५०% ईसी"},
+
+    # Fungicides (बुरशीनाशके)
+    {"category": "Fungicides", "name_en": "Mancozeb", "name_mr": "मॅन्कोझेब"},
+    {"category": "Fungicides", "name_en": "Carbendazim", "name_mr": "कार्बेन्डाझिम"},
+    {"category": "Fungicides", "name_en": "Copper Oxychloride", "name_mr": "कॉपर ऑक्सीक्लोराईड"},
+    {"category": "Fungicides", "name_en": "Metalaxyl + Mancozeb", "name_mr": "मेटॅलॅक्सिल + मॅन्कोझेब"},
+    {"category": "Fungicides", "name_en": "Hexaconazole", "name_mr": "हेक्झाकोनाझोल"},
+    {"category": "Fungicides", "name_en": "Propiconazole", "name_mr": "प्रोपिकोनाझोल"},
+    {"category": "Fungicides", "name_en": "Azoxystrobin", "name_mr": "अॅझॉक्सीस्ट्रोबिन"},
+    {"category": "Fungicides", "name_en": "Tebuconazole", "name_mr": "टेबुकोनाझोल"},
+    {"category": "Fungicides", "name_en": "Tricyclazole", "name_mr": "ट्रायसायक्लाझोल"},
+    {"category": "Fungicides", "name_en": "Sulphur 80% WDG", "name_mr": "सल्फर ८०% WDG"},
+    {"category": "Fungicides", "name_en": "Captan", "name_mr": "कॅप्टन"},
+    {"category": "Fungicides", "name_en": "Cymoxanil", "name_mr": "सायमोक्सानिल"},
+    {"category": "Fungicides", "name_en": "Validamycin", "name_mr": "व्हॅलिडामायसिन"},
+    {"category": "Fungicides", "name_en": "Kasugamycin", "name_mr": "कासुगामायसिन"},
+    {"category": "Fungicides", "name_en": "Fosetyl Aluminium", "name_mr": "फोसेटिल अॅल्युमिनियम"},
+
+    # Herbicides (तणनाशके)
+    {"category": "Herbicides", "name_en": "Glyphosate", "name_mr": "ग्लायफोसेट"},
+    {"category": "Herbicides", "name_en": "Pendimethalin", "name_mr": "पेंडीमेथालिन"},
+    {"category": "Herbicides", "name_en": "Butachlor", "name_mr": "ब्यूटाक्लोर"},
+    {"category": "Herbicides", "name_en": "Atrazine", "name_mr": "अॅट्राझीन"},
+    {"category": "Herbicides", "name_en": "Oxyfluorfen", "name_mr": "ऑक्सीफ्लुओर्फेन"},
+    {"category": "Herbicides", "name_en": "Paraquat Dichloride", "name_mr": "पॅराक्वॉट डाय-क्लोराईड"},
+    {"category": "Herbicides", "name_en": "Pretilachlor", "name_mr": "प्रीटिलाक्लोर"},
+    {"category": "Herbicides", "name_en": "2,4-D Amine Salt", "name_mr": "२,४-डी अमाईन सॉल्ट"},
+    {"category": "Herbicides", "name_en": "Metribuzin", "name_mr": "मेट्रीब्युझिन"},
+    {"category": "Herbicides", "name_en": "Pyrazosulfuron Ethyl", "name_mr": "पायराझोसल्फ्युरॉन इथाइल"},
+    {"category": "Herbicides", "name_en": "Bispyribac Sodium", "name_mr": "बिस्पायरिबॅक सोडियम"},
+    {"category": "Herbicides", "name_en": "Imazethapyr", "name_mr": "इमाझेथापायर"},
+    {"category": "Herbicides", "name_en": "Quizalofop Ethyl", "name_mr": "क्विझालोफॉप इथाइल"},
+    {"category": "Herbicides", "name_en": "Fenoxaprop-P-Ethyl", "name_mr": "फेनॉक्साप्रॉप-पी-इथाइल"},
+
+    # Rodenticides (उंदीरनाशके)
+    {"category": "Rodenticides", "name_en": "Zinc Phosphide", "name_mr": "झिंक फॉस्फाईड"},
+    {"category": "Rodenticides", "name_en": "Bromadiolone", "name_mr": "ब्रोमॅडिओलोन"},
+    {"category": "Rodenticides", "name_en": "Ratol Cake", "name_mr": "रॅटॉल केक"},
+    {"category": "Rodenticides", "name_en": "Ratol Paste", "name_mr": "रॅटॉल पेस्ट"},
+    {"category": "Rodenticides", "name_en": "Ratol Powder", "name_mr": "रॅटॉल पावडर"},
+    {"category": "Rodenticides", "name_en": "Ratol Pellets", "name_mr": "रॅटॉल पेलेट्स"},
+
+    # Bio-Pesticides (जैविक कीटकनाशके)
+    {"category": "Bio-Pesticides", "name_en": "Neem Oil", "name_mr": "कडुनिंब तेल"},
+    {"category": "Bio-Pesticides", "name_en": "Beauveria bassiana", "name_mr": "ब्यूव्हेरिया बॅसियाना"},
+    {"category": "Bio-Pesticides", "name_en": "Metarhizium anisopliae", "name_mr": "मेटारायझियम अॅनिसोप्ली"},
+    {"category": "Bio-Pesticides", "name_en": "Verticillium lecanii", "name_mr": "व्हर्टिसिलियम लेकॅनी"},
+    {"category": "Bio-Pesticides", "name_en": "Bacillus thuringiensis (Bt)", "name_mr": "बॅसिलस थुरिंजिएन्सिस (बीटी)"},
+    {"category": "Bio-Pesticides", "name_en": "Trichoderma viride", "name_mr": "ट्रायकोडर्मा व्हिरिडी"},
+    {"category": "Bio-Pesticides", "name_en": "Pseudomonas fluorescens", "name_mr": "स्यूडोमोनास फ्लुरोसेन्स"},
+    {"category": "Bio-Pesticides", "name_en": "Paecilomyces lilacinus", "name_mr": "पेसिलोमायसिस लिलासिनस"},
+
+    # Plant Growth Regulators (वनस्पती वाढ नियामके)
+    {"category": "PGR", "name_en": "Gibberellic Acid (GA3)", "name_mr": "जिबरेलिक अॅसिड (GA3)"},
+    {"category": "PGR", "name_en": "Naphthalene Acetic Acid (NAA)", "name_mr": "नॅफ्थलीन अॅसिटिक अॅसिड (NAA)"},
+    {"category": "PGR", "name_en": "Triacontanol", "name_mr": "ट्रायकोंटॅनॉल"},
+    {"category": "PGR", "name_en": "Seaweed Extract", "name_mr": "समुद्री शैवाल अर्क"},
+    {"category": "PGR", "name_en": "Humic Acid", "name_mr": "ह्युमिक अॅसिड"},
+    {"category": "PGR", "name_en": "Amino Acid Liquid", "name_mr": "अमिनो अॅसिड द्रावण"},
+    {"category": "PGR", "name_en": "Fulvic Acid", "name_mr": "फुल्विक अॅसिड"},
+
+    # Common Agricultural Products (इतर कृषी उत्पादने)
+    {"category": "General", "name_en": "Boric Acid", "name_mr": "बोरीक ॲसिड"},
+    {"category": "General", "name_en": "Boric Powder", "name_mr": "बोरिक पावडर"},
+    {"category": "General", "name_en": "Terminose", "name_mr": "टर्मिनोज"},
+    {"category": "General", "name_en": "Amish-B", "name_mr": "अमिश-बी"},
+    {"category": "General", "name_en": "Amish-C", "name_mr": "अमिश-सी"},
+    {"category": "General", "name_en": "Trichoderma", "name_mr": "ट्रायकोडर्मा"},
+    {"category": "General", "name_en": "Spray Pump Battery 16L", "name_mr": "स्प्रे पंप बॅटरी १६ लि"},
+    {"category": "General", "name_en": "Brass Nozzle Set", "name_mr": "ब्रास नोझल संच"},
+]
+
+
+def seed_pesticide_products_if_needed(db: Session):
+    for item in DEFAULT_PESTICIDE_PRODUCTS:
+        existing = db.query(PesticideProductMaster).filter(
+            func.lower(PesticideProductMaster.name_en) == item["name_en"].lower()
+        ).first()
+        if not existing:
+            new_prod = PesticideProductMaster(
+                category=item["category"],
+                name_en=item["name_en"],
+                name_mr=item["name_mr"]
+            )
+            db.add(new_prod)
+    db.commit()
+
+
+@router.get("/products", response_model=List[PesticideProductOut])
+def get_pesticide_products(db: Session = Depends(get_db)):
+    seed_pesticide_products_if_needed(db)
+    return db.query(PesticideProductMaster).order_by(PesticideProductMaster.name_en.asc()).all()
+
+
+@router.post("/products", response_model=PesticideProductOut, status_code=status.HTTP_201_CREATED)
+def create_pesticide_product(payload: PesticideProductCreate, db: Session = Depends(get_db)):
+    seed_pesticide_products_if_needed(db)
+
+    trimmed_en = payload.name_en.strip()
+    if not trimmed_en:
+        raise HTTPException(status_code=400, detail="English product name is required")
+
+    existing = db.query(PesticideProductMaster).filter(
+        func.lower(PesticideProductMaster.name_en) == trimmed_en.lower()
+    ).first()
+    if existing:
+        if payload.name_mr and payload.name_mr.strip():
+            existing.name_mr = payload.name_mr.strip()
+            db.commit()
+            db.refresh(existing)
+        return existing
+
+    name_mr_val = payload.name_mr.strip() if (payload.name_mr and payload.name_mr.strip()) else trimmed_en
+
+    new_prod = PesticideProductMaster(
+        category=payload.category or "General",
+        name_en=trimmed_en,
+        name_mr=name_mr_val
+    )
+    db.add(new_prod)
+    db.commit()
+    db.refresh(new_prod)
+    return new_prod
+

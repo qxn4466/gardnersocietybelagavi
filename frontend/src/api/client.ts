@@ -390,6 +390,21 @@ export const deletePesticideSale = (id: number): Promise<void> =>
 export const fetchShopkeeperAuditSummary = (startDate: string, endDate: string): Promise<import('../types').ShopkeeperAuditSummary> =>
   api.get('/shopkeeper/audit-summary', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
 
+// 6. Product Master DB APIs
+export interface DBProductItem {
+  id: number;
+  category: string;
+  name_en: string;
+  name_mr: string;
+}
+
+export const fetchPesticideProducts = (): Promise<DBProductItem[]> =>
+  api.get('/shopkeeper/products').then(r => r.data);
+
+export const createPesticideProduct = (name_en: string, name_mr?: string, category?: string): Promise<DBProductItem> =>
+  api.post('/shopkeeper/products', { name_en, name_mr, category }).then(r => r.data);
+
+
 
 
 

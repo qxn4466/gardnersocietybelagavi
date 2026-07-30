@@ -411,3 +411,19 @@ class ShopkeeperAuditSummary(BaseModel):
     total_cheques_issued_amount: Decimal
 
 
+class PesticideProductCreate(BaseModel):
+    category: Optional[str] = "General"
+    name_en: str
+    name_mr: Optional[str] = None
+
+
+class PesticideProductOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    category: Optional[str] = "General"
+    name_en: str
+    name_mr: str
+    created_at: Optional[datetime] = None
+
+
+

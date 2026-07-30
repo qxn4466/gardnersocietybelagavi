@@ -1,4 +1,6 @@
 import { PESTICIDE_PRODUCT_LIST } from '../types';
+import { createPesticideProduct } from '../api/client';
+import { getMarathiItem, phoneticTransliterate } from './translator';
 
 const STORAGE_KEY = 'gardner_custom_pesticide_products';
 
@@ -23,17 +25,27 @@ export const getStoredProducts = (): string[] => {
 };
 
 /**
- * Add a new product to stored product list
+ * Add a new product to stored product list AND save both English & Marathi names in backend DB!
  */
-export const addStoredProduct = (newProduct: string): string[] => {
+export const addStoredProduct = (newProduct: string, marathiName?: string): string[] => {
   if (!newProduct || !newProduct.trim()) return getStoredProducts();
   const trimmed = newProduct.trim();
+
+  // Determine Marathi translation
+  const marathiVal = marathiName && marathiName.trim()
+    ? marathiName.trim()
+    : (getMarathiItem(trimmed) !== trimmed ? getMarathiItem(trimmed) : phoneticTransliterate(trimmed));
+
+  // Save to backend database asynchronously
+  createPesticideProduct(trimmed, marathiVal).catch(err => {
+    console.warn("Failed to persist product to DB:", err);
+  });
 
   const current = getStoredProducts();
   if (!current.some(p => p.toLowerCase() === trimmed.toLowerCase())) {
     const updated = [...current, trimmed];
     try {
-      // Store only custom additions beyond defaults
+      // Store custom additions in localStorage as well
       const customOnly = updated.filter(p => !PESTICIDE_PRODUCT_LIST.includes(p));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customOnly));
     } catch {
