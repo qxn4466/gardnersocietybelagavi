@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Banknote, CreditCard } from 'lucide-react';
-import { fetchNextRentInvoiceNo, createRentBill, fetchRentBills, deleteRentBill } from '../../api/client';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap } from 'lucide-react';
+import { fetchNextRentInvoiceNo, createRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { RentBill, User } from '../../types';
+
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi } from '../../utils/translator';
@@ -216,10 +217,57 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
             {lang === 'mr' ? 'गाळा/दुकान भाड्याचे जीएसटी इनव्हॉईस (स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create GST Tax Invoice (Auto-posts to Cash Scroll & Cheque Book)'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा कॅशियर चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days cashier test data?')) return;
+              setLoading(true);
+              try {
+                const res = await generate30DaysCashierTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Zap size={14} color="#d97706" />
+            {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवायचा आहे का?' : 'Delete generated cashier test data?')) return;
+              setLoading(true);
+              try {
+                const res = await delete30DaysCashierTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
+          </button>
           {history.length > 0 && (
             <button className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
-              <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print'}
+              <Printer size={14} /> {lang === 'mr' ? 'भाडे बिल प्रिंट करा' : 'Print Rent Bill'}
             </button>
           )}
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>

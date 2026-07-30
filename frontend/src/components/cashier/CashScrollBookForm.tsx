@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice } from '../../api/client';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+
 
 interface CashScrollBookFormProps {
   user?: User | null;
@@ -127,12 +128,59 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
             {lang === 'mr' ? 'व्हाऊचर, बिल व इनव्हॉईसमधून स्वयंचलित अपडेट होणारे दैनिक रोख स्क्रोल नोंदवही' : 'Daily Cash Scroll Register auto-updated from Vouchers, Bills & Invoices'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा कॅशियर चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days cashier test data?')) return;
+              setLoading(true);
+              try {
+                const res = await generate30DaysCashierTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Zap size={14} color="#d97706" />
+            {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवायचा आहे का?' : 'Delete generated cashier test data?')) return;
+              setLoading(true);
+              try {
+                const res = await delete30DaysCashierTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
             <Printer size={14} /> {lang === 'mr' ? 'स्क्रोल पुस्तक प्रिंट करा' : 'Print Scroll Book'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-            <Plus size={14} /> {lang === 'mr' ? 'नवीन हस्ते नोंद' : 'Manual Entry'}
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
           </button>
         </div>
       </div>

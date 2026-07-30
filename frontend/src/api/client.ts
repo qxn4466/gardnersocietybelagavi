@@ -270,6 +270,9 @@ export const fetchPaymentVouchers = (startDate?: string, endDate?: string): Prom
 export const createPaymentVoucher = (payload: import('../types').CashPaymentVoucherCreate): Promise<import('../types').CashPaymentVoucher> =>
   api.post('/cashier/payment-vouchers', payload).then(r => r.data);
 
+export const updatePaymentVoucher = (id: number, payload: import('../types').CashPaymentVoucherCreate): Promise<import('../types').CashPaymentVoucher> =>
+  api.put(`/cashier/payment-vouchers/${id}`, payload).then(r => r.data);
+
 export const deletePaymentVoucher = (id: number): Promise<void> =>
   api.delete(`/cashier/payment-vouchers/${id}`).then(r => r.data);
 
@@ -280,6 +283,9 @@ export const fetchReceiptVouchers = (startDate?: string, endDate?: string): Prom
 export const createReceiptVoucher = (payload: import('../types').CashReceiptVoucherCreate): Promise<import('../types').CashReceiptVoucher> =>
   api.post('/cashier/receipt-vouchers', payload).then(r => r.data);
 
+export const updateReceiptVoucher = (id: number, payload: import('../types').CashReceiptVoucherCreate): Promise<import('../types').CashReceiptVoucher> =>
+  api.put(`/cashier/receipt-vouchers/${id}`, payload).then(r => r.data);
+
 export const deleteReceiptVoucher = (id: number): Promise<void> =>
   api.delete(`/cashier/receipt-vouchers/${id}`).then(r => r.data);
 
@@ -289,6 +295,9 @@ export const fetchRentBills = (startDate?: string, endDate?: string): Promise<im
 
 export const createRentBill = (payload: import('../types').RentBillCreate): Promise<import('../types').RentBill> =>
   api.post('/cashier/rent-bills', payload).then(r => r.data);
+
+export const updateRentBill = (id: number, payload: import('../types').RentBillCreate): Promise<import('../types').RentBill> =>
+  api.put(`/cashier/rent-bills/${id}`, payload).then(r => r.data);
 
 export const deleteRentBill = (id: number): Promise<void> =>
   api.delete(`/cashier/rent-bills/${id}`).then(r => r.data);
@@ -316,6 +325,12 @@ export const deleteChequeIssueEntry = (id: number): Promise<void> =>
 // Cashier Audit Summary
 export const fetchCashierAuditSummary = (startDate: string, endDate: string): Promise<import('../types').CashierAuditSummary> =>
   api.get('/cashier/audit-summary', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const generate30DaysCashierTestData = (): Promise<{ message: string; payment_vouchers: number; receipt_vouchers: number; rent_bills: number }> =>
+  api.post('/cashier/generate-30-days-test-data').then(r => r.data);
+
+export const delete30DaysCashierTestData = (): Promise<{ message: string; payment_vouchers_deleted: number; receipt_vouchers_deleted: number; rent_bills_deleted: number; cash_scroll_entries_deleted: number; cheque_issues_deleted: number }> =>
+  api.delete('/cashier/delete-test-data').then(r => r.data);
 
 // Upload Payment Receipt Document
 export const uploadCashierReceipt = (file: File): Promise<{ filename: string; filepath: string }> => {

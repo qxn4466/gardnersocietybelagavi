@@ -435,16 +435,90 @@ def delete_cheque_issue_entry(id: int, db: Session = Depends(get_db)):
     return {"message": "Cheque issue entry deleted successfully"}
 
 
+@router.put("/payment-vouchers/{id}", response_model=CashPaymentVoucherOut)
+def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Session = Depends(get_db)):
+    record = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Payment voucher not found")
+    record.paid_to = payload.paid_to
+    record.purpose_remarks = payload.purpose_remarks
+    record.details_of_expenditure = payload.details_of_expenditure
+    record.amount_rs = payload.amount_rs
+    record.amount_words = payload.amount_words
+    record.payment_mode = payload.payment_mode or "CASH"
+    record.cheque_no = payload.cheque_no
+    record.cheque_date = payload.cheque_date
+    record.bank_name = payload.bank_name
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+@router.put("/receipt-vouchers/{id}", response_model=CashReceiptVoucherOut)
+def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Session = Depends(get_db)):
+    record = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Receipt voucher not found")
+    record.gst_no = payload.gst_no
+    record.phone_no = payload.phone_no
+    record.received_from = payload.received_from
+    record.particulars = payload.particulars
+    record.loan_amount = payload.loan_amount
+    record.interest_amount = payload.interest_amount
+    record.total_amount = payload.total_amount
+    record.payment_mode = payload.payment_mode or "CASH"
+    record.cheque_no = payload.cheque_no
+    record.cheque_date = payload.cheque_date
+    record.bank_name = payload.bank_name
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+@router.put("/rent-bills/{id}", response_model=RentBillOut)
+def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get_db)):
+    record = db.query(RentBill).filter(RentBill.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Rent bill not found")
+    record.consignee_name = payload.consignee_name
+    record.consignee_address = payload.consignee_address
+    record.particulars = payload.particulars
+    record.qty = payload.qty
+    record.rate = payload.rate
+    record.amount = payload.amount
+    record.igst_amount = payload.igst_amount
+    record.sgst_amount = payload.sgst_amount
+    record.cgst_amount = payload.cgst_amount
+    record.total_amount = payload.total_amount
+    record.payment_mode = payload.payment_mode or "CASH"
+    record.cheque_no = payload.cheque_no
+    record.cheque_date = payload.cheque_date
+    record.bank_name = payload.bank_name
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 # ─── 6. Cashier Audit Summary ───────────────────────────────────────────────
 
 @router.get("/audit-summary", response_model=CashierAuditSummary)
 def get_cashier_audit_summary(
-    start_date: str,
-    end_date: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    sd = date.fromisoformat(start_date)
-    ed = date.fromisoformat(end_date)
+    try:
+        sd = date.fromisoformat(start_date) if (start_date and start_date.strip()) else date(2020, 1, 1)
+    except Exception:
+        sd = date(2020, 1, 1)
+
+    try:
+        ed = date.fromisoformat(end_date) if (end_date and end_date.strip()) else date(2035, 12, 31)
+    except Exception:
+        ed = date(2035, 12, 31)
+
+    if sd > ed:
+        sd, ed = ed, sd
 
     # 1. Payment Vouchers
     pv_q = db.query(
@@ -483,17 +557,186 @@ def get_cashier_audit_summary(
     ci_count, ci_amt = ci_q if ci_q else (0, 0)
 
     return CashierAuditSummary(
-        start_date=start_date,
-        end_date=end_date,
+        start_date=sd.isoformat(),
+        end_date=ed.isoformat(),
         total_payment_vouchers_count=pv_count,
         total_payment_amount=Decimal(str(pv_amt)),
         total_receipt_vouchers_count=rv_count,
         total_receipt_amount=Decimal(str(rv_amt)),
         total_rent_bills_count=rb_count,
-        total_rent_bill_amount=Decimal(str(rb_amt)),
-        total_scroll_received=Decimal(str(cs_rec)),
-        total_scroll_paid=Decimal(str(cs_paid)),
-        total_scroll_cheque=Decimal(str(cs_chq)),
+        total_rent_amount=Decimal(str(rb_amt)),
+        total_cash_scroll_received=Decimal(str(cs_rec)),
+        total_cash_scroll_paid=Decimal(str(cs_paid)),
         total_cheques_issued_count=ci_count,
-        total_cheques_issued_amount=Decimal(str(ci_amt)),
+        total_cheques_amount=Decimal(str(ci_amt)),
     )
+
+
+# ─── 7. Cashier 30 Days Test Data Generator ──────────────────────────────────
+
+from datetime import timedelta
+import random
+
+@router.post("/generate-30-days-test-data")
+def generate_30_days_cashier_test_data(db: Session = Depends(get_db)):
+    today_dt = date.today()
+    payees = ["Avinash Suregaonkar", "Ramesh Patil", "Society Supplier", "Electric Board", "Water Supply Dept"]
+    receipt_sources = ["Avinash Suregaonkar", "Farmer Member Collection", "Fertilizer Sales Collection", "Cold Storage Charges"]
+    rent_tenants = ["Karnataka Seed Depot", "Agri Tool Services", "Pesticide Retail Agency", "Farmer Producer Co."]
+
+    pv_count = 0
+    rv_count = 0
+    rb_count = 0
+
+    for i in range(30):
+        entry_date = today_dt - timedelta(days=i)
+        rnd_tag = random.randint(1000, 9999)
+
+        # 1. Cash Payment Voucher
+        p_amt = Decimal(str(random.randint(500, 5000)))
+        is_chq_pv = (i % 3 == 0)
+        pv_vno = f"PV-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
+
+        pv = CashPaymentVoucher(
+            voucher_no=pv_vno,
+            date=entry_date,
+            paid_to=payees[i % len(payees)],
+            purpose_remarks="Office & Shop Operating Expenses",
+            details_of_expenditure="General Maintenance & Field Expenses",
+            amount_rs=p_amt,
+            amount_words=f"Rupees {int(p_amt)} Only",
+            payment_mode="CHEQUE" if is_chq_pv else "CASH",
+            cheque_no=f"CHQ-{rnd_tag}" if is_chq_pv else None,
+            cheque_date=entry_date if is_chq_pv else None,
+            bank_name="State Bank of India" if is_chq_pv else None,
+            created_by="Test Generator",
+            status="POSTED"
+        )
+        db.add(pv)
+        pv_count += 1
+
+        # Auto-post PV to Cash Scroll & Cheque Issue
+        db.add(CashScrollBookEntry(
+            date=entry_date,
+            voucher_no=pv_vno,
+            from_received_paid=f"Paid To: {pv.paid_to}",
+            received_amount=Decimal("0.00"),
+            paid_amount=Decimal("0.00") if is_chq_pv else p_amt,
+            cheque_amount=p_amt if is_chq_pv else Decimal("0.00"),
+            created_by="Test Generator"
+        ))
+        if is_chq_pv:
+            db.add(ChequeIssueBookEntry(
+                issue_date=entry_date,
+                name_to_whom_issued=pv.paid_to,
+                cheque_no=f"CHQ-{rnd_tag}",
+                amount_rs=p_amt,
+                remarks=f"Payment Voucher {pv_vno}",
+                created_by="Test Generator"
+            ))
+
+        # 2. Cash Receipt Voucher
+        r_amt = Decimal(str(random.randint(1000, 12000)))
+        is_chq_rv = (i % 4 == 0)
+        rv_bno = f"RV-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
+
+        rv = CashReceiptVoucher(
+            bill_no=rv_bno,
+            date=entry_date,
+            gst_no="29AAAAA0000A1Z5",
+            phone_no="9876543210",
+            received_from=receipt_sources[i % len(receipt_sources)],
+            particulars="Fertilizer & Pesticide Recovery Collection",
+            loan_amount=r_amt,
+            interest_amount=Decimal("0.00"),
+            total_amount=r_amt,
+            payment_mode="CHEQUE" if is_chq_rv else "CASH",
+            cheque_no=f"CHQ-{rnd_tag+1}" if is_chq_rv else None,
+            cheque_date=entry_date if is_chq_rv else None,
+            bank_name="Canara Bank" if is_chq_rv else None,
+            created_by="Test Generator",
+            status="POSTED"
+        )
+        db.add(rv)
+        rv_count += 1
+
+        # Auto-post RV to Cash Scroll
+        db.add(CashScrollBookEntry(
+            date=entry_date,
+            voucher_no=rv_bno,
+            from_received_paid=f"Received From: {rv.received_from}",
+            received_amount=r_amt if not is_chq_rv else Decimal("0.00"),
+            paid_amount=Decimal("0.00"),
+            cheque_amount=r_amt if is_chq_rv else Decimal("0.00"),
+            created_by="Test Generator"
+        ))
+
+        # 3. Rent Bill
+        rent_base = Decimal(str(random.randint(3000, 8000)))
+        sgst = rent_base * Decimal("0.09")
+        cgst = rent_base * Decimal("0.09")
+        tot_rent = rent_base + sgst + cgst
+        rb_vno = f"RENT-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
+
+        rb = RentBill(
+            invoice_no=rb_vno,
+            date=entry_date,
+            consignee_name=rent_tenants[i % len(rent_tenants)],
+            consignee_address="Shop Premises Market Yard, Belagavi",
+            particulars="Godown & Cold Storage Shop Monthly Rent",
+            hsn_sac="997212",
+            gst_rate=Decimal("18.00"),
+            qty=Decimal("1.00"),
+            rate=rent_base,
+            per="Month",
+            amount=rent_base,
+            sgst_amount=sgst,
+            cgst_amount=cgst,
+            total_amount=tot_rent,
+            payment_mode="CASH",
+            created_by="Test Generator",
+            status="POSTED"
+        )
+        db.add(rb)
+        rb_count += 1
+
+        # Auto-post Rent Bill to Cash Scroll
+        db.add(CashScrollBookEntry(
+            date=entry_date,
+            voucher_no=rb_vno,
+            from_received_paid=f"Rent Bill: {rb.consignee_name}",
+            received_amount=tot_rent,
+            paid_amount=Decimal("0.00"),
+            cheque_amount=Decimal("0.00"),
+            created_by="Test Generator"
+        ))
+
+    db.commit()
+
+    return {
+        "message": "Successfully generated 30 days of cashier test data across all cashier forms!",
+        "payment_vouchers": pv_count,
+        "receipt_vouchers": rv_count,
+        "rent_bills": rb_count
+    }
+
+
+@router.delete("/delete-test-data")
+def delete_cashier_test_data(db: Session = Depends(get_db)):
+    pv_del = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.created_by == "Test Generator").delete()
+    rv_del = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.created_by == "Test Generator").delete()
+    rb_del = db.query(RentBill).filter(RentBill.created_by == "Test Generator").delete()
+    cs_del = db.query(CashScrollBookEntry).filter(CashScrollBookEntry.created_by == "Test Generator").delete()
+    ci_del = db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.created_by == "Test Generator").delete()
+
+    db.commit()
+
+    return {
+        "message": "Successfully deleted cashier test data!",
+        "payment_vouchers_deleted": pv_del,
+        "receipt_vouchers_deleted": rv_del,
+        "rent_bills_deleted": rb_del,
+        "cash_scroll_entries_deleted": cs_del,
+        "cheque_issues_deleted": ci_del
+    }
+

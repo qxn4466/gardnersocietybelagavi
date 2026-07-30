@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Printer, RefreshCw, CheckCircle2, ShieldCheck, FileText, CheckSquare, Calendar, Building2 } from 'lucide-react';
-import { fetchCashierAuditSummary, fetchPaymentVouchers, fetchReceiptVouchers, fetchRentBills, fetchCashScrollEntries, fetchChequeIssueEntries, fetchOffice } from '../../api/client';
+import { Printer, RefreshCw, CheckCircle2, ShieldCheck, FileText, CheckSquare, Calendar, Building2, Zap } from 'lucide-react';
+import { fetchCashierAuditSummary, fetchPaymentVouchers, fetchReceiptVouchers, fetchRentBills, fetchCashScrollEntries, fetchChequeIssueEntries, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashierAuditSummary, CashPaymentVoucher, CashReceiptVoucher, RentBill, CashScrollBookEntry, ChequeIssueBookEntry, OfficeMaster, User } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -11,9 +11,10 @@ interface CashierAuditFormProps {
 const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const [startDate, setStartDate] = useState('2026-06-01');
-  const [endDate, setEndDate] = useState('2026-06-30');
+  const [startDate, setStartDate] = useState(thirtyDaysAgo);
+  const [endDate, setEndDate] = useState(today);
 
   const [office, setOffice] = useState<OfficeMaster | null>(null);
   const [summary, setSummary] = useState<CashierAuditSummary | null>(null);
@@ -24,6 +25,8 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
   const [chequeEntries, setChequeEntries] = useState<ChequeIssueBookEntry[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Section Print Toggles
   const [includePayments, setIncludePayments] = useState(true);
@@ -63,6 +66,42 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
     loadAuditData();
   }, [loadAuditData]);
 
+  const handleGenerateTestData = async () => {
+    if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा कॅशियर चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days of cashier test data across all forms?')) return;
+    setGenerating(true);
+    setMsg(null);
+    try {
+      const res = await generate30DaysCashierTestData();
+      setMsg({
+        type: 'success',
+        text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
+      });
+      await loadAuditData();
+    } catch {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDeleteTestData = async () => {
+    if (!window.confirm(lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवायचा आहे का?' : 'Delete generated cashier test data across all forms?')) return;
+    setGenerating(true);
+    setMsg(null);
+    try {
+      const res = await delete30DaysCashierTestData();
+      setMsg({
+        type: 'success',
+        text: (lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवला गेला! ' : 'Successfully deleted cashier test data! ') + res.message
+      });
+      await loadAuditData();
+    } catch {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -80,10 +119,39 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
             {lang === 'mr' ? 'कॅशियर सर्व व्हाऊचर, बिल, स्क्रोल व चेक नोंदींचे लेखापरीक्षण अहवाल बाइंडर' : 'Comprehensive Cashier binder & auditor verification package'}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={handlePrint}>
-          <Printer size={16} /> {lang === 'mr' ? 'कॅशियर ऑडिट बाइंडर प्रिंट करा' : 'Print Cashier Audit Binder'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={handleGenerateTestData}
+            disabled={generating}
+          >
+            <Zap size={14} color="#d97706" />
+            {generating
+              ? (lang === 'mr' ? 'डेटा तयार होत आहे...' : 'Generating Data...')
+              : (lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={handleDeleteTestData}
+            disabled={generating}
+          >
+            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
+          </button>
+          <button className="btn btn-primary" onClick={handlePrint}>
+            <Printer size={16} /> {lang === 'mr' ? 'कॅशियर ऑडिट बाइंडर प्रिंट करा' : 'Print Cashier Audit Binder'}
+          </button>
+        </div>
       </div>
+
+      {msg && (
+        <div className={`alert alert-${msg.type}`} style={{ marginBottom: 16 }}>
+          {msg.text}
+        </div>
+      )}
 
       {/* Date Filter & Options */}
       <div className="no-print" style={{ background: 'var(--surface-subtle)', padding: 16, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 24 }}>
