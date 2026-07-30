@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages, Check, FolderPlus } from 'lucide-react';
 import { createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
 import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
-
 
 interface ShopRetailBillFormProps {
   user?: User | null;
@@ -15,6 +14,7 @@ interface ShopRetailBillFormProps {
 interface RetailBillRow {
   id: string;
   particulars: string;
+  isCustomText?: boolean;
   qty: number;
   rate: number;
   amount: number;
@@ -337,19 +337,43 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
         {/* Dynamic Multi-Item Table Grid */}
         <div style={{ background: '#fff7ed', padding: 18, borderRadius: 8, border: '1px solid #fed7aa', marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
             <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#c2410c' }}>
               {lang === 'mr' ? 'किरकोळ विक्री वस्तू तक्ता (Retail Cash Bill Grid Items)' : 'Retail Cash Bill Grid Items'}
             </h4>
-            {!editingId && (
-              <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
-                <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ background: '#fff', color: '#c2410c', borderColor: '#fdba74', fontWeight: 600 }}
+                onClick={() => {
+                  const newProd = window.prompt(
+                    lang === 'mr'
+                      ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:'
+                      : 'Enter new product name to add to master list:'
+                  );
+                  if (newProd && newProd.trim()) {
+                    const updatedList = addStoredProduct(newProd.trim());
+                    setProductList(updatedList);
+                    setMsg({
+                      type: 'success',
+                      text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added to master dropdown: ') + newProd.trim()
+                    });
+                  }
+                }}
+              >
+                <FolderPlus size={14} /> {lang === 'mr' ? '➕ + नवीन वस्तू यादीत जोडा (Add Product)' : '➕ + Add Custom Product'}
               </button>
-            )}
+              {!editingId && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
+                  <Plus size={14} /> {lang === 'mr' ? '+ ओळ जोडा (Add Item)' : '+ Add Item Row'}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', minWidth: 800, fontSize: 13, borderCollapse: 'collapse' }}>
+            <table className="table" style={{ width: '100%', minWidth: 850, fontSize: 13, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#ffedd5', borderBottom: '2px solid #fdba74' }}>
                   <th style={{ width: 35, padding: '8px 6px' }}>#</th>
@@ -357,7 +381,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                   <th style={{ width: 90, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
                   <th style={{ width: 110, padding: '8px 6px' }}>{lang === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
                   <th style={{ width: 140, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
-                  <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}></th>
+                  <th style={{ width: 90, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Row Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -365,27 +389,66 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                   <tr key={row.id} style={{ background: '#fff' }}>
                     <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
                     <td style={{ padding: '6px 4px' }}>
-                      <select
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.particulars}
-                        onChange={e => {
-                          if (e.target.value === '__ADD_NEW__') {
-                            handleAddNewProduct(idx);
-                          } else {
-                            updateRow(idx, 'particulars', e.target.value);
-                          }
-                        }}
-                      >
-                        {productList.map(p => (
-                          <option key={p} value={p}>
-                            {lang === 'mr' ? getMarathiItem(p) : p}
-                          </option>
-                        ))}
-                        <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#ea580c' }}>
-                          {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add New Product...'}
-                        </option>
-                      </select>
+                      {row.isCustomText ? (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px', fontWeight: 600, color: '#c2410c' }}
+                            placeholder="Enter item name..."
+                            value={row.particulars}
+                            onChange={e => updateRow(idx, 'particulars', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            style={{ padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }}
+                            title="Save custom item to product list"
+                            onClick={() => {
+                              if (row.particulars.trim()) {
+                                const updatedList = addStoredProduct(row.particulars.trim());
+                                setProductList(updatedList);
+                              }
+                              updateRow(idx, 'isCustomText', false);
+                            }}
+                          >
+                            <Check size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                          <select
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px', flex: 1 }}
+                            value={row.particulars}
+                            onChange={e => {
+                              if (e.target.value === '__ADD_NEW__') {
+                                handleAddNewProduct(idx);
+                              } else {
+                                updateRow(idx, 'particulars', e.target.value);
+                              }
+                            }}
+                          >
+                            {productList.map(p => (
+                              <option key={p} value={p}>
+                                {lang === 'mr' ? getMarathiItem(p) : p}
+                              </option>
+                            ))}
+                            <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#ea580c' }}>
+                              {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add Custom Product...'}
+                            </option>
+                          </select>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '4px 6px', fontSize: 11 }}
+                            title="Type custom product name"
+                            onClick={() => updateRow(idx, 'isCustomText', true)}
+                          >
+                            <Edit size={12} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input
@@ -410,10 +473,25 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                     <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 14 }}>
                       ₹{row.amount.toFixed(2)}
                     </td>
-                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                    <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 6px', marginRight: 4, color: '#ea580c' }}
+                        title="Save Row & Product"
+                        onClick={() => {
+                          if (row.particulars.trim()) {
+                            const updatedList = addStoredProduct(row.particulars.trim());
+                            setProductList(updatedList);
+                          }
+                          updateRow(idx, 'isCustomText', false);
+                        }}
+                      >
+                        <Save size={12} />
+                      </button>
                       {items.length > 1 && !editingId && (
-                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: 4 }} onClick={() => removeRow(idx)}>
-                          <Trash2 size={13} />
+                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 6px' }} title="Delete Row" onClick={() => removeRow(idx)}>
+                          <Trash2 size={12} />
                         </button>
                       )}
                     </td>
