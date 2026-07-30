@@ -133,9 +133,9 @@ def generate_30_days_meeting_notices(db: Session = Depends(get_db)):
             notice_no=notice_no,
             meeting_date=entry_date,
             meeting_time="11:00 AM" if i % 2 == 0 else "04:30 PM",
-            time_of_day="सकाळी (Morning)" if i % 2 == 0 else "संध्याकाळी (Evening)",
+            time_of_day="सकाळी" if i % 2 == 0 else "संध्याकाळी",
             recipient_name=rec[1],
-            meeting_type="Managing Committee Meeting / मॅ. कमिटी मिटिंग",
+            meeting_type="सर्व्ह सोसायटीची मॅ. कमिटी मिटिंग",
             agenda_subjects=agenda,
             created_by="Test Generator"
         )

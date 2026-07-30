@@ -27,10 +27,16 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
   const [noticeNo, setNoticeNo] = useState('');
   const [meetingDate, setMeetingDate] = useState(today);
   const [meetingTime, setMeetingTime] = useState('11:00 AM');
-  const [timeOfDay, setTimeOfDay] = useState('सकाळी (Morning)');
+  const [timeOfDay, setTimeOfDay] = useState(lang === 'mr' ? 'सकाळी' : 'Morning');
   const [recipientName, setRecipientName] = useState('');
-  const [meetingType, setMeetingType] = useState('सर्व्ह सोसायटीची मॅ. कमिटी मिटिंग (Managing Committee Meeting)');
-  const [agendaSubjects, setAgendaSubjects] = useState('१. वार्षिक अंदाजपत्रक व अहवाल मंजुरीबाबत\n२. खते व औषधे खरेदी दरपत्रक आढावा\n३. अध्यक्षांच्या परवानगीने येणारे एनवेळचे विषय');
+  const [meetingType, setMeetingType] = useState(
+    lang === 'mr' ? 'सर्व्ह सोसायटीची मॅ. कमिटी मिटिंग' : 'Managing Committee Meeting'
+  );
+  const [agendaSubjects, setAgendaSubjects] = useState(
+    lang === 'mr'
+      ? '१. वार्षिक अंदाजपत्रक व अहवाल मंजुरीबाबत\n२. खते व औषधे खरेदी दरपत्रक आढावा\n३. अध्यक्षांच्या परवानगीने येणारे एनवेळचे विषय'
+      : '1. Annual budget and financial review\n2. Fertilizer & pesticide purchasing rates\n3. Other subjects with permission of Chair'
+  );
   const [docPath, setDocPath] = useState('');
 
   // Search & Filter
@@ -73,10 +79,14 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
     setEditingId(null);
     setMeetingDate(today);
     setMeetingTime('11:00 AM');
-    setTimeOfDay('सकाळी (Morning)');
+    setTimeOfDay(lang === 'mr' ? 'सकाळी' : 'Morning');
     setRecipientName('');
-    setMeetingType('सर्व्ह सोसायटीची मॅ. कमिटी मिटिंग (Managing Committee Meeting)');
-    setAgendaSubjects('१. वार्षिक अंदाजपत्रक व अहवाल मंजुरीबाबत\n२. खते व औषधे खरेदी दरपत्रक आढावा\n३. अध्यक्षांच्या परवानगीने येणारे एनवेळचे विषय');
+    setMeetingType(lang === 'mr' ? 'सर्व्ह सोसायटीची मॅ. कमिटी मिटिंग' : 'Managing Committee Meeting');
+    setAgendaSubjects(
+      lang === 'mr'
+        ? '१. वार्षिक अंदाजपत्रक व अहवाल मंजुरीबाबत\n२. खते व औषधे खरेदी दरपत्रक आढावा\n३. अध्यक्षांच्या परवानगीने येणारे एनवेळचे विषय'
+        : '1. Annual budget and financial review\n2. Fertilizer & pesticide purchasing rates\n3. Other subjects with permission of Chair'
+    );
     setDocPath('');
     setMsg(null);
     loadNextNoticeNo();
@@ -125,7 +135,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipientName.trim()) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया सदस्याचे / व्यक्तीचे नाव प्रविष्ट करा.' : 'Please enter Recipient Name (To Mr./Mrs.).' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया सदस्याचे / व्यक्तीचे नाव प्रविष्ट करा.' : 'Please enter Recipient Name.' });
       return;
     }
     if (!agendaSubjects.trim()) {
@@ -212,11 +222,11 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileText size={22} color="#1d4ed8" />
-            {lang === 'mr' ? 'मिटिंग नोटीस फॉर्म (Meeting Notice Form)' : 'Meeting Notice Form'}
+            {lang === 'mr' ? 'मिटिंग नोटीस फॉर्म' : 'Meeting Notice Form'}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
             {lang === 'mr'
-              ? 'बेळगाव गार्डनर्स को-ऑप सोसायटीच्या मॅनेजिंग कमिटी सभेची नोटीस तयार करा, जतन करा व प्रिंट करा.'
+              ? 'बेळगाव गार्डनर्स को-ऑप सोसायटीच्या मॅनेजिंग कमिटी सभेची नोटीस तयार करा, जतन करा, संपादन करा व प्रिंट करा.'
               : 'Create, store, edit, and print official Managing Committee Meeting Notices.'}
           </p>
         </div>
@@ -253,7 +263,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'नोटीस क्र. (Notice No.):' : 'Notice No.:'}
+              {lang === 'mr' ? 'नोटीस क्र.:' : 'Notice No.:'}
             </label>
             <input
               type="text"
@@ -267,7 +277,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'चार तारीख / सभा दिनांक (Date):' : 'Meeting Date:'}
+              {lang === 'mr' ? 'चार तारीख / सभा दिनांक:' : 'Meeting Date:'}
             </label>
             <input
               type="date"
@@ -280,26 +290,26 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'सकाळी / संध्याकाळी (Session):' : 'Time of Day (Session):'}
+              {lang === 'mr' ? 'सकाळी / संध्याकाळी:' : 'Session / Time of Day:'}
             </label>
             <select
               className="form-input"
               value={timeOfDay}
               onChange={e => setTimeOfDay(e.target.value)}
             >
-              <option value="सकाळी (Morning)">सकाळी (Morning)</option>
-              <option value="संध्याकाळी (Evening)">संध्याकाळी (Evening)</option>
+              <option value={lang === 'mr' ? 'सकाळी' : 'Morning'}>{lang === 'mr' ? 'सकाळी' : 'Morning'}</option>
+              <option value={lang === 'mr' ? 'संध्याकाळी' : 'Evening'}>{lang === 'mr' ? 'संध्याकाळी' : 'Evening'}</option>
             </select>
           </div>
 
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'वाजता / सभा वेळ (Time):' : 'Meeting Time:'}
+              {lang === 'mr' ? 'सभा वेळ (वाजता):' : 'Meeting Time:'}
             </label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. 11:00 AM / सकाळी ११:००"
+              placeholder={lang === 'mr' ? 'उदा. ११:०० वाजता / 11:00 AM' : 'e.g. 11:00 AM'}
               value={meetingTime}
               onChange={e => setMeetingTime(e.target.value)}
               required
@@ -310,7 +320,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'रा. रा. (प्रति / To Mr./Mrs.):' : 'To (Mr./Mrs. Recipient Name):'}
+              {lang === 'mr' ? 'रा. रा. (प्रति):' : 'To (Recipient Name):'}
             </label>
             <input
               type="text"
@@ -325,7 +335,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 600 }}>
-              {lang === 'mr' ? 'सभा प्रकार (Meeting Type / Notice Heading):' : 'Meeting Type / Notice Heading:'}
+              {lang === 'mr' ? 'सभा प्रकार:' : 'Meeting Type:'}
             </label>
             <input
               type="text"
@@ -340,14 +350,14 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         {/* Agenda / Subjects Field */}
         <div className="form-group" style={{ marginBottom: 16 }}>
           <label className="form-label" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>{lang === 'mr' ? 'विषय / सभेचे कामकाज (Subject & Agenda Topics):' : 'Subject & Agenda Topics:'}</span>
+            <span>{lang === 'mr' ? 'विषय / सभेचे कामकाज:' : 'Subject & Agenda Topics:'}</span>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lang === 'mr' ? 'प्रत्येक ओळीवर एक विषय लिहा' : 'One topic per line'}</span>
           </label>
           <textarea
             className="form-input"
             rows={4}
             style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.5 }}
-            placeholder="१. वार्षिक अंदाजपत्रक मंजुरीबाबत&#10;२. खते व औषधे खरेदी दरपत्रक आढावा&#10;३. नवीन सभासद अर्ज मंजुरी"
+            placeholder={lang === 'mr' ? '१. वार्षिक अंदाजपत्रक मंजुरीबाबत&#10;२. खते व औषधे खरेदी दरपत्रक आढावा&#10;३. नवीन सभासद अर्ज मंजुरी' : '1. Annual budget approval&#10;2. Pesticides rate review'}
             value={agendaSubjects}
             onChange={e => setAgendaSubjects(e.target.value)}
             required
@@ -396,7 +406,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Calendar size={16} color="#1d4ed8" />
-            <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / महिना शिफारस:' : 'Filter Date Range:'}</label>
+            <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / तारीख शिफारस:' : 'Filter Date Range:'}</label>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
             <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
@@ -471,7 +481,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         )}
       </div>
 
-      {/* Single Meeting Notice Printable Modal (Matching Attached Physical Document Photo) */}
+      {/* Single Meeting Notice Printable Modal (Exact Match to Physical Document Photo) */}
       {selectedNoticeForPrint && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -479,13 +489,15 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '92%', maxWidth: 780, padding: 26, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '92vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700, margin: 0 }}>Meeting Notice Print #{selectedNoticeForPrint.notice_no}</h4>
+              <h4 style={{ fontWeight: 700, margin: 0 }}>
+                {lang === 'mr' ? `मिटिंग नोटीस प्रिंट #${selectedNoticeForPrint.notice_no}` : `Meeting Notice Print #${selectedNoticeForPrint.notice_no}`}
+              </h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#1d4ed8', borderColor: '#1d4ed8' }}>
-                  <Printer size={14} /> Print Notice
+                  <Printer size={14} /> {lang === 'mr' ? 'प्रिंट काढा' : 'Print Notice'}
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setSelectedNoticeForPrint(null)}>
-                  Close
+                  {lang === 'mr' ? 'बंद करा' : 'Close'}
                 </button>
               </div>
             </div>
@@ -504,38 +516,40 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
                   📍 Address: Belagavi, Karnataka - 590001 | 📞 Phone: 0831-2401234 / 0831-2401235 | 🆔 GSTN: 29AAATB1234C1Z5
                 </div>
                 <h3 style={{ fontSize: 18, fontWeight: 'bold', marginTop: 10, marginBottom: 0, textDecoration: 'underline', letterSpacing: '0.05em' }}>
-                  मिटिंग नोटीस / MEETING NOTICE
+                  {lang === 'mr' ? 'मिटिंग नोटीस' : 'MEETING NOTICE'}
                 </h3>
               </div>
 
               {/* Notice Recipient Line */}
               <div style={{ fontSize: 14, marginBottom: 14, fontWeight: 'bold', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6 }}>
-                <span>रा. रा.</span>
+                <span>{lang === 'mr' ? 'रा. रा.' : 'To,'}</span>
                 <span style={{ borderBottom: '1px solid #000', flex: 1, padding: '0 8px', minWidth: 200 }}>{selectedNoticeForPrint.recipient_name}</span>
-                <span>यांना</span>
+                {lang === 'mr' && <span>यांना</span>}
               </div>
 
-              {/* Notice Body Paragraph */}
-              <div style={{ fontSize: 13.5, textIndent: 30, textAlign: 'justify', marginBottom: 16, lineHeight: 1.8 }}>
-                सदरी सोसायटीची मॅ. कमिटी मिटिंग <strong>{selectedNoticeForPrint.meeting_date}</strong> रोजी <strong>{selectedNoticeForPrint.time_of_day} {selectedNoticeForPrint.meeting_time}</strong> वाजता सदरी सोसायटीच्या ऑफिसात बोलावलेली आहे. तरी आपण वेळेवर येण्याची कृपा करावी कळावे ता.
-              </div>
+              {/* Notice Body Paragraph (Exact Marathi Text as document photo) */}
+              {lang === 'mr' ? (
+                <div style={{ fontSize: 13.5, textIndent: 30, textAlign: 'justify', marginBottom: 16, lineHeight: 1.8 }}>
+                  सदरी सोसायटीची मॅ. कमिटी मिटिंग <strong>{selectedNoticeForPrint.meeting_date}</strong> रोजी <strong>{selectedNoticeForPrint.time_of_day} {selectedNoticeForPrint.meeting_time}</strong> वाजता सदरी सोसायटीच्या ऑफिसात बोलावलेली आहे. तरी आपण वेळेवर येण्याची कृपा करावी कळावे ता.
+                </div>
+              ) : (
+                <div style={{ fontSize: 13.5, textIndent: 30, textAlign: 'justify', marginBottom: 16, lineHeight: 1.8 }}>
+                  You are hereby informed that the Managing Committee Meeting of the Society has been scheduled on Date: <strong>{selectedNoticeForPrint.meeting_date}</strong> at <strong>{selectedNoticeForPrint.meeting_time} ({selectedNoticeForPrint.time_of_day})</strong> in the office of the Society. You are requested to attend the meeting on time.
+                </div>
+              )}
 
-              <div style={{ fontSize: 12, fontStyle: 'italic', color: '#334155', marginBottom: 20, padding: '8px 12px', background: '#f8fafc', borderLeft: '3px solid #000' }}>
-                (You are hereby informed that the Managing Committee Meeting of the Society has been scheduled on Date: <strong>{selectedNoticeForPrint.meeting_date}</strong> at <strong>{selectedNoticeForPrint.meeting_time} ({selectedNoticeForPrint.time_of_day})</strong> in the office of the Society. You are requested to attend the meeting on time.)
-              </div>
-
-              {/* Subject / Agenda Oval Pill Header (Exact as photo) */}
+              {/* Subject Oval Pill Header (Exact match to 'विषय' oval pill in photo) */}
               <div style={{ textAlign: 'center', margin: '20px 0 16px' }}>
                 <span style={{
                   display: 'inline-block',
                   border: '2px solid #000',
                   borderRadius: 24,
-                  padding: '4px 30px',
-                  fontSize: 16,
+                  padding: '4px 34px',
+                  fontSize: 17,
                   fontWeight: 'bold',
                   background: '#fff'
                 }}>
-                  विषय / Subject & Agenda
+                  {lang === 'mr' ? 'विषय' : 'Subject / Agenda'}
                 </span>
               </div>
 
@@ -561,13 +575,11 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
               {/* Signatures */}
               <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: 13, fontWeight: 'bold', marginTop: 45 }}>
                 <div>
-                  बँक ऑपरेटर / हिशोबनीस स्वाक्षरी<br />
-                  (Accountant Signature)<br /><br />
+                  {lang === 'mr' ? 'हिशोबनीस स्वाक्षरी' : 'Accountant Signature'}<br /><br />
                   _______________
                 </div>
                 <div>
-                  व्यवस्थापक / सेक्रेटरी स्वाक्षरी<br />
-                  (Manager Signature)<br /><br />
+                  {lang === 'mr' ? 'व्यवस्थापक स्वाक्षरी' : 'Manager Signature'}<br /><br />
                   _______________
                 </div>
               </div>
