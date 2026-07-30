@@ -4,6 +4,8 @@ import { fetchNextShopRetailBillNo, createShopRetailBill, updateShopRetailBill, 
 import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateToMarathi } from '../../utils/translator';
+
 
 interface ShopRetailBillFormProps {
   user?: User | null;
@@ -359,9 +361,29 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#ea580c', borderColor: '#ea580c' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Bill') : (lang === 'mr' ? 'रोख बिल जतन करा' : 'Save Retail Bill'))}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#ffedd5', color: '#c2410c', borderColor: '#fdba74', fontWeight: 600 }}
+            onClick={async () => {
+              if (customerName) {
+                const translatedName = await translateToMarathi(customerName);
+                setCustomerName(translatedName);
+              }
+              const updatedItems = await Promise.all(
+                items.map(async item => ({
+                  ...item,
+                  particulars: await translateToMarathi(item.particulars),
+                }))
+              );
+              setItems(updatedItems);
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

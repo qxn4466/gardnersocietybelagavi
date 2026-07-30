@@ -5,6 +5,8 @@ import type { CashReceiptVoucher, User, OfficeMaster } from '../../types';
 import { RECEIPT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
+import { translateToMarathi } from '../../utils/translator';
+
 
 interface ReceiptVoucherFormProps {
   user?: User | null;
@@ -411,9 +413,21 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'पावती मेमो जतन करा' : 'Save Cash Memo')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd', fontWeight: 600 }}
+            onClick={async () => {
+              if (receivedFrom) setReceivedFrom(await translateToMarathi(receivedFrom));
+              if (customParticulars) setCustomParticulars(await translateToMarathi(customParticulars));
+              if (bankName) setBankName(await translateToMarathi(bankName));
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

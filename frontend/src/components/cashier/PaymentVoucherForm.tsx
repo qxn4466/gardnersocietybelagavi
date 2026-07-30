@@ -5,6 +5,8 @@ import type { CashPaymentVoucher, User, VoucherItemRow } from '../../types';
 import { PAYMENT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
+import { translateToMarathi } from '../../utils/translator';
+
 
 interface PaymentVoucherFormProps {
   user?: User | null;
@@ -509,9 +511,28 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'व्हाऊचर जतन करा' : 'Save Voucher')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#e0e7ff', color: '#3730a3', borderColor: '#c7d2fe', fontWeight: 600 }}
+            onClick={async () => {
+              if (paidTo) setPaidTo(await translateToMarathi(paidTo));
+              if (purpose) setPurpose(await translateToMarathi(purpose));
+              if (bankName) setBankName(await translateToMarathi(bankName));
+              const updatedItems = await Promise.all(
+                items.map(async item => ({
+                  ...item,
+                  particular: await translateToMarathi(item.particular),
+                }))
+              );
+              setItems(updatedItems);
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

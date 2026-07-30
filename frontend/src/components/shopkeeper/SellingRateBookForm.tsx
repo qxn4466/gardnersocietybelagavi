@@ -4,6 +4,7 @@ import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries
 import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateToMarathi } from '../../utils/translator';
 
 interface SellingRateBookFormProps {
   user?: User | null;
@@ -482,9 +483,29 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Entry') : (lang === 'mr' ? 'दर पुस्तक नोंदी जतन करा' : 'Save Rate Entries'))}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#dcfce7', color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
+            onClick={async () => {
+              if (name) {
+                const translatedName = await translateToMarathi(name);
+                setName(translatedName);
+              }
+              const updatedItems = await Promise.all(
+                items.map(async item => ({
+                  ...item,
+                  particulars: await translateToMarathi(item.particulars),
+                }))
+              );
+              setItems(updatedItems);
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

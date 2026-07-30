@@ -4,6 +4,8 @@ import { fetchNextShopTaxInvoiceNo, createShopTaxInvoice, updateShopTaxInvoice, 
 import type { ShopTaxInvoice, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateToMarathi } from '../../utils/translator';
+
 
 interface ShopTaxInvoiceFormProps {
   user?: User | null;
@@ -391,9 +393,29 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#2563eb', borderColor: '#2563eb' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Invoice') : (lang === 'mr' ? 'टॅक्स इनव्हॉईस जतन करा' : 'Save Tax Invoice'))}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd', fontWeight: 600 }}
+            onClick={async () => {
+              if (customerName) {
+                const translatedName = await translateToMarathi(customerName);
+                setCustomerName(translatedName);
+              }
+              const updatedItems = await Promise.all(
+                items.map(async item => ({
+                  ...item,
+                  product_name: await translateToMarathi(item.product_name),
+                }))
+              );
+              setItems(updatedItems);
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

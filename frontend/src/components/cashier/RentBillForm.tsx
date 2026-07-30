@@ -4,6 +4,8 @@ import { fetchNextRentInvoiceNo, createRentBill, fetchRentBills, deleteRentBill 
 import type { RentBill, User } from '../../types';
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateToMarathi } from '../../utils/translator';
+
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 
 interface RentBillFormProps {
@@ -408,9 +410,22 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'भाडे बिल इनव्हॉईस जतन करा' : 'Save Rent Invoice')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ background: '#dcfce7', color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
+            onClick={async () => {
+              if (consigneeName) setConsigneeName(await translateToMarathi(consigneeName));
+              if (consigneeAddress) setConsigneeAddress(await translateToMarathi(consigneeAddress));
+              if (customParticulars) setCustomParticulars(await translateToMarathi(customParticulars));
+              if (bankName) setBankName(await translateToMarathi(bankName));
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

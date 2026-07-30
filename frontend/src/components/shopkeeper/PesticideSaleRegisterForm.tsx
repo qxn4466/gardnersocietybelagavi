@@ -4,6 +4,8 @@ import { createPesticideSale, fetchPesticideSales, deletePesticideSale } from '.
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateToMarathi } from '../../utils/translator';
+
 
 interface PesticideSaleRegisterFormProps {
   user?: User | null;
@@ -223,9 +225,30 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary btn-sm" disabled={loading} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
             <Save size={14} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जतन करा' : 'Save Pesticide Sale')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#f3e8ff', color: '#6b21a8', borderColor: '#d8b4fe', fontWeight: 600 }}
+            onClick={async () => {
+              if (customerName) {
+                const translatedName = await translateToMarathi(customerName);
+                setCustomerName(translatedName);
+              }
+              if (productName) {
+                const translatedProd = await translateToMarathi(productName);
+                setProductName(translatedProd);
+              }
+              if (remarks) {
+                const translatedRem = await translateToMarathi(remarks);
+                setRemarks(translatedRem);
+              }
+            }}
+          >
+            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
