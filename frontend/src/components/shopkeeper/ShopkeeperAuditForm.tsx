@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Calendar, ShieldCheck, Tag, Receipt, ShoppingCart, FlaskConical, TrendingUp, Zap } from 'lucide-react';
-import { fetchShopkeeperAuditSummary, generate30DaysTestData } from '../../api/client';
+import { fetchShopkeeperAuditSummary, generate30DaysTestData, delete30DaysTestData } from '../../api/client';
+
 import type { ShopkeeperAuditSummary, User } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -58,6 +59,27 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
     }
   };
 
+  const handleDeleteTestData = async () => {
+    if (!window.confirm(lang === 'mr' ? 'सर्व चाचणी विक्री डेटा हटवायचा आहे का?' : 'Delete generated test sales data across all shop forms?')) return;
+    setGenerating(true);
+    setMsg(null);
+    try {
+      const res = await delete30DaysTestData();
+      setMsg({
+        type: 'success',
+        text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
+      });
+      await loadAuditSummary();
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Failed to delete test data.'
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #4f46e5', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12, flexWrap: 'wrap', gap: 12 }}>
@@ -87,6 +109,15 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
             {generating
               ? (lang === 'mr' ? 'डेटा तयार होत आहे...' : 'Generating 30 Days Data...')
               : (lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleDeleteTestData}
+            disabled={generating}
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
           </button>
           <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ background: '#4f46e5', borderColor: '#4f46e5' }}>
             <Printer size={14} /> {lang === 'mr' ? 'लेखापरीक्षा अहवाल मुद्रित करा' : 'Print Audit Binder'}

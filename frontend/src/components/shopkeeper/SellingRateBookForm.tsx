@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X, Languages, Check, FolderPlus, Zap } from 'lucide-react';
 
-import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry, generate30DaysTestData } from '../../api/client';
+import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry, generate30DaysTestData, delete30DaysTestData } from '../../api/client';
+
 
 import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -347,6 +348,29 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           >
             <Zap size={14} color="#d97706" />
             {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'सर्व चाचणी विक्री डेटा हटवायचा आहे का?' : 'Delete generated test sales data across all shop forms?')) return;
+              setLoading(true);
+              try {
+                const res = await delete30DaysTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
           </button>
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}

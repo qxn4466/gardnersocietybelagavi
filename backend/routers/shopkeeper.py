@@ -630,12 +630,7 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
             hsn_code="3808",
             qty=qty_val,
             rate=rate_val,
-            amount=base_amt,
-            sgst_rate=Decimal("9.00"),
-            sgst_amount=base_amt * Decimal("0.09"),
-            cgst_rate=Decimal("9.00"),
-            cgst_amount=base_amt * Decimal("0.09"),
-            total_amount=base_amt * Decimal("1.18"),
+            amount=base_amt * Decimal("1.18"),
             created_by="Test Generator"
         )
         db.add(tax_inv)
@@ -648,7 +643,6 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
             date=entry_date,
             customer_name=cust,
             particulars=prod,
-            qty=qty_val,
             rate=rate_val,
             amount=base_amt,
             created_by="Test Generator"
@@ -680,5 +674,24 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         "retail_bills": retail_count,
         "pesticide_sales": pesticide_count
     }
+
+
+@router.delete("/delete-test-data")
+def delete_test_data(db: Session = Depends(get_db)):
+    sr_deleted = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.created_by == "Test Generator").delete()
+    stx_deleted = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.created_by == "Test Generator").delete()
+    srb_deleted = db.query(ShopRetailBill).filter(ShopRetailBill.created_by == "Test Generator").delete()
+    pest_deleted = db.query(PesticideSaleEntry).filter(PesticideSaleEntry.created_by == "Test Generator").delete()
+
+    db.commit()
+
+    return {
+        "message": "Successfully deleted test data!",
+        "selling_rate_deleted": sr_deleted,
+        "tax_invoices_deleted": stx_deleted,
+        "retail_bills_deleted": srb_deleted,
+        "pesticide_sales_deleted": pest_deleted
+    }
+
 
 

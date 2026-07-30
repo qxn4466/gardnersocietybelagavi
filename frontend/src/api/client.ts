@@ -408,6 +408,10 @@ export const createPesticideProduct = (name_en: string, name_mr?: string, catego
 export const generate30DaysTestData = (): Promise<{ message: string; selling_rate_entries: number; tax_invoices: number; retail_bills: number; pesticide_sales: number }> =>
   api.post('/shopkeeper/generate-30-days-test-data').then(r => r.data);
 
+export const delete30DaysTestData = (): Promise<{ message: string; selling_rate_deleted: number; tax_invoices_deleted: number; retail_bills_deleted: number; pesticide_sales_deleted: number }> =>
+  api.delete('/shopkeeper/delete-test-data').then(r => r.data);
+
+
 
 
 
