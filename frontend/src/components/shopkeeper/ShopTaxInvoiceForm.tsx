@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus } from 'lucide-react';
-import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus, Zap } from 'lucide-react';
+import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice, generate30DaysTestData } from '../../api/client';
+
+
 import type { ShopTaxInvoice, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -313,7 +315,31 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={async () => {
+              if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days test data across all shop forms?')) return;
+              setLoading(true);
+              try {
+                const res = await generate30DaysTestData();
+                setMsg({
+                  type: 'success',
+                  text: (lang === 'mr' ? '३० दिवसांचा चाचणी डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully added 30 days test data! ') + res.message
+                });
+                loadHistory();
+              } catch {
+                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Zap size={14} color="#d97706" />
+            {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setShowRangePrintModal(true)} style={{ background: '#2563eb', borderColor: '#2563eb' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>

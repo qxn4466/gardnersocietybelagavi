@@ -404,6 +404,11 @@ export const fetchPesticideProducts = (): Promise<DBProductItem[]> =>
 export const createPesticideProduct = (name_en: string, name_mr?: string, category?: string): Promise<DBProductItem> =>
   api.post('/shopkeeper/products', { name_en, name_mr, category }).then(r => r.data);
 
+// 7. Test Data Generator API
+export const generate30DaysTestData = (): Promise<{ message: string; selling_rate_entries: number; tax_invoices: number; retail_bills: number; pesticide_sales: number }> =>
+  api.post('/shopkeeper/generate-30-days-test-data').then(r => r.data);
+
+
 
 
 

@@ -575,3 +575,110 @@ def create_pesticide_product(payload: PesticideProductCreate, db: Session = Depe
     db.refresh(new_prod)
     return new_prod
 
+
+# ─── 7. Test Data Generator Endpoint ──────────────────────────────────────────
+
+from datetime import timedelta
+import random
+
+@router.post("/generate-30-days-test-data")
+def generate_30_days_test_data(db: Session = Depends(get_db)):
+    today_dt = date.today()
+    sample_customers = ["Avinash Suregaonkar", "Ramesh Patil", "Suresh Pawar", "Mahesh Deshmukh", "Ganesh Kulkarni"]
+    sample_products = ["Chlorpyriphos", "Imidacloprid", "Mancozeb", "Neem Oil", "Boric Acid", "Gibberellic Acid (GA3)"]
+
+    selling_count = 0
+    tax_count = 0
+    retail_count = 0
+    pesticide_count = 0
+
+    for i in range(30):
+        entry_date = today_dt - timedelta(days=i)
+        cust = sample_customers[i % len(sample_customers)]
+        prod = sample_products[i % len(sample_products)]
+        qty_val = Decimal(str(random.randint(1, 10)))
+        rate_val = Decimal(str(random.randint(150, 850)))
+        base_amt = qty_val * rate_val
+
+        # 1. Selling Rate Entry
+        sr_entry = ShopSellingRateEntry(
+            date=entry_date,
+            name=cust,
+            particulars=prod,
+            qty=qty_val,
+            amount=base_amt,
+            sgst=base_amt * Decimal("0.09"),
+            cgst=base_amt * Decimal("0.09"),
+            hmall=Decimal("20.00"),
+            motor_rent=Decimal("50.00"),
+            total_amount=base_amt * Decimal("1.18") + Decimal("70.00"),
+            net_rate=rate_val,
+            selling_rate=rate_val * Decimal("1.2"),
+            stock_book_no=f"SB-{entry_date.strftime('%Y%m')}-{i+1:03d}",
+            created_by="Test Generator"
+        )
+        db.add(sr_entry)
+        selling_count += 1
+
+        # 2. Shop Tax Invoice
+        inv_no = f"STX-{entry_date.strftime('%Y')}-{i+501:04d}"
+        tax_inv = ShopTaxInvoice(
+            invoice_no=inv_no,
+            date=entry_date,
+            customer_name=cust,
+            product_name=prod,
+            hsn_code="3808",
+            qty=qty_val,
+            rate=rate_val,
+            amount=base_amt,
+            sgst_rate=Decimal("9.00"),
+            sgst_amount=base_amt * Decimal("0.09"),
+            cgst_rate=Decimal("9.00"),
+            cgst_amount=base_amt * Decimal("0.09"),
+            total_amount=base_amt * Decimal("1.18"),
+            created_by="Test Generator"
+        )
+        db.add(tax_inv)
+        tax_count += 1
+
+        # 3. Shop Retail Bill
+        bill_no = f"RET-{entry_date.strftime('%Y%m')}-{i+501:04d}"
+        ret_bill = ShopRetailBill(
+            bill_no=bill_no,
+            date=entry_date,
+            customer_name=cust,
+            particulars=prod,
+            qty=qty_val,
+            rate=rate_val,
+            amount=base_amt,
+            created_by="Test Generator"
+        )
+        db.add(ret_bill)
+        retail_count += 1
+
+        # 4. Pesticide Sale Entry
+        pest_entry = PesticideSaleEntry(
+            date=entry_date,
+            customer_name=cust,
+            product_name=prod,
+            qty=qty_val,
+            rate=rate_val,
+            amount=base_amt,
+            batch_no=f"BATCH-{i+1:03d}",
+            remarks="Generated 30-day test sale",
+            created_by="Test Generator"
+        )
+        db.add(pest_entry)
+        pesticide_count += 1
+
+    db.commit()
+
+    return {
+        "message": "Successfully generated 30 days of test data across all shop forms!",
+        "selling_rate_entries": selling_count,
+        "tax_invoices": tax_count,
+        "retail_bills": retail_count,
+        "pesticide_sales": pesticide_count
+    }
+
+
