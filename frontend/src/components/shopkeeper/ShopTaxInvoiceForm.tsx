@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X } from 'lucide-react';
-import { fetchNextShopTaxInvoiceNo, createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages } from 'lucide-react';
+import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice } from '../../api/client';
 import type { ShopTaxInvoice, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateToMarathi } from '../../utils/translator';
-
+import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 
 interface ShopTaxInvoiceFormProps {
   user?: User | null;
@@ -18,6 +17,11 @@ interface TaxInvoiceRow {
   qty: number;
   rate: number;
   amount: number;
+  sgst_rate: number;
+  sgst_amount: number;
+  cgst_rate: number;
+  cgst_amount: number;
+  total_amount: number;
 }
 
 const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
@@ -30,7 +34,6 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [date, setDate] = useState(today);
   const [invoiceNo, setInvoiceNo] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -39,35 +42,34 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
   // Multi-item addable grid rows
   const [items, setItems] = useState<TaxInvoiceRow[]>([
-    { id: '1', product_name: PESTICIDE_PRODUCT_LIST[0], hsn_code: '3808', qty: 1, rate: 0, amount: 0 }
+    {
+      id: '1',
+      product_name: PESTICIDE_PRODUCT_LIST[0],
+      hsn_code: '3808',
+      qty: 1,
+      rate: 0,
+      amount: 0,
+      sgst_rate: 9,
+      sgst_amount: 0,
+      cgst_rate: 9,
+      cgst_amount: 0,
+      total_amount: 0,
+    }
   ]);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [history, setHistory] = useState<ShopTaxInvoice[]>([]);
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [showRegisterPrintModal, setShowRegisterPrintModal] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<ShopTaxInvoice | null>(null);
 
-  useEffect(() => {
-    if (!editingId) {
-      loadNextInvoiceNo(date);
-    }
-  }, [date, editingId]);
+  // Print Modals
+  const [showRangePrintModal, setShowRangePrintModal] = useState(false);
+  const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<ShopTaxInvoice | null>(null);
 
   useEffect(() => {
     loadHistory();
+    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   }, [startDate, endDate]);
-
-  const loadNextInvoiceNo = async (d: string) => {
-    try {
-      const res = await fetchNextShopTaxInvoiceNo(d);
-      setInvoiceNo(res.invoice_no);
-    } catch {
-      // ignore
-    }
-  };
 
   const loadHistory = async () => {
     try {
@@ -81,9 +83,22 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const updateRow = (index: number, field: keyof TaxInvoiceRow, val: any) => {
     const updated = [...items];
     const row = { ...updated[index], [field]: val };
-    const q = parseFloat(String(row.qty)) || 0;
+
+    const q = parseFloat(String(row.qty)) || 1;
     const r = parseFloat(String(row.rate)) || 0;
-    row.amount = q * r;
+    const baseAmt = q * r;
+    row.amount = baseAmt;
+
+    const sRate = parseFloat(String(row.sgst_rate)) || 0;
+    const cRate = parseFloat(String(row.cgst_rate)) || 0;
+
+    const sAmt = (baseAmt * sRate) / 100;
+    const cAmt = (baseAmt * cRate) / 100;
+
+    row.sgst_amount = sAmt;
+    row.cgst_amount = cAmt;
+    row.total_amount = baseAmt + sAmt + cAmt;
+
     updated[index] = row;
     setItems(updated);
   };
@@ -91,7 +106,19 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const addRow = () => {
     setItems([
       ...items,
-      { id: Date.now().toString(), product_name: PESTICIDE_PRODUCT_LIST[0], hsn_code: '3808', qty: 1, rate: 0, amount: 0 }
+      {
+        id: Date.now().toString(),
+        product_name: PESTICIDE_PRODUCT_LIST[0],
+        hsn_code: '3808',
+        qty: 1,
+        rate: 0,
+        amount: 0,
+        sgst_rate: 9,
+        sgst_amount: 0,
+        cgst_rate: 9,
+        cgst_amount: 0,
+        total_amount: 0,
+      }
     ]);
   };
 
@@ -100,24 +127,36 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const grandTotal = items.reduce((s, r) => s + (r.amount || 0), 0);
+  const grandTotal = items.reduce((s, r) => s + (r.total_amount || 0), 0);
 
   const handleReset = () => {
     setEditingId(null);
     setDate(today);
+    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     setCustomerName('');
-    setCustomerPhone('');
-    setItems([{ id: '1', product_name: PESTICIDE_PRODUCT_LIST[0], hsn_code: '3808', qty: 1, rate: 0, amount: 0 }]);
+    setItems([
+      {
+        id: '1',
+        product_name: PESTICIDE_PRODUCT_LIST[0],
+        hsn_code: '3808',
+        qty: 1,
+        rate: 0,
+        amount: 0,
+        sgst_rate: 9,
+        sgst_amount: 0,
+        cgst_rate: 9,
+        cgst_amount: 0,
+        total_amount: 0,
+      }
+    ]);
     setMsg(null);
-    loadNextInvoiceNo(today);
   };
 
   const handleEdit = (inv: ShopTaxInvoice) => {
     setEditingId(inv.id);
-    setInvoiceNo(inv.invoice_no);
     setDate(inv.date);
+    setInvoiceNo(inv.invoice_no);
     setCustomerName(inv.customer_name);
-    setCustomerPhone(inv.customer_phone || '');
     setItems([
       {
         id: inv.id.toString(),
@@ -126,9 +165,28 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         qty: inv.qty,
         rate: inv.rate,
         amount: inv.amount,
+        sgst_rate: inv.sgst_rate ?? 9,
+        sgst_amount: inv.sgst_amount ?? 0,
+        cgst_rate: inv.cgst_rate ?? 9,
+        cgst_amount: inv.cgst_amount ?? 0,
+        total_amount: inv.total_amount ?? inv.amount,
       }
     ]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTranslateAllFields = async () => {
+    if (customerName) {
+      const translatedName = await translateToMarathi(customerName);
+      setCustomerName(translatedName);
+    }
+    const updatedItems = await Promise.all(
+      items.map(async item => ({
+        ...item,
+        product_name: await translateToMarathi(item.product_name),
+      }))
+    );
+    setItems(updatedItems);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,7 +196,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
       return;
     }
     if (grandTotal <= 0) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया दर व प्रमाण योग्य प्रविष्ट करा.' : 'Please enter valid Qty and Rate for at least one item.' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया प्रमाण व दर प्रविष्ट करा.' : 'Please enter valid Qty and Rate for items.' });
       return;
     }
 
@@ -147,75 +205,71 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
     try {
       if (editingId) {
         const item = items[0];
-        const updated = await updateShopTaxInvoice(editingId, {
+        await updateShopTaxInvoice(editingId, {
           date,
           invoice_no: invoiceNo,
           customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim() || undefined,
           product_name: item.product_name,
-          hsn_code: item.hsn_code || '3808',
+          hsn_code: item.hsn_code,
           qty: Number(item.qty) || 1,
           rate: Number(item.rate) || 0,
           amount: item.amount,
+          sgst_rate: Number(item.sgst_rate) || 0,
+          sgst_amount: item.sgst_amount,
+          cgst_rate: Number(item.cgst_rate) || 0,
+          cgst_amount: item.cgst_amount,
+          total_amount: item.total_amount,
           created_by: user?.username || 'shopkeeper',
         });
         setMsg({
           type: 'success',
-          text: lang === 'mr' ? `टॅक्स इनव्हॉईस ${invoiceNo} अपडेट केले!` : `Shop Tax Invoice ${invoiceNo} updated successfully!`
+          text: lang === 'mr' ? 'टॅक्स इनव्हॉईस अपडेट केले!' : 'Shop Tax Invoice updated successfully!'
         });
-        setSelectedInvoice(updated);
-        setShowPrintModal(true);
       } else {
-        let createdLast: ShopTaxInvoice | null = null;
         for (const item of items) {
-          if (item.amount > 0) {
-            createdLast = await createShopTaxInvoice({
+          if (item.total_amount > 0) {
+            await createShopTaxInvoice({
               date,
               invoice_no: invoiceNo,
               customer_name: customerName.trim(),
-              customer_phone: customerPhone.trim() || undefined,
               product_name: item.product_name,
-              hsn_code: item.hsn_code || '3808',
+              hsn_code: item.hsn_code,
               qty: Number(item.qty) || 1,
               rate: Number(item.rate) || 0,
               amount: item.amount,
+              sgst_rate: Number(item.sgst_rate) || 0,
+              sgst_amount: item.sgst_amount,
+              cgst_rate: Number(item.cgst_rate) || 0,
+              cgst_amount: item.cgst_amount,
+              total_amount: item.total_amount,
               created_by: user?.username || 'shopkeeper',
             });
           }
         }
         setMsg({
           type: 'success',
-          text: (lang === 'mr' ? `टॅक्स इनव्हॉईस ${invoiceNo} जतन केले!` : `Shop Tax Invoice ${invoiceNo} saved successfully!`) +
-            (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडले गेले)' : ' (Auto-posted to Pesticide Register if applicable)')
+          text: (lang === 'mr' ? 'टॅक्स इनव्हॉईस जतन केले!' : 'Shop Tax Invoice saved successfully!') +
+            (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडली गेली)' : ' (Auto-posted to Pesticide Register if applicable)')
         });
-        if (createdLast) {
-          setSelectedInvoice(createdLast);
-          setShowPrintModal(true);
-        }
       }
 
       loadHistory();
       handleReset();
     } catch {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'इनव्हॉईस जतन करताना त्रुटी आली.' : 'Error saving tax invoice.' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'टॅक्स इनव्हॉईस जतन करताना त्रुटी आली.' : 'Error saving shop tax invoice.' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm(lang === 'mr' ? 'तुम्हाला हे इनव्हॉईस हटवायचे आहे का?' : 'Are you sure you want to delete this invoice?')) return;
+    if (!window.confirm(lang === 'mr' ? 'तुम्हाला हा इनव्हॉईस हटवायचा आहे का?' : 'Are you sure you want to delete this tax invoice?')) return;
     try {
       await deleteShopTaxInvoice(id);
       loadHistory();
     } catch {
       // ignore
     }
-  };
-
-  const handleSingleInvoicePrint = (inv: ShopTaxInvoice) => {
-    setSelectedInvoice(inv);
-    setShowPrintModal(true);
   };
 
   const filteredHistory = history.filter(row =>
@@ -226,27 +280,43 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #2563eb', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)' }}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#dbeafe', padding: 10, borderRadius: 8, color: '#1d4ed8' }}>
+          <div style={{ background: '#dbeafe', padding: 10, borderRadius: 8, color: '#1e40af' }}>
             <Receipt size={22} />
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              2. {lang === 'mr' ? 'दुकान टॅक्स इनव्हॉईस (TAX INVOICE)' : 'TAX INVOICE'}
+              2. {lang === 'mr' ? 'दुकान टॅक्स इनव्हॉईस (Tax Invoice)' : 'Shop Tax Invoice'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              H.O. Phone: 2460534 | Cold Storage Phone: 2478234 | PPO / INSAT Phone: 2461468
+              The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowRegisterPrintModal(true)} style={{ background: '#2563eb', borderColor: '#2563eb' }}>
-            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी इनव्हॉईस प्रिंट करा' : 'Print Month / Range Invoices'}
+          <button className="btn btn-primary btn-sm" onClick={() => setShowRangePrintModal(true)} style={{ background: '#2563eb', borderColor: '#2563eb' }}>
+            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-            <Plus size={14} /> {lang === 'mr' ? 'नवीन इनव्हॉईस' : 'New Invoice'}
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
           </button>
+        </div>
+      </div>
+
+      {/* Official Header Sub-banner matching exact phone specs */}
+      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 14, marginBottom: 20, fontSize: 12, display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+        <div>
+          <div style={{ fontWeight: 700, color: '#1e40af' }}>
+            {lang === 'mr' ? 'द बेळगाव गार्डनर्स को-ऑप. प्रॉडक्शन सप्लाय अँड सेल सोसायटी लि., बेळगाव' : 'The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.'}
+          </div>
+          <div style={{ color: 'var(--text-secondary)' }}>930/1A Zanda Chowk Market, Belagavi – 590002</div>
+        </div>
+        <div style={{ textAlign: 'right', fontSize: 11, color: '#1e3a8a', lineHeight: '1.5' }}>
+          <div><strong>H.O. Phone:</strong> 2460534</div>
+          <div><strong>Cold Storage Phone:</strong> 2478234</div>
+          <div><strong>PPO / INSAT Phone:</strong> 2461468</div>
         </div>
       </div>
 
@@ -260,7 +330,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
       {editingId && (
         <div style={{ background: '#fef3c7', padding: '10px 16px', borderRadius: 8, border: '1px solid #fde68a', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>
-            ✏️ Edit Mode: Updating Tax Invoice #{invoiceNo}
+            ✏️ Edit Mode: Updating Tax Invoice #{editingId} ({invoiceNo})
           </span>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
             <X size={14} /> Cancel Edit
@@ -268,63 +338,67 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Entry Form */}
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No.)' : 'Invoice No.'}</label>
-            <input type="text" className="form-input" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
+            <label className="form-label">{lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No)' : 'Invoice No.'}</label>
+            <input type="text" className="form-input" style={{ fontWeight: 700, color: '#2563eb' }} value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</label>
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="form-label">{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</label>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#1e40af', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}
+                onClick={async () => customerName && setCustomerName(await translateToMarathi(customerName))}
+                title="Translate Customer Name to Marathi"
+              >
+                <Languages size={12} /> {lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi'}
+              </button>
+            </div>
             <input
               type="text"
               className="form-input"
-              placeholder={lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer name'}
+              placeholder={lang === 'mr' ? 'ग्राहकाचे नाव प्रविष्ट करा' : 'Customer name'}
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
               required
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'फोन क्र.' : 'Customer Phone'}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. 9845012345"
-              value={customerPhone}
-              onChange={e => setCustomerPhone(e.target.value)}
-            />
-          </div>
         </div>
 
-        {/* Multi-Item Dynamic Table Grid */}
+        {/* Dynamic Multi-Item Table Grid */}
         <div style={{ background: '#eff6ff', padding: 18, borderRadius: 8, border: '1px solid #bfdbfe', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#1e40af' }}>
-              {lang === 'mr' ? 'उत्पादने तक्ता (Product, HSN Code, Qty, Rate, Amount Grid)' : 'Product, HSN Code, Qty, Rate, Amount Grid'}
+              {lang === 'mr' ? 'इनव्हॉईस वस्तू व जीएसटी तक्ता (Tax Invoice Grid Items)' : 'Tax Invoice Grid Items'}
             </h4>
             {!editingId && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
-                <Plus size={14} /> {lang === 'mr' ? '+ उत्पादने जोडा (Add Item)' : '+ Add Item'}
+                <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
               </button>
             )}
           </div>
 
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', minWidth: 950, fontSize: 13, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#dbeafe', borderBottom: '2px solid #93c5fd' }}>
-                  <th style={{ width: 40, padding: '8px 6px' }}>#</th>
-                  <th style={{ padding: '8px 6px' }}>Product Name</th>
-                  <th style={{ width: 140, padding: '8px 6px' }}>HSN Code</th>
-                  <th style={{ width: 100, padding: '8px 6px' }}>Qty</th>
-                  <th style={{ width: 130, padding: '8px 6px' }}>Rate (₹)</th>
-                  <th style={{ width: 150, padding: '8px 6px', textAlign: 'right' }}>Amount (₹)</th>
-                  <th style={{ width: 50, padding: '8px 6px', textAlign: 'center' }}></th>
+                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
+                  <th style={{ minWidth: 200, padding: '8px 6px' }}>{lang === 'mr' ? 'उत्पादनाचे नाव (Product Name)' : 'Product Name'}</th>
+                  <th style={{ width: 90, padding: '8px 6px' }}>{lang === 'mr' ? 'एचएसएन' : 'HSN Code'}</th>
+                  <th style={{ width: 75, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
+                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
+                  <th style={{ width: 100, padding: '8px 6px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base Amt (₹)'}</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'एसजीएसटी %' : 'SGST %'}</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'सीजीएसटी %' : 'CGST %'}</th>
+                  <th style={{ width: 120, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
+                  <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -339,7 +413,9 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                         onChange={e => updateRow(idx, 'product_name', e.target.value)}
                       >
                         {PESTICIDE_PRODUCT_LIST.map(p => (
-                          <option key={p} value={p}>{p}</option>
+                          <option key={p} value={p}>
+                            {lang === 'mr' ? getMarathiItem(p) : p}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -372,8 +448,39 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                         onChange={e => updateRow(idx, 'rate', e.target.value)}
                       />
                     </td>
-                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#1e40af', fontSize: 14 }}>
+                    <td style={{ padding: '6px 4px', fontWeight: 600 }}>
                       ₹{row.amount.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <select
+                        className="form-input"
+                        style={{ fontSize: 12, padding: '6px 4px' }}
+                        value={row.sgst_rate}
+                        onChange={e => updateRow(idx, 'sgst_rate', e.target.value)}
+                      >
+                        <option value="0">0%</option>
+                        <option value="2.5">2.5%</option>
+                        <option value="6">6%</option>
+                        <option value="9">9%</option>
+                        <option value="14">14%</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <select
+                        className="form-input"
+                        style={{ fontSize: 12, padding: '6px 4px' }}
+                        value={row.cgst_rate}
+                        onChange={e => updateRow(idx, 'cgst_rate', e.target.value)}
+                      >
+                        <option value="0">0%</option>
+                        <option value="2.5">2.5%</option>
+                        <option value="6">6%</option>
+                        <option value="9">9%</option>
+                        <option value="14">14%</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#2563eb', fontSize: 14 }}>
+                      ₹{row.total_amount.toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                       {items.length > 1 && !editingId && (
@@ -389,7 +496,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           </div>
 
           <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#1e40af' }}>
-            Grand Total Invoice Amount: ₹{grandTotal.toFixed(2)}
+            {lang === 'mr' ? 'एकूण इनव्हॉईस रक्कम:' : 'Grand Total Invoice Amount:'} ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
@@ -400,22 +507,10 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd', fontWeight: 600 }}
-            onClick={async () => {
-              if (customerName) {
-                const translatedName = await translateToMarathi(customerName);
-                setCustomerName(translatedName);
-              }
-              const updatedItems = await Promise.all(
-                items.map(async item => ({
-                  ...item,
-                  product_name: await translateToMarathi(item.product_name),
-                }))
-              );
-              setItems(updatedItems);
-            }}
+            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={handleTranslateAllFields}
           >
-            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
@@ -440,32 +535,33 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
               type="text"
               className="form-input"
               style={{ width: 240, padding: '4px 10px', fontSize: 13 }}
-              placeholder={lang === 'mr' ? 'इनव्हॉईस क्र. किंवा नाव शोधा...' : 'Search Invoice No, Name, Product...'}
+              placeholder={lang === 'mr' ? 'इनव्हॉईस क्र. किंवा नाव शोधा...' : 'Search Invoice No, Customer Name...'}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        {/* History Register Table with Edit & Print */}
+        {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
-            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही इनव्हॉईस नोंदी आढळल्या नाहीत.' : 'No shop tax invoices found for selected date range.'}
+            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणतेही टॅक्स इनव्हॉईस आढळले नाहीत.' : 'No shop tax invoices found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
             <table className="table" style={{ width: '100%', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#eff6ff' }}>
-                  <th>Invoice No</th>
-                  <th>Date</th>
-                  <th>Customer Name</th>
-                  <th>Product</th>
-                  <th>HSN Code</th>
-                  <th>Qty</th>
-                  <th>Rate</th>
-                  <th style={{ textAlign: 'right' }}>Amount (₹)</th>
-                  <th style={{ textAlign: 'center' }}>Actions</th>
+                  <th>{lang === 'mr' ? 'इनव्हॉईस क्र.' : 'Invoice No.'}</th>
+                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
+                  <th>{lang === 'mr' ? 'उत्पादनाचे नाव' : 'Product Name'}</th>
+                  <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
+                  <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST (9%)'}</th>
+                  <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST (9%)'}</th>
+                  <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
+                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -473,15 +569,16 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                   <tr key={row.id}>
                     <td style={{ fontWeight: 600 }}>{row.invoice_no}</td>
                     <td>{row.date}</td>
-                    <td>{row.customer_name}</td>
-                    <td>{row.product_name}</td>
-                    <td>{row.hsn_code || '3808'}</td>
+                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
+                    <td>{lang === 'mr' ? getMarathiItem(row.product_name) : row.product_name}</td>
                     <td>{row.qty}</td>
                     <td>₹{Number(row.rate).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.amount).toFixed(2)}</td>
+                    <td>₹{Number(row.sgst_amount).toFixed(2)}</td>
+                    <td>₹{Number(row.cgst_amount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.total_amount).toFixed(2)}</td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => handleSingleInvoicePrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Invoice">
-                        <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
+                      <button className="btn btn-primary btn-sm" onClick={() => setSelectedInvoiceForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Invoice">
+                        <Printer size={13} />
                       </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Invoice">
                         <Edit size={13} color="#2563eb" />
@@ -499,105 +596,99 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
       </div>
 
       {/* Single Invoice Print Modal */}
-      {showPrintModal && selectedInvoice && (
+      {selectedInvoiceForPrint && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '90%', maxWidth: 750, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>TAX INVOICE Preview & Print ({selectedInvoice.invoice_no})</h4>
+              <h4 style={{ fontWeight: 700 }}>Tax Invoice Print #{selectedInvoiceForPrint.invoice_no}</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#2563eb', borderColor: '#2563eb' }}>
-                  <Printer size={14} /> Print Now
+                  <Printer size={14} /> Print Invoice
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowPrintModal(false)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setSelectedInvoiceForPrint(null)}>
                   Close
                 </button>
               </div>
             </div>
 
-            <div className="printable-tax-invoice" style={{ border: '2px solid #000', padding: 24, fontFamily: 'sans-serif', background: '#fff', color: '#000' }}>
-              <div style={{ borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <div style={{ width: '65%' }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 'bold', margin: 0 }}>
-                      The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
-                    </h3>
-                    <div style={{ fontSize: 12, marginTop: 4 }}>
-                      930/1A Zanda Chowk Market, Belagavi – 590002
-                    </div>
-                  </div>
-                  <div style={{ width: '35%', textAlign: 'right', fontSize: 11 }}>
-                    <div><strong>H.O. Phone:</strong> 2460534</div>
-                    <div><strong>Cold Storage Phone:</strong> 2478234</div>
-                    <div><strong>PPO / INSAT Phone:</strong> 2461468</div>
-                  </div>
+            <div className="printable-tax-invoice" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
+                  The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
+                </h3>
+                <div style={{ fontSize: 12, marginTop: 4 }}>930/1A Zanda Chowk Market, Belagavi – 590002</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 6, fontWeight: 'bold' }}>
+                  <span>H.O. Phone: 2460534</span>
+                  <span>Cold Storage Phone: 2478234</span>
+                  <span>PPO / INSAT Phone: 2461468</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginTop: 10, letterSpacing: '0.05em' }}>
+                <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 10, textDecoration: 'underline' }}>
                   TAX INVOICE
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 13 }}>
-                <div><strong>Invoice No:</strong> {selectedInvoice.invoice_no}</div>
-                <div><strong>Date:</strong> {selectedInvoice.date}</div>
-              </div>
-
-              <div style={{ marginBottom: 14, fontSize: 13 }}>
-                <strong>Customer Name:</strong> {selectedInvoice.customer_name} {selectedInvoice.customer_phone ? `(Ph: ${selectedInvoice.customer_phone})` : ''}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 16, borderBottom: '1px solid #000', paddingBottom: 8 }}>
+                <div>
+                  <div><strong>Invoice No:</strong> {selectedInvoiceForPrint.invoice_no}</div>
+                  <div><strong>Customer Name:</strong> {selectedInvoiceForPrint.customer_name}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div><strong>Date:</strong> {selectedInvoiceForPrint.date}</div>
+                  <div><strong>HSN Code:</strong> {selectedInvoiceForPrint.hsn_code || '3808'}</div>
+                </div>
               </div>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
                 <thead>
-                  <tr style={{ background: '#f5f5f5', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'left' }}>Product</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'center' }}>HSN Code</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'center' }}>Qty</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Rate</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Amount</th>
+                  <tr style={{ background: '#f1f5f9', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Product Details</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Qty</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Rate (₹)</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Base Amt (₹)</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>SGST ({selectedInvoiceForPrint.sgst_rate}%)</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>CGST ({selectedInvoiceForPrint.cgst_rate}%)</th>
+                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ minHeight: 60 }}>
-                    <td style={{ border: '1px solid #000', padding: 8, fontWeight: 'bold' }}>{selectedInvoice.product_name}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'center' }}>{selectedInvoice.hsn_code || '3808'}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'center' }}>{selectedInvoice.qty}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>₹{Number(selectedInvoice.rate).toFixed(2)}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(selectedInvoice.amount).toFixed(2)}</td>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>{selectedInvoiceForPrint.product_name}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>{selectedInvoiceForPrint.qty}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(selectedInvoiceForPrint.rate).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(selectedInvoiceForPrint.amount).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(selectedInvoiceForPrint.sgst_amount).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(selectedInvoiceForPrint.cgst_amount).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(selectedInvoiceForPrint.total_amount).toFixed(2)}</td>
                   </tr>
                 </tbody>
-                <tfoot>
-                  <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
-                    <td colSpan={4} style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Total Invoice Amount:</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right', fontSize: 14 }}>₹{Number(selectedInvoice.amount).toFixed(2)}</td>
-                  </tr>
-                </tfoot>
               </table>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginTop: 40 }}>
                 <div>Customer Signature<br /><br />_______________</div>
-                <div>Seller / Shop Keeper Signature<br /><br />_______________</div>
+                <div>Authorized Signatory<br /><br />_______________</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Range Register Print Modal */}
-      {showRegisterPrintModal && (
+      {/* Printable Register View for Date Range */}
+      {showRangePrintModal && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '95%', maxWidth: 900, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>TAX INVOICE REGISTER ({startDate} to {endDate})</h4>
+              <h4 style={{ fontWeight: 700 }}>Shop Tax Invoices Register Print ({startDate} to {endDate})</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#2563eb', borderColor: '#2563eb' }}>
                   <Printer size={14} /> Print Register
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowRegisterPrintModal(false)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowRangePrintModal(false)}>
                   Close
                 </button>
               </div>
@@ -606,10 +697,10 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             <div className="printable-tax-register" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  THE BELGAUM GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM
+                  The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
                 </h3>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
-                  SHOP TAX INVOICES REGISTER (GST 3808)
+                  SHOP TAX INVOICES REGISTER
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Period: {startDate} to {endDate}</div>
               </div>
@@ -617,30 +708,32 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 20 }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>Invoice No</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Inv No.</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Date</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Customer Name</th>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>Product Name</th>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>HSN</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Product Details</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Qty</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Rate (₹)</th>
-                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Amount (₹)</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>SGST</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>CGST</th>
+                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredHistory.length === 0 ? (
-                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 12 }}>No invoices found</td></tr>
+                    <tr><td colSpan={9} style={{ textAlign: 'center', padding: 12 }}>No entries found</td></tr>
                   ) : (
                     filteredHistory.map(row => (
                       <tr key={row.id}>
-                        <td style={{ border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>{row.invoice_no}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.invoice_no}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.customer_name}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.product_name}</td>
-                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.hsn_code || '3808'}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.qty}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(row.rate).toFixed(2)}</td>
-                        <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(row.amount).toFixed(2)}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(row.sgst_amount).toFixed(2)}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(row.cgst_amount).toFixed(2)}</td>
+                        <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(row.total_amount).toFixed(2)}</td>
                       </tr>
                     ))
                   )}
@@ -649,7 +742,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginTop: 40 }}>
                 <div>Shop Keeper Signature<br /><br />_______________</div>
-                <div>Manager Signature<br /><br />_______________</div>
+                <div>Accountant Signature<br /><br />_______________</div>
               </div>
             </div>
           </div>

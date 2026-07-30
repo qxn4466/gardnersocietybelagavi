@@ -1,8 +1,8 @@
 import { translateText } from '../api/client';
 
 // ─── Comprehensive English-to-Marathi Society & Agriculture Dictionary ────────
-const MARATHI_DICTIONARY: Record<string, string> = {
-  // Products
+export const MARATHI_DICTIONARY: Record<string, string> = {
+  // Products & Dropdowns
   'Boric Acid': 'बोरीक ॲसिड',
   'Chlorpyrifos 20% EC': 'क्लोरोपायरीफॉस २०% ईसी',
   'Monocrotophos 36% SL': 'मोनोक्रोटोफॉस ३६% एसएल',
@@ -16,7 +16,7 @@ const MARATHI_DICTIONARY: Record<string, string> = {
   'Spray Pump Battery Operated': 'स्प्रे पंप बॅटरी ऑपरेटेड',
   'Brass Nozzle Set': 'ब्रास नोझल संच',
 
-  // Rent Items
+  // Rent Dropdown Items
   'Cold Storage Shop Rent': 'कोल्ड स्टोरेज दुकान भाडे',
   'Head Office Building Rent': 'हेड ऑफिस इमारत भाडे',
   'Cold Storage Godown Rent': 'कोल्ड स्टोरेज गोदाम भाडे',
@@ -25,7 +25,7 @@ const MARATHI_DICTIONARY: Record<string, string> = {
   'New Shop Rent': 'नवीन दुकान भाडे',
   'Cold Storage Charges': 'कोल्ड स्टोरेज आकार',
 
-  // Cashier Accounts & Particulars
+  // Cashier Accounts & Dropdown Particulars
   'Advance a/c': 'ॲडव्हान्स खाते',
   'PF A/c': 'पीएफ खाते',
   'ESI a/c': 'ईएसआय खाते',
@@ -52,6 +52,35 @@ const MARATHI_DICTIONARY: Record<string, string> = {
   'Pesticide purchase a/c': 'कीटकनाशक खरेदी खाते',
   'Meeting': 'सभा/बैठक',
 
+  // Table Headers
+  'Date': 'दिनांक',
+  'Name': 'नाव',
+  'Customer Name': 'ग्राहकाचे नाव',
+  'Particulars': 'तपशील',
+  'Qty': 'प्रमाण (Qty)',
+  'Amount': 'रक्कम',
+  'Rate': 'दर',
+  'Base Amt (₹)': 'मूळ रक्कम (₹)',
+  'SGST (₹)': 'एसजीएसटी (₹)',
+  'CGST (₹)': 'सीजीएसटी (₹)',
+  'HMall (₹)': 'हमाली (₹)',
+  'Motor Rent (₹)': 'मोटर भाडे (₹)',
+  'Total Amount': 'एकूण रक्कम',
+  'Total (₹)': 'एकूण (₹)',
+  'Net Rate': 'निव्वळ दर',
+  'Selling Rate': 'विक्री दर',
+  'Stock Book No.': 'स्टॉक बुक क्र.',
+  'Sign': 'स्वाक्षरी',
+  'Actions': 'कृती',
+  'Invoice No': 'इनव्हॉईस क्र.',
+  'Bill No': 'बिल क्र.',
+  'HSN Code': 'एचएसएन कोड',
+  'Batch / Source Ref': 'बॅच / संदर्भ',
+  'Product Name': 'उत्पादनाचे नाव',
+  'Share (%)': 'वाटा (%)',
+  'Total Sales (₹)': 'एकूण विक्री (₹)',
+  'Total Qty': 'एकूण प्रमाण',
+
   // General Terms
   'Signed': 'स्वाक्षरीत',
   'Seller Signed': 'विक्रेत्याची स्वाक्षरी',
@@ -65,6 +94,18 @@ const MARATHI_DICTIONARY: Record<string, string> = {
   'Manager': 'व्यवस्थापक',
   'Belgaum': 'बेळगाव',
   'Belagavi': 'बेळगावी',
+};
+
+/**
+ * Synchronously translate dictionary items (labels, dropdowns, headers)
+ */
+export const getMarathiItem = (text: string): string => {
+  if (!text) return '';
+  const trimmed = text.trim();
+  if (MARATHI_DICTIONARY[trimmed]) return MARATHI_DICTIONARY[trimmed];
+  const dictKey = Object.keys(MARATHI_DICTIONARY).find(k => k.toLowerCase() === trimmed.toLowerCase());
+  if (dictKey) return MARATHI_DICTIONARY[dictKey];
+  return text;
 };
 
 // ─── Simple Phonetic English to Devanagari Transliteration Fallback ───────────
@@ -82,10 +123,8 @@ export const phoneticTransliterate = (text: string): string => {
   if (!text) return '';
   let result = text.toLowerCase();
 
-  // Simple token replacements for common words
   const words = result.split(' ');
   const transliteratedWords = words.map(w => {
-    // Check if in dictionary (case-insensitive)
     const foundKey = Object.keys(MARATHI_DICTIONARY).find(k => k.toLowerCase() === w);
     if (foundKey) return MARATHI_DICTIONARY[foundKey];
 
@@ -126,7 +165,7 @@ export const translateToMarathi = async (text: string): Promise<string> => {
   if (!text || !text.trim()) return '';
   const trimmed = text.trim();
 
-  // Tier 1: Exact or case-insensitive Dictionary Match
+  // Tier 1: Dictionary Lookup
   if (MARATHI_DICTIONARY[trimmed]) {
     return MARATHI_DICTIONARY[trimmed];
   }

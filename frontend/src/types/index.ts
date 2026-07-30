@@ -478,6 +478,11 @@ export interface ShopTaxInvoice {
   qty: number;
   rate: number;
   amount: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  total_amount?: number;
   created_by?: string | null;
   created_at?: string | null;
 }
@@ -492,6 +497,11 @@ export interface ShopTaxInvoiceCreate {
   qty?: number;
   rate?: number;
   amount?: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  total_amount?: number;
   created_by?: string;
 }
 
@@ -502,6 +512,7 @@ export interface ShopRetailBill {
   tin_no?: string | null;
   customer_name: string;
   particulars: string;
+  qty?: number;
   rate: number;
   amount: number;
   seller_signature?: string | null;
@@ -515,6 +526,7 @@ export interface ShopRetailBillCreate {
   tin_no?: string;
   customer_name: string;
   particulars: string;
+  qty?: number;
   rate?: number;
   amount?: number;
   seller_signature?: string;

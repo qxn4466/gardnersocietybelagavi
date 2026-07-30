@@ -373,8 +373,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars'}</th>
                   <th style={{ width: 140 }}>{lang === 'mr' ? 'संदर्भ / खाते क्र.' : 'Ref / Account No.'}</th>
                   <th style={{ width: 120, textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम ₹' : 'Amount (₹)'}</th>
-                  <th style={{ width: 100 }}>CGST %</th>
-                  <th style={{ width: 100 }}>SGST %</th>
+                  <th style={{ width: 100 }}>{lang === 'mr' ? 'सीजीएसटी %' : 'CGST %'}</th>
+                  <th style={{ width: 100 }}>{lang === 'mr' ? 'एसजीएसटी %' : 'SGST %'}</th>
                   <th style={{ width: 130, textAlign: 'right' }}>{lang === 'mr' ? 'एकूण ₹' : 'Item Total (₹)'}</th>
                   <th style={{ width: 50, textAlign: 'center' }}></th>
                 </tr>

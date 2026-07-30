@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X } from 'lucide-react';
-import { fetchNextShopRetailBillNo, createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages } from 'lucide-react';
+import { createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
 import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateToMarathi } from '../../utils/translator';
-
+import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 
 interface ShopRetailBillFormProps {
   user?: User | null;
@@ -14,6 +13,7 @@ interface ShopRetailBillFormProps {
 interface RetailBillRow {
   id: string;
   particulars: string;
+  qty: number;
   rate: number;
   amount: number;
 }
@@ -27,9 +27,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   const [date, setDate] = useState(today);
   const [billNo, setBillNo] = useState('');
-  const [tinNo, setTinNo] = useState('29540268502');
   const [customerName, setCustomerName] = useState('');
-  const [sellerSig, setSellerSig] = useState('Seller Signed');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -38,35 +36,28 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   // Multi-item addable grid rows
   const [items, setItems] = useState<RetailBillRow[]>([
-    { id: '1', particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }
+    {
+      id: '1',
+      particulars: PESTICIDE_PRODUCT_LIST[0],
+      qty: 1,
+      rate: 0,
+      amount: 0,
+    }
   ]);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [history, setHistory] = useState<ShopRetailBill[]>([]);
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [showRegisterPrintModal, setShowRegisterPrintModal] = useState(false);
-  const [selectedBill, setSelectedBill] = useState<ShopRetailBill | null>(null);
 
-  useEffect(() => {
-    if (!editingId) {
-      loadNextBillNo(date);
-    }
-  }, [date, editingId]);
+  // Print Modals
+  const [showRangePrintModal, setShowRangePrintModal] = useState(false);
+  const [selectedBillForPrint, setSelectedBillForPrint] = useState<ShopRetailBill | null>(null);
 
   useEffect(() => {
     loadHistory();
+    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   }, [startDate, endDate]);
-
-  const loadNextBillNo = async (d: string) => {
-    try {
-      const res = await fetchNextShopRetailBillNo(d);
-      setBillNo(res.bill_no);
-    } catch {
-      // ignore
-    }
-  };
 
   const loadHistory = async () => {
     try {
@@ -80,8 +71,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const updateRow = (index: number, field: keyof RetailBillRow, val: any) => {
     const updated = [...items];
     const row = { ...updated[index], [field]: val };
+
+    const q = parseFloat(String(row.qty)) || 1;
     const r = parseFloat(String(row.rate)) || 0;
-    row.amount = r;
+    row.amount = q * r;
+
     updated[index] = row;
     setItems(updated);
   };
@@ -89,7 +83,13 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const addRow = () => {
     setItems([
       ...items,
-      { id: Date.now().toString(), particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }
+      {
+        id: Date.now().toString(),
+        particulars: PESTICIDE_PRODUCT_LIST[0],
+        qty: 1,
+        rate: 0,
+        amount: 0,
+      }
     ]);
   };
 
@@ -103,29 +103,49 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const handleReset = () => {
     setEditingId(null);
     setDate(today);
+    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     setCustomerName('');
-    setItems([{ id: '1', particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }]);
-    setSellerSig('Seller Signed');
-    setMsg(null);
-    loadNextBillNo(today);
-  };
-
-  const handleEdit = (b: ShopRetailBill) => {
-    setEditingId(b.id);
-    setBillNo(b.bill_no);
-    setDate(b.date);
-    setTinNo(b.tin_no || '29540268502');
-    setCustomerName(b.customer_name);
-    setSellerSig(b.seller_signature || 'Seller Signed');
     setItems([
       {
-        id: b.id.toString(),
-        particulars: b.particulars,
-        rate: b.rate,
-        amount: b.amount,
+        id: '1',
+        particulars: PESTICIDE_PRODUCT_LIST[0],
+        qty: 1,
+        rate: 0,
+        amount: 0,
+      }
+    ]);
+    setMsg(null);
+  };
+
+  const handleEdit = (bill: ShopRetailBill) => {
+    setEditingId(bill.id);
+    setDate(bill.date);
+    setBillNo(bill.bill_no);
+    setCustomerName(bill.customer_name);
+    setItems([
+      {
+        id: bill.id.toString(),
+        particulars: bill.particulars,
+        qty: bill.qty ?? 1,
+        rate: bill.rate,
+        amount: bill.amount,
       }
     ]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTranslateAllFields = async () => {
+    if (customerName) {
+      const translatedName = await translateToMarathi(customerName);
+      setCustomerName(translatedName);
+    }
+    const updatedItems = await Promise.all(
+      items.map(async item => ({
+        ...item,
+        particulars: await translateToMarathi(item.particulars),
+      }))
+    );
+    setItems(updatedItems);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +155,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       return;
     }
     if (grandTotal <= 0) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया रक्कम प्रविष्ट करा.' : 'Please enter Rate / Amount for at least one item.' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया प्रमाण व दर प्रविष्ट करा.' : 'Please enter valid Qty and Rate for items.' });
       return;
     }
 
@@ -144,73 +164,59 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     try {
       if (editingId) {
         const item = items[0];
-        const updated = await updateShopRetailBill(editingId, {
+        await updateShopRetailBill(editingId, {
           date,
           bill_no: billNo,
-          tin_no: tinNo.trim() || '29540268502',
           customer_name: customerName.trim(),
           particulars: item.particulars,
+          qty: Number(item.qty) || 1,
           rate: Number(item.rate) || 0,
           amount: item.amount,
-          seller_signature: sellerSig,
           created_by: user?.username || 'shopkeeper',
         });
         setMsg({
           type: 'success',
-          text: lang === 'mr' ? `किरकोळ बिल ${billNo} अपडेट केले!` : `Retail Cash Bill ${billNo} updated successfully!`
+          text: lang === 'mr' ? 'किरकोळ रोख बिल अपडेट केले!' : 'Retail cash bill updated successfully!'
         });
-        setSelectedBill(updated);
-        setShowPrintModal(true);
       } else {
-        let createdLast: ShopRetailBill | null = null;
         for (const item of items) {
           if (item.amount > 0) {
-            createdLast = await createShopRetailBill({
+            await createShopRetailBill({
               date,
               bill_no: billNo,
-              tin_no: tinNo.trim() || '29540268502',
               customer_name: customerName.trim(),
               particulars: item.particulars,
+              qty: Number(item.qty) || 1,
               rate: Number(item.rate) || 0,
               amount: item.amount,
-              seller_signature: sellerSig,
               created_by: user?.username || 'shopkeeper',
             });
           }
         }
         setMsg({
           type: 'success',
-          text: (lang === 'mr' ? `किरकोळ बिल ${billNo} जतन केले!` : `Retail Cash Bill ${billNo} saved successfully!`) +
-            (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडले गेले)' : ' (Auto-posted to Pesticide Register if applicable)')
+          text: (lang === 'mr' ? 'किरकोळ रोख बिल जतन केले!' : 'Retail Cash Bill saved successfully!') +
+            (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडली गेली)' : ' (Auto-posted to Pesticide Register if applicable)')
         });
-        if (createdLast) {
-          setSelectedBill(createdLast);
-          setShowPrintModal(true);
-        }
       }
 
       loadHistory();
       handleReset();
     } catch {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'बिल जतन करताना त्रुटी आली.' : 'Error saving retail bill.' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'रोख बिल जतन करताना त्रुटी आली.' : 'Error saving shop retail bill.' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm(lang === 'mr' ? 'तुम्हाला हे बिल हटवायचे आहे का?' : 'Are you sure you want to delete this retail bill?')) return;
+    if (!window.confirm(lang === 'mr' ? 'तुम्हाला हे रोख बिल हटवायचे आहे का?' : 'Are you sure you want to delete this retail cash bill?')) return;
     try {
       await deleteShopRetailBill(id);
       loadHistory();
     } catch {
       // ignore
     }
-  };
-
-  const handleSingleBillPrint = (b: ShopRetailBill) => {
-    setSelectedBill(b);
-    setShowPrintModal(true);
   };
 
   const filteredHistory = history.filter(row =>
@@ -221,6 +227,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #ea580c', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.08)' }}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ background: '#ffedd5', padding: 10, borderRadius: 8, color: '#c2410c' }}>
@@ -228,20 +235,33 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              3. {lang === 'mr' ? 'किरकोळ रोख बिल (TIN / PPO INSAT / BLG/48)' : 'Retail Cash Bill (TIN / PPO INSAT / BLG/48)'}
+              3. {lang === 'mr' ? 'दुकान किरकोळ रोख बिल (Retail Cash Bill)' : 'Shop Retail Cash Bill'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              TIN: 29540268502 | PPO / INSAT / BLG/48 Printed on form | Phone No.: 2460534
+              The Belgaum Gardeners Co-Op Pro Supply and Sale Society Ltd. Belgaum
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowRegisterPrintModal(true)} style={{ background: '#ea580c', borderColor: '#ea580c' }}>
-            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी बिल नोंद प्रिंट करा' : 'Print Month / Range Bills'}
+          <button className="btn btn-primary btn-sm" onClick={() => setShowRangePrintModal(true)} style={{ background: '#ea580c', borderColor: '#ea580c' }}>
+            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-            <Plus size={14} /> {lang === 'mr' ? 'नवीन बिल' : 'New Bill'}
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
           </button>
+        </div>
+      </div>
+
+      {/* Official Sub-banner matching specs */}
+      <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: 14, marginBottom: 20, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: 700, color: '#c2410c' }}>
+            {lang === 'mr' ? 'द बेळगाव गार्डनर्स को-ऑप. प्रॉडक्शन सप्लाय अँड सेल सोसायटी लि., बेळगाव' : 'The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.'}
+          </div>
+          <div style={{ color: 'var(--text-secondary)' }}>TIN: 29540268502 | PPO / INSAT / BLG/48</div>
+        </div>
+        <div style={{ fontWeight: 700, color: '#9a3412', fontSize: 13 }}>
+          Phone No.: 2460534
         </div>
       </div>
 
@@ -255,7 +275,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       {editingId && (
         <div style={{ background: '#fef3c7', padding: '10px 16px', borderRadius: 8, border: '1px solid #fde68a', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>
-            ✏️ Edit Mode: Updating Retail Cash Bill #{billNo}
+            ✏️ Edit Mode: Updating Retail Cash Bill #{editingId} ({billNo})
           </span>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
             <X size={14} /> Cancel Edit
@@ -263,26 +283,33 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Entry Form */}
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'बिल क्र. / इनव्हॉईस क्र.' : 'Bill No. / Invoice No.'}</label>
-            <input type="text" className="form-input" value={billNo} onChange={e => setBillNo(e.target.value)} required />
+            <label className="form-label">{lang === 'mr' ? 'रोख बिल क्र. (Bill No)' : 'Retail Bill No.'}</label>
+            <input type="text" className="form-input" style={{ fontWeight: 700, color: '#ea580c' }} value={billNo} onChange={e => setBillNo(e.target.value)} required />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
-          <div className="form-group">
-            <label className="form-label">TIN No.</label>
-            <input type="text" className="form-input" value={tinNo} onChange={e => setTinNo(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</label>
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="form-label">{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</label>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#c2410c', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}
+                onClick={async () => customerName && setCustomerName(await translateToMarathi(customerName))}
+                title="Translate Customer Name to Marathi"
+              >
+                <Languages size={12} /> {lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi'}
+              </button>
+            </div>
             <input
               type="text"
               className="form-input"
-              placeholder={lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer name'}
+              placeholder={lang === 'mr' ? 'ग्राहकाचे नाव प्रविष्ट करा' : 'Customer name'}
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
               required
@@ -290,11 +317,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Multi-Item Dynamic Table Grid */}
+        {/* Dynamic Multi-Item Table Grid */}
         <div style={{ background: '#fff7ed', padding: 18, borderRadius: 8, border: '1px solid #fed7aa', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#9a3412' }}>
-              {lang === 'mr' ? 'तपशील व दर मेमो (Particulars, Rate, Amount Grid)' : 'Particulars, Rate, Amount Grid'}
+            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#c2410c' }}>
+              {lang === 'mr' ? 'किरकोळ विक्री वस्तू तक्ता (Retail Cash Bill Grid Items)' : 'Retail Cash Bill Grid Items'}
             </h4>
             {!editingId && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
@@ -303,15 +330,16 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             )}
           </div>
 
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', minWidth: 800, fontSize: 13, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#ffedd5', borderBottom: '2px solid #fdba74' }}>
-                  <th style={{ width: 40, padding: '8px 6px' }}>#</th>
-                  <th style={{ padding: '8px 6px' }}>Particulars</th>
-                  <th style={{ width: 160, padding: '8px 6px' }}>Rate (₹)</th>
-                  <th style={{ width: 180, padding: '8px 6px', textAlign: 'right' }}>Amount (₹)</th>
-                  <th style={{ width: 50, padding: '8px 6px', textAlign: 'center' }}></th>
+                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
+                  <th style={{ minWidth: 250, padding: '8px 6px' }}>{lang === 'mr' ? 'तपशील / उत्पादन (Particulars)' : 'Particulars / Product'}</th>
+                  <th style={{ width: 90, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
+                  <th style={{ width: 110, padding: '8px 6px' }}>{lang === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
+                  <th style={{ width: 140, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
+                  <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -326,9 +354,21 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                         onChange={e => updateRow(idx, 'particulars', e.target.value)}
                       >
                         {PESTICIDE_PRODUCT_LIST.map(p => (
-                          <option key={p} value={p}>{p}</option>
+                          <option key={p} value={p}>
+                            {lang === 'mr' ? getMarathiItem(p) : p}
+                          </option>
                         ))}
                       </select>
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        style={{ fontSize: 13, padding: '6px 8px' }}
+                        value={row.qty}
+                        onChange={e => updateRow(idx, 'qty', e.target.value)}
+                      />
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input
@@ -357,7 +397,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
 
           <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#c2410c' }}>
-            Grand Total Retail Amount: ₹{grandTotal.toFixed(2)}
+            {lang === 'mr' ? 'सर्व किरकोळ बिलांची एकूण रक्कम:' : 'Grand Total Retail Amount:'} ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
@@ -368,22 +408,10 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ background: '#ffedd5', color: '#c2410c', borderColor: '#fdba74', fontWeight: 600 }}
-            onClick={async () => {
-              if (customerName) {
-                const translatedName = await translateToMarathi(customerName);
-                setCustomerName(translatedName);
-              }
-              const updatedItems = await Promise.all(
-                items.map(async item => ({
-                  ...item,
-                  particulars: await translateToMarathi(item.particulars),
-                }))
-              );
-              setItems(updatedItems);
-            }}
+            style={{ background: '#ffedd5', color: '#c2410c', borderColor: '#fdba74', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={handleTranslateAllFields}
           >
-            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
@@ -415,7 +443,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* History Register Table with Edit & Print */}
+        {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही बिल नोंदी आढळल्या नाहीत.' : 'No retail bills found for selected date range.'}
@@ -425,13 +453,13 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             <table className="table" style={{ width: '100%', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#fff7ed' }}>
-                  <th>Bill / Invoice No.</th>
-                  <th>Date</th>
-                  <th>Customer Name</th>
-                  <th>Particulars</th>
-                  <th>Rate</th>
-                  <th style={{ textAlign: 'right' }}>Total (₹)</th>
-                  <th style={{ textAlign: 'center' }}>Actions</th>
+                  <th>{lang === 'mr' ? 'बिल क्र.' : 'Bill / Invoice No.'}</th>
+                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
+                  <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
+                  <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
+                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -439,13 +467,13 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                   <tr key={row.id}>
                     <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
                     <td>{row.date}</td>
-                    <td>{row.customer_name}</td>
-                    <td>{row.particulars}</td>
+                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
+                    <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
                     <td>₹{Number(row.rate).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{Number(row.amount).toFixed(2)}</td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => handleSingleBillPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }} title="Print Bill">
-                        <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
+                      <button className="btn btn-primary btn-sm" onClick={() => setSelectedBillForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }} title="Print Bill">
+                        <Printer size={13} />
                       </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Bill">
                         <Edit size={13} color="#ea580c" />
@@ -463,90 +491,87 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       </div>
 
       {/* Single Bill Print Modal */}
-      {showPrintModal && selectedBill && (
+      {selectedBillForPrint && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '90%', maxWidth: 650, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>Retail Cash Bill Preview & Print ({selectedBill.bill_no})</h4>
+              <h4 style={{ fontWeight: 700 }}>Retail Cash Bill Print #{selectedBillForPrint.bill_no}</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#ea580c', borderColor: '#ea580c' }}>
-                  <Printer size={14} /> Print Now
+                  <Printer size={14} /> Print Bill
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowPrintModal(false)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setSelectedBillForPrint(null)}>
                   Close
                 </button>
               </div>
             </div>
 
-            <div className="printable-retail-bill" style={{ border: '2px solid #000', padding: 24, fontFamily: 'sans-serif', background: '#fff', color: '#000' }}>
-              <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 8, marginBottom: 12 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 'bold', margin: 0 }}>
+            <div className="printable-retail-bill" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
                   The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
                 </h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 6, fontWeight: 'bold' }}>
-                  <span>TIN: {selectedBill.tin_no || '29540268502'}</span>
-                  <span>PPO / INSAT / BLG/48</span>
-                  <span>Phone No.: 2460534</span>
+                <div style={{ fontSize: 12, marginTop: 4 }}>TIN: 29540268502 | PPO / INSAT / BLG/48 | Phone: 2460534</div>
+                <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 10, textDecoration: 'underline' }}>
+                  RETAIL CASH BILL
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 13 }}>
-                <div><strong>Bill No. / Invoice No.:</strong> {selectedBill.bill_no}</div>
-                <div><strong>Date:</strong> {selectedBill.date}</div>
-              </div>
-
-              <div style={{ marginBottom: 14, fontSize: 13 }}>
-                <strong>Customer Name:</strong> {selectedBill.customer_name}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 16, borderBottom: '1px solid #000', paddingBottom: 8 }}>
+                <div>
+                  <div><strong>Bill No:</strong> {selectedBillForPrint.bill_no}</div>
+                  <div><strong>Customer Name:</strong> {selectedBillForPrint.customer_name}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div><strong>Date:</strong> {selectedBillForPrint.date}</div>
+                </div>
               </div>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
                 <thead>
-                  <tr style={{ background: '#f5f5f5', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'left' }}>Particulars</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Rate</th>
-                    <th style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Amount</th>
+                  <tr style={{ background: '#f1f5f9', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Particulars / Product</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Qty</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Rate (₹)</th>
+                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ minHeight: 50 }}>
-                    <td style={{ border: '1px solid #000', padding: 8, fontWeight: 'bold' }}>{selectedBill.particulars}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>₹{Number(selectedBill.rate).toFixed(2)}</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(selectedBill.amount).toFixed(2)}</td>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>{selectedBillForPrint.particulars}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>{selectedBillForPrint.qty}</td>
+                    <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(selectedBillForPrint.rate).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(selectedBillForPrint.amount).toFixed(2)}</td>
                   </tr>
                 </tbody>
-                <tfoot>
-                  <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
-                    <td colSpan={2} style={{ border: '1px solid #000', padding: 8, textAlign: 'right' }}>Total:</td>
-                    <td style={{ border: '1px solid #000', padding: 8, textAlign: 'right', fontSize: 14 }}>₹{Number(selectedBill.amount).toFixed(2)}</td>
-                  </tr>
-                </tfoot>
               </table>
 
-              <div style={{ marginTop: 40, textAlign: 'right', fontSize: 12, fontWeight: 'bold' }}>
-                Seller's Signature: __________________
+              <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginTop: 40 }}>
+                <div>Customer Signature<br /><br />_______________</div>
+                <div>Shop Keeper Signature<br /><br />_______________</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Range Register Print Modal */}
-      {showRegisterPrintModal && (
+      {/* Printable Register View for Date Range */}
+      {showRangePrintModal && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '95%', maxWidth: 900, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>RETAIL CASH BILLS REGISTER ({startDate} to {endDate})</h4>
+              <h4 style={{ fontWeight: 700 }}>Shop Retail Cash Bills Register Print ({startDate} to {endDate})</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#ea580c', borderColor: '#ea580c' }}>
                   <Printer size={14} /> Print Register
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowRegisterPrintModal(false)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowRangePrintModal(false)}>
                   Close
                 </button>
               </div>
@@ -555,10 +580,10 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             <div className="printable-retail-register" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  THE BELGAUM GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM
+                  The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
                 </h3>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
-                  RETAIL CASH BILLS REGISTER (TIN 29540268502)
+                  RETAIL CASH BILLS REGISTER
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Period: {startDate} to {endDate}</div>
               </div>
@@ -566,24 +591,26 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 20 }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>Bill No</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Bill No.</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Date</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Customer Name</th>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>Particulars</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Particulars / Product</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Qty</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Rate (₹)</th>
-                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Amount (₹)</th>
+                    <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredHistory.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 12 }}>No bills found</td></tr>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 12 }}>No entries found</td></tr>
                   ) : (
                     filteredHistory.map(row => (
                       <tr key={row.id}>
-                        <td style={{ border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>{row.bill_no}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.bill_no}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.customer_name}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.particulars}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.qty}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(row.rate).toFixed(2)}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(row.amount).toFixed(2)}</td>
                       </tr>
@@ -594,7 +621,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginTop: 40 }}>
                 <div>Shop Keeper Signature<br /><br />_______________</div>
-                <div>Manager Signature<br /><br />_______________</div>
+                <div>Accountant Signature<br /><br />_______________</div>
               </div>
             </div>
           </div>

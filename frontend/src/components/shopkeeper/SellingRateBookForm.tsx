@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X, Languages } from 'lucide-react';
 import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry } from '../../api/client';
 import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateToMarathi } from '../../utils/translator';
+import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 
 interface SellingRateBookFormProps {
   user?: User | null;
@@ -176,6 +176,24 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleTranslateAllFields = async () => {
+    if (name) {
+      const translatedName = await translateToMarathi(name);
+      setName(translatedName);
+    }
+    if (stockBookNo) {
+      const translatedStock = await translateToMarathi(stockBookNo);
+      setStockBookNo(translatedStock);
+    }
+    const updatedItems = await Promise.all(
+      items.map(async item => ({
+        ...item,
+        particulars: await translateToMarathi(item.particulars),
+      }))
+    );
+    setItems(updatedItems);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -191,7 +209,6 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     setMsg(null);
     try {
       if (editingId) {
-        // Edit single entry update
         const item = items[0];
         await updateSellingRateEntry(editingId, {
           date,
@@ -215,7 +232,6 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           text: lang === 'mr' ? 'विक्री दर पुस्तक नोंद अपडेट केली!' : 'Selling Rate Book entry updated successfully!'
         });
       } else {
-        // Create new multi-item entries
         for (const item of items) {
           if (item.total_amount > 0) {
             await createSellingRateEntry({
@@ -319,8 +335,19 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
+
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#15803d', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}
+                onClick={async () => name && setName(await translateToMarathi(name))}
+                title="Translate Name to Marathi"
+              >
+                <Languages size={12} /> {lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi'}
+              </button>
+            </div>
             <input
               type="text"
               className="form-input"
@@ -330,6 +357,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
               required
             />
           </div>
+
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'स्टॉक बुक क्र. (Stock Book No)' : 'Stock Book No.'}</label>
             <input
@@ -360,16 +388,16 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
               <thead>
                 <tr style={{ background: '#dcfce7', borderBottom: '2px solid #86efac' }}>
                   <th style={{ width: 35, padding: '8px 6px' }}>#</th>
-                  <th style={{ minWidth: 200, padding: '8px 6px' }}>Particulars</th>
-                  <th style={{ width: 75, padding: '8px 6px' }}>Qty</th>
-                  <th style={{ width: 100, padding: '8px 6px' }}>Base Amt (₹)</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>SGST (₹)</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>CGST (₹)</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>HMall (₹)</th>
-                  <th style={{ width: 95, padding: '8px 6px' }}>Motor Rent (₹)</th>
-                  <th style={{ width: 110, padding: '8px 6px', textAlign: 'right' }}>Total (₹)</th>
-                  <th style={{ width: 95, padding: '8px 6px' }}>Net Rate</th>
-                  <th style={{ width: 105, padding: '8px 6px' }}>Selling Rate</th>
+                  <th style={{ minWidth: 200, padding: '8px 6px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars'}</th>
+                  <th style={{ width: 75, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
+                  <th style={{ width: 100, padding: '8px 6px' }}>{lang === 'mr' ? 'मूळ रक्कम (Base Amt)' : 'Base Amt (₹)'}</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST (₹)'}</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST (₹)'}</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'हमाली' : 'HMall (₹)'}</th>
+                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent (₹)'}</th>
+                  <th style={{ width: 110, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
+                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
+                  <th style={{ width: 105, padding: '8px 6px' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
                   <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}></th>
                 </tr>
               </thead>
@@ -385,7 +413,9 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         onChange={e => updateRow(idx, 'particulars', e.target.value)}
                       >
                         {PESTICIDE_PRODUCT_LIST.map(p => (
-                          <option key={p} value={p}>{p}</option>
+                          <option key={p} value={p}>
+                            {lang === 'mr' ? getMarathiItem(p) : p}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -479,7 +509,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
 
           <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#15803d' }}>
-            Grand Total Amount: ₹{grandTotal.toFixed(2)}
+            {lang === 'mr' ? 'सर्व नोंदींची एकूण रक्कम:' : 'Grand Total Amount:'} ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
@@ -490,22 +520,10 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ background: '#dcfce7', color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
-            onClick={async () => {
-              if (name) {
-                const translatedName = await translateToMarathi(name);
-                setName(translatedName);
-              }
-              const updatedItems = await Promise.all(
-                items.map(async item => ({
-                  ...item,
-                  particulars: await translateToMarathi(item.particulars),
-                }))
-              );
-              setItems(updatedItems);
-            }}
+            style={{ background: '#dcfce7', color: '#15803d', borderColor: '#86efac', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={handleTranslateAllFields}
           >
-            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
@@ -537,7 +555,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* History Register Table with Edit Option */}
+        {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही नोंदी आढळल्या नाहीत.' : 'No rate book entries found for selected date range.'}
@@ -547,21 +565,21 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             <table className="table" style={{ width: '100%', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#f0fdf4' }}>
-                  <th>Date</th>
-                  <th>Name</th>
-                  <th>Particulars</th>
-                  <th>Qty</th>
-                  <th>Amount</th>
-                  <th>SGST</th>
-                  <th>CGST</th>
-                  <th>HMall</th>
-                  <th>Motor Rent</th>
-                  <th style={{ color: '#16a34a' }}>Total Amount</th>
-                  <th>Net Rate</th>
-                  <th style={{ color: '#2563eb' }}>Selling Rate</th>
-                  <th>Stock Book No.</th>
-                  <th>Sign</th>
-                  <th style={{ textAlign: 'center' }}>Actions</th>
+                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th>{lang === 'mr' ? 'नाव' : 'Name'}</th>
+                  <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
+                  <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
+                  <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
+                  <th>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
+                  <th>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
+                  <th style={{ color: '#16a34a' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                  <th>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
+                  <th style={{ color: '#2563eb' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
+                  <th>{lang === 'mr' ? 'स्टॉक बुक क्र.' : 'Stock Book No.'}</th>
+                  <th>{lang === 'mr' ? 'स्वाक्षरी' : 'Sign'}</th>
+                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -569,7 +587,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <tr key={row.id}>
                     <td>{row.date}</td>
                     <td style={{ fontWeight: 600 }}>{row.name}</td>
-                    <td>{row.particulars}</td>
+                    <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
                     <td>{row.qty}</td>
                     <td>₹{Number(row.amount).toFixed(2)}</td>
                     <td>₹{Number(row.sgst).toFixed(2)}</td>
