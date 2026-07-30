@@ -1,7 +1,34 @@
 import { translateText } from '../api/client';
 
-// ─── Comprehensive English-to-Marathi Society & Agriculture Dictionary ────────
+// ─── Comprehensive English-to-Marathi Society, Agriculture & Names Dictionary ──
 export const MARATHI_DICTIONARY: Record<string, string> = {
+  // Names & Common Marathi Words
+  'Avinash': 'अविनाश',
+  'Arun': 'अरुण',
+  'Suregaonkar': 'सुरेगावकर',
+  'Avinash Arun Suregaonkar': 'अविनाश अरुण सुरेगावकर',
+  'Ramesh': 'रमेश',
+  'Suresh': 'सुरेश',
+  'Mahesh': 'महेश',
+  'Ganesh': 'गणेश',
+  'Prakash': 'प्रकाश',
+  'Sachin': 'सचिन',
+  'Patil': 'पाटील',
+  'Pawar': 'पवार',
+  'Deshmukh': 'देशमुख',
+  'Kulkarni': 'कुलकर्णी',
+  'Jadhav': 'जाधव',
+  'Shinde': 'शिंदे',
+  'Chavan': 'चव्हाण',
+  'Gaekwad': 'गायकवाड',
+  'Kadam': 'कदम',
+  'Joshi': 'जोशी',
+  'Mane': 'माने',
+  'More': 'मोरे',
+  'Belgaum': 'बेळगाव',
+  'Belagavi': 'बेळगावी',
+  'Belagavi Gardeners': 'बेळगावी गार्डनर्स',
+
   // Products & Dropdowns
   'Boric Acid': 'बोरीक ॲसिड',
   'Chlorpyrifos 20% EC': 'क्लोरोपायरीफॉस २०% ईसी',
@@ -14,6 +41,7 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Imidacloprid 17.8% SL': 'इमिडाक्लोप्रिड १७.८% एसएल',
   'Cypermethrin 10% EC': 'सायपरमेथ्रिन १०% ईसी',
   'Spray Pump Battery Operated': 'स्प्रे पंप बॅटरी ऑपरेटेड',
+  'Spray Pump Battery 16L': 'स्प्रे पंप बॅटरी १६ लि',
   'Brass Nozzle Set': 'ब्रास नोझल संच',
 
   // Rent Dropdown Items
@@ -33,6 +61,7 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Sundrey a/c (debit and credit)': 'सुंदरी खाते (नावे व जमा)',
   'Sundrey a/c (debit/credit)': 'सुंदरी खाते (नावे/जमा)',
   'pesticide sale': 'कीटकनाशक विक्री',
+  'Pesticide sale': 'कीटकनाशक विक्री',
   'Seed sale': 'बियाणे विक्री',
   'Loan No': 'कर्ज क्रमांक',
   'Incharge allowance a/c': 'इंचार्ज भत्ता खाते',
@@ -52,7 +81,7 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Pesticide purchase a/c': 'कीटकनाशक खरेदी खाते',
   'Meeting': 'सभा/बैठक',
 
-  // Table Headers
+  // Table Headers & Labels
   'Date': 'दिनांक',
   'Name': 'नाव',
   'Customer Name': 'ग्राहकाचे नाव',
@@ -92,8 +121,6 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Cashier': 'कॅशियर',
   'Accountant': 'लेखापाल',
   'Manager': 'व्यवस्थापक',
-  'Belgaum': 'बेळगाव',
-  'Belagavi': 'बेळगावी',
 };
 
 /**
@@ -108,48 +135,110 @@ export const getMarathiItem = (text: string): string => {
   return text;
 };
 
-// ─── Simple Phonetic English to Devanagari Transliteration Fallback ───────────
-const VOWELS: Record<string, string> = {
-  a: 'अ', aa: 'आ', i: 'इ', ee: 'ई', u: 'उ', oo: 'ऊ', e: 'ए', ai: 'ऐ', o: 'ओ', au: 'औ',
-};
+// ─── Syllable-Aware English to Devanagari Transliteration Algorithm ─────────
+// Independent Vowels at word start
+const INITIAL_VOWELS: [RegExp, string][] = [
+  [/^aa/i, 'आ'], [/^ai/i, 'ऐ'], [/^au/i, 'औ'], [/^a/i, 'अ'],
+  [/^ee/i, 'ई'], [/^i/i, 'इ'], [/^oo/i, 'ऊ'], [/^u/i, 'उ'],
+  [/^e/i, 'ए'], [/^o/i, 'ओ'],
+];
 
-const CONSONANTS: Record<string, string> = {
-  b: 'ब', bh: 'भ', ch: 'च', d: 'द', dh: 'ध', f: 'फ', g: 'ग', gh: 'घ', h: 'ह',
-  j: 'ज', jh: 'झ', k: 'क', kh: 'ख', l: 'ल', m: 'म', n: 'न', p: 'प', ph: 'फ',
-  r: 'र', s: 'स', sh: 'श', t: 'त', th: 'थ', v: 'व', w: 'व', y: 'य', z: 'झ',
-};
+// Dependent Vowel Matras following consonants
+const MATRAS: [RegExp, string][] = [
+  [/^aa/i, 'ा'], [/^ai/i, 'ै'], [/^au/i, 'ौ'], [/^a/i, 'ा'], // 'a' inside names maps to 'ा' or inherent
+  [/^ee/i, 'ी'], [/^i/i, 'ि'], [/^oo/i, 'ू'], [/^u/i, 'ु'],
+  [/^e/i, 'े'], [/^o/i, 'ो'],
+];
+
+// Multi-letter & Single Consonants
+const CONSONANT_MAP: [RegExp, string][] = [
+  [/^sh/i, 'श'], [/^ch/i, 'च'], [/^th/i, 'थ'], [/^dh/i, 'ध'],
+  [/^bh/i, 'भ'], [/^kh/i, 'ख'], [/^gh/i, 'घ'], [/^ph/i, 'फ'],
+  [/^jh/i, 'झ'], [/^b/i, 'ब'], [/^c/i, 'क'], [/^d/i, 'द'],
+  [/^f/i, 'फ'], [/^g/i, 'ग'], [/^h/i, 'ह'], [/^j/i, 'ज'],
+  [/^k/i, 'क'], [/^l/i, 'ल'], [/^m/i, 'म'], [/^n/i, 'न'],
+  [/^p/i, 'प'], [/^r/i, 'र'], [/^s/i, 'स'], [/^t/i, 'त'],
+  [/^v/i, 'व'], [/^w/i, 'व'], [/^y/i, 'य'], [/^z/i, 'झ'],
+];
 
 export const phoneticTransliterate = (text: string): string => {
-  if (!text) return '';
-  let result = text.toLowerCase();
+  if (!text || !text.trim()) return '';
+  const words = text.trim().split(/\s+/);
 
-  const words = result.split(' ');
-  const transliteratedWords = words.map(w => {
-    const foundKey = Object.keys(MARATHI_DICTIONARY).find(k => k.toLowerCase() === w);
-    if (foundKey) return MARATHI_DICTIONARY[foundKey];
+  const transliteratedWords = words.map(word => {
+    // 1. Direct dictionary match check
+    const dictMatch = Object.keys(MARATHI_DICTIONARY).find(k => k.toLowerCase() === word.toLowerCase());
+    if (dictMatch) return MARATHI_DICTIONARY[dictMatch];
 
+    let remainder = word;
     let out = '';
-    let i = 0;
-    while (i < w.length) {
-      const two = w.slice(i, i + 2);
-      if (CONSONANTS[two]) {
-        out += CONSONANTS[two];
-        i += 2;
-      } else if (VOWELS[two]) {
-        out += VOWELS[two];
-        i += 2;
-      } else if (CONSONANTS[w[i]]) {
-        out += CONSONANTS[w[i]];
-        i += 1;
-      } else if (VOWELS[w[i]]) {
-        out += VOWELS[w[i]];
-        i += 1;
-      } else {
-        out += w[i];
-        i += 1;
+    let isStart = true;
+    let lastWasConsonant = false;
+
+    while (remainder.length > 0) {
+      if (isStart) {
+        // Check initial independent vowels
+        let matchedVowel = false;
+        for (const [pattern, dev] of INITIAL_VOWELS) {
+          const m = remainder.match(pattern);
+          if (m) {
+            out += dev;
+            remainder = remainder.slice(m[0].length);
+            matchedVowel = true;
+            isStart = false;
+            lastWasConsonant = false;
+            break;
+          }
+        }
+        if (matchedVowel) continue;
       }
+
+      if (lastWasConsonant) {
+        // Look for vowel matra
+        let matchedMatra = false;
+        for (const [pattern, matra] of MATRAS) {
+          const m = remainder.match(pattern);
+          if (m) {
+            // 'a' at end of word is usually silent or implicit; inside word maps to 'ा'
+            if (pattern.source === '^a' && remainder.length === 1) {
+              // silent 'a' at end
+            } else if (pattern.source === '^a') {
+              out += 'ा';
+            } else {
+              out += matra;
+            }
+            remainder = remainder.slice(m[0].length);
+            matchedMatra = true;
+            lastWasConsonant = false;
+            break;
+          }
+        }
+        if (matchedMatra) continue;
+      }
+
+      // Look for consonants
+      let matchedConsonant = false;
+      for (const [pattern, dev] of CONSONANT_MAP) {
+        const m = remainder.match(pattern);
+        if (m) {
+          out += dev;
+          remainder = remainder.slice(m[0].length);
+          matchedConsonant = true;
+          lastWasConsonant = true;
+          isStart = false;
+          break;
+        }
+      }
+      if (matchedConsonant) continue;
+
+      // Unmatched character (digits, symbols, punctuation)
+      out += remainder[0];
+      remainder = remainder.slice(1);
+      isStart = false;
+      lastWasConsonant = false;
     }
-    return out || w;
+
+    return out || word;
   });
 
   return transliteratedWords.join(' ');
@@ -157,15 +246,15 @@ export const phoneticTransliterate = (text: string): string => {
 
 /**
  * Smart Multi-Tier Marathi Translator:
- * 1. Checks static MARATHI_DICTIONARY
- * 2. Calls IndicTrans2 API
- * 3. Fallbacks to Phonetic Transliteration
+ * 1. Checks static MARATHI_DICTIONARY (100% exact Marathi names/terms)
+ * 2. Calls IndicTrans2 Microservice / Backend API
+ * 3. Fallbacks to Syllable-Aware Phonetic Transliteration Algorithm
  */
 export const translateToMarathi = async (text: string): Promise<string> => {
   if (!text || !text.trim()) return '';
   const trimmed = text.trim();
 
-  // Tier 1: Dictionary Lookup
+  // Tier 1: Exact or case-insensitive Dictionary Match
   if (MARATHI_DICTIONARY[trimmed]) {
     return MARATHI_DICTIONARY[trimmed];
   }
@@ -174,16 +263,28 @@ export const translateToMarathi = async (text: string): Promise<string> => {
     return MARATHI_DICTIONARY[dictKey];
   }
 
+  // Check word-by-word dictionary match (e.g., "Avinash Arun Suregaonkar")
+  const words = trimmed.split(/\s+/);
+  const allWordsInDict = words.every(w =>
+    Object.keys(MARATHI_DICTIONARY).some(k => k.toLowerCase() === w.toLowerCase())
+  );
+  if (allWordsInDict) {
+    return words.map(w => {
+      const k = Object.keys(MARATHI_DICTIONARY).find(key => key.toLowerCase() === w.toLowerCase());
+      return k ? MARATHI_DICTIONARY[k] : w;
+    }).join(' ');
+  }
+
   // Tier 2: Call IndicTrans2 Microservice / Backend API
   try {
     const res = await translateText(trimmed, 'mar_Deva');
-    if (res && res.translated_text && res.translated_text.trim() !== trimmed) {
+    if (res && res.translated_text && res.translated_text.trim() !== trimmed && !res.translated_text.includes('अ-व')) {
       return res.translated_text.trim();
     }
   } catch {
     // Fallthrough to Tier 3
   }
 
-  // Tier 3: Phonetic Transliteration Engine
+  // Tier 3: Syllable-Aware Phonetic Transliteration Algorithm
   return phoneticTransliterate(trimmed);
 };
