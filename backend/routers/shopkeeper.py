@@ -388,8 +388,18 @@ def get_shopkeeper_audit_summary(
     end_date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    s_date = date.fromisoformat(start_date) if start_date else date(date.today().year, 1, 1)
-    e_date = date.fromisoformat(end_date) if end_date else date.today()
+    try:
+        s_date = date.fromisoformat(start_date) if (start_date and start_date.strip()) else date(2020, 1, 1)
+    except Exception:
+        s_date = date(2020, 1, 1)
+
+    try:
+        e_date = date.fromisoformat(end_date) if (end_date and end_date.strip()) else date(2035, 12, 31)
+    except Exception:
+        e_date = date(2035, 12, 31)
+
+    if s_date > e_date:
+        s_date, e_date = e_date, s_date
 
     sr_query = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.date >= s_date, ShopSellingRateEntry.date <= e_date)
     stx_query = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.date >= s_date, ShopTaxInvoice.date <= e_date)
@@ -421,7 +431,17 @@ def get_shopkeeper_audit_summary(
         total_retail_bill_amount=Decimal(str(srb_sum)),
         total_pesticide_sales_count=pest_count,
         total_pesticide_sale_amount=Decimal(str(pest_sum)),
-        grand_shop_sales_total=grand_total
+        grand_shop_sales_total=grand_total,
+
+        total_receipt_vouchers_count=0,
+        total_receipt_amount=Decimal("0.00"),
+        total_rent_bills_count=0,
+        total_rent_bill_amount=Decimal("0.00"),
+        total_scroll_received=Decimal("0.00"),
+        total_scroll_paid=Decimal("0.00"),
+        total_scroll_cheque=Decimal("0.00"),
+        total_cheques_issued_count=0,
+        total_cheques_issued_amount=Decimal("0.00")
     )
 
 
@@ -621,7 +641,8 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         selling_count += 1
 
         # 2. Shop Tax Invoice
-        inv_no = f"STX-{entry_date.strftime('%Y')}-{i+501:04d}"
+        rnd_tag = random.randint(1000, 9999)
+        inv_no = f"STX-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
         tax_inv = ShopTaxInvoice(
             invoice_no=inv_no,
             date=entry_date,
@@ -637,7 +658,7 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         tax_count += 1
 
         # 3. Shop Retail Bill
-        bill_no = f"RET-{entry_date.strftime('%Y%m')}-{i+501:04d}"
+        bill_no = f"RET-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
         ret_bill = ShopRetailBill(
             bill_no=bill_no,
             date=entry_date,
