@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages } from 'lucide-react';
 import { createChequeIssueEntry, fetchChequeIssueEntries, deleteChequeIssueEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { ChequeIssueBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-
+import { translateToMarathi } from '../../utils/translator';
 
 interface ChequeIssueBookFormProps {
   user?: User | null;
@@ -12,12 +12,17 @@ interface ChequeIssueBookFormProps {
 const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [nameToWhomIssued, setNameToWhomIssued] = useState('');
   const [chequeNo, setChequeNo] = useState('');
   const [amount, setAmount] = useState<string>('');
   const [remarks, setRemarks] = useState('');
+
+  // Date Filters
+  const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
+  const [endDateFilter, setEndDateFilter] = useState(today);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -30,7 +35,7 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
   useEffect(() => {
     loadHistory();
     loadOffice();
-  }, []);
+  }, [startDateFilter, endDateFilter]);
 
   const loadOffice = async () => {
     try {
@@ -43,10 +48,17 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
 
   const loadHistory = async () => {
     try {
-      const data = await fetchChequeIssueEntries();
+      const data = await fetchChequeIssueEntries(startDateFilter, endDateFilter);
       setHistory(data);
     } catch {
       // ignore
+    }
+  };
+
+  const handleTranslateName = async () => {
+    if (nameToWhomIssued.trim()) {
+      const tr = await translateToMarathi(nameToWhomIssued);
+      setNameToWhomIssued(tr);
     }
   };
 
@@ -203,7 +215,16 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">{lang === 'mr' ? 'ज्यांच्या नावावर दिला (Name to whom Issued)' : 'Name to whom Issued'}</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'ज्यांच्या नावावर दिला (Name to whom Issued)' : 'Name to whom Issued'}</label>
+              <button
+                type="button"
+                onClick={handleTranslateName}
+                style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+              </button>
+            </div>
             <input
               type="text"
               className="form-input"
@@ -262,15 +283,23 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
       </form>
 
       {/* Search & Filter Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <input
-          type="text"
-          className="form-input"
-          style={{ maxWidth: 300 }}
-          placeholder={lang === 'mr' ? 'चेक क्र. किंवा नावाने शोधा...' : 'Search by Cheque No or Name...'}
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, background: '#f8fafc', padding: '10px 16px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Calendar size={15} color="var(--blue-600)" />
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+          <span style={{ fontSize: 12 }}>to</span>
+          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+          <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+          <input
+            type="text"
+            className="form-input"
+            style={{ width: 180, padding: '3px 6px', fontSize: 12 }}
+            placeholder={lang === 'mr' ? 'चेक क्र. किंवा नावाने शोधा...' : 'Search by Cheque No or Name...'}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
         <div style={{ fontSize: 13, fontWeight: 700 }}>
           {lang === 'mr' ? 'एकूण दिलेले चेक रक्कम:' : 'Total Cheques Issued:'} <span style={{ color: '#ea580c' }}>₹{totalChequeAmount.toFixed(2)}</span>
         </div>

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Upload, Eye, Download, Banknote, CreditCard, Zap } from 'lucide-react';
-import { fetchNextReceiptBillNo, createReceiptVoucher, fetchReceiptVouchers, deleteReceiptVoucher, fetchOffice, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, Banknote, CreditCard, Zap, Calendar, Search, Languages } from 'lucide-react';
+import { fetchNextReceiptBillNo, createReceiptVoucher, updateReceiptVoucher, fetchReceiptVouchers, deleteReceiptVoucher, fetchOffice, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashReceiptVoucher, User, OfficeMaster } from '../../types';
 import { RECEIPT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import { translateToMarathi } from '../../utils/translator';
-
-
 
 interface ReceiptVoucherFormProps {
   user?: User | null;
@@ -16,12 +14,14 @@ interface ReceiptVoucherFormProps {
 const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [billNo, setBillNo] = useState('');
   const [gstNo, setGstNo] = useState('29AAAAT4655K1Z1');
   const [phoneNo, setPhoneNo] = useState('2460554');
   const [receivedFrom, setReceivedFrom] = useState('');
+  const [particularsOptions, setParticularsOptions] = useState<string[]>(RECEIPT_PARTICULARS_OPTIONS);
   const [particularsSelect, setParticularsSelect] = useState(RECEIPT_PARTICULARS_OPTIONS[0]);
   const [customParticulars, setCustomParticulars] = useState('');
   const [loanAmount, setLoanAmount] = useState<string>('0');
@@ -35,6 +35,12 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
 
   const [receiptDocPath, setReceiptDocPath] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Date Filters & Search
+  const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
+  const [endDateFilter, setEndDateFilter] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -44,10 +50,10 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
   const [selectedReceipt, setSelectedReceipt] = useState<CashReceiptVoucher | null>(null);
 
   useEffect(() => {
-    loadNextBillNo(date);
+    if (!editingId) loadNextBillNo(date);
     loadHistory();
     loadOfficeDetails();
-  }, [date]);
+  }, [date, startDateFilter, endDateFilter]);
 
   useEffect(() => {
     const l = parseFloat(loanAmount) || 0;
@@ -78,7 +84,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
 
   const loadHistory = async () => {
     try {
-      const data = await fetchReceiptVouchers();
+      const data = await fetchReceiptVouchers(startDateFilter, endDateFilter);
       setHistory(data);
     } catch {
       // ignore
@@ -100,10 +106,46 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
     }
   };
 
+  const handleTranslateReceivedFrom = async () => {
+    if (receivedFrom.trim()) {
+      const tr = await translateToMarathi(receivedFrom);
+      setReceivedFrom(tr);
+    }
+  };
+
+  const handleEdit = (r: CashReceiptVoucher) => {
+    setEditingId(r.id);
+    setDate(r.date);
+    setBillNo(r.bill_no);
+    setReceivedFrom(r.received_from);
+    setLoanAmount(String(r.loan_amount || 0));
+    setInterestAmount(String(r.interest_amount || 0));
+    setPaymentMode((r.payment_mode || 'CASH') as 'CASH' | 'CHEQUE');
+    setChequeNo(r.cheque_no || '');
+    setChequeDate(r.cheque_date || today);
+    setBankName(r.bank_name || '');
+    setReceiptDocPath(r.receipt_doc_path || '');
+    setParticularsSelect(particularsOptions[0]);
+    setCustomParticulars(r.particulars || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const addCustomParticular = () => {
+    const custom = window.prompt(lang === 'mr' ? 'नवीन बाबीचे नाव प्रविष्ट करा:' : 'Enter new receipt particular name:');
+    if (custom && custom.trim()) {
+      const trimmed = custom.trim();
+      if (!particularsOptions.includes(trimmed)) {
+        setParticularsOptions([...particularsOptions, trimmed]);
+        setParticularsSelect(trimmed);
+      }
+    }
+  };
+
   const handleReset = () => {
+    setEditingId(null);
     setDate(today);
     setReceivedFrom('');
-    setParticularsSelect(RECEIPT_PARTICULARS_OPTIONS[0]);
+    setParticularsSelect(particularsOptions[0]);
     setCustomParticulars('');
     setLoanAmount('0');
     setInterestAmount('0');
@@ -126,10 +168,6 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया कर्जाची रक्कम किंवा व्याजाची रक्कम प्रविष्ट करा.' : 'Please enter Loan Amount or Interest Amount.' });
       return;
     }
-    if (paymentMode === 'CHEQUE' && !chequeNo.trim()) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया चेक क्रमांक प्रविष्ट करा.' : 'Please enter Cheque Number for cheque receipt.' });
-      return;
-    }
 
     const finalParticulars = customParticulars.trim()
       ? `${particularsSelect} - ${customParticulars.trim()}`
@@ -138,7 +176,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
     setLoading(true);
     setMsg(null);
     try {
-      const created = await createReceiptVoucher({
+      const payload = {
         date,
         bill_no: billNo,
         gst_no: gstNo,
@@ -154,17 +192,27 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         cheque_date: paymentMode === 'CHEQUE' ? chequeDate : undefined,
         bank_name: paymentMode === 'CHEQUE' ? bankName.trim() : undefined,
         created_by: user?.username || 'cashier',
-      });
+      };
 
-      const modeNote = paymentMode === 'CHEQUE'
-        ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll & Cheque Issue Book!')
-        : (lang === 'mr' ? ' स्क्रोल पुस्तक (जमा/Received) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
+      if (editingId) {
+        const updated = await updateReceiptVoucher(editingId, payload);
+        setMsg({
+          type: 'success',
+          text: lang === 'mr' ? `पावती बिल क्र. ${updated.bill_no} अपडेट केले!` : `Cash Receipt Voucher ${updated.bill_no} updated successfully!`
+        });
+      } else {
+        const created = await createReceiptVoucher(payload);
+        const modeNote = paymentMode === 'CHEQUE'
+          ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll & Cheque Issue Book!')
+          : (lang === 'mr' ? ' स्क्रोल पुस्तक (जमा/Received) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
 
-      setMsg({
-        type: 'success',
-        text: (lang === 'mr' ? `पावती बिल क्र. ${created.bill_no} जतन केले!` : `Cash Receipt Voucher ${created.bill_no} saved!`) + modeNote
-      });
-      setSelectedReceipt(created);
+        setMsg({
+          type: 'success',
+          text: (lang === 'mr' ? `पावती बिल क्र. ${created.bill_no} जतन केले!` : `Cash Receipt Voucher ${created.bill_no} saved!`) + modeNote
+        });
+        setSelectedReceipt(created);
+      }
+
       loadHistory();
       handleReset();
     } catch {
@@ -287,7 +335,16 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         </div>
 
         <div className="form-group" style={{ marginBottom: 16 }}>
-          <label className="form-label">{lang === 'mr' ? 'कडून मिळाले (Received From - Name)' : 'Received From (Name)'}</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'कडून मिळाले (Received From - Name)' : 'Received From (Name)'}</label>
+            <button
+              type="button"
+              onClick={handleTranslateReceivedFrom}
+              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+            </button>
+          </div>
           <input
             type="text"
             className="form-input"
@@ -301,24 +358,24 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         {/* Payment Mode (CASH vs CHEQUE) */}
         <div style={{ background: '#f1f5f9', padding: 14, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16 }}>
           <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
-            {lang === 'mr' ? 'प्राप्ती प्रकार (Payment Mode):' : 'Payment Mode:'}
+            {lang === 'mr' ? 'पेमेंट प्रकार (Payment Mode):' : 'Payment Mode:'}
           </label>
           <div style={{ display: 'flex', gap: 20, marginBottom: paymentMode === 'CHEQUE' ? 12 : 0 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               <input
                 type="radio"
-                name="paymentModeReceipt"
+                name="paymentMode"
                 value="CASH"
                 checked={paymentMode === 'CASH'}
                 onChange={() => setPaymentMode('CASH')}
               />
               <Banknote size={16} color="#16a34a" />
-              {lang === 'mr' ? 'रोख (Cash) → स्क्रोल बुकात (Received) जमा होईल' : 'Cash → Updates Cash Scroll (Received)'}
+              {lang === 'mr' ? 'रोख (Cash) → स्क्रोल बुकात (Received) नोंद होईल' : 'Cash → Updates Cash Scroll (Received)'}
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               <input
                 type="radio"
-                name="paymentModeReceipt"
+                name="paymentMode"
                 value="CHEQUE"
                 checked={paymentMode === 'CHEQUE'}
                 onChange={() => setPaymentMode('CHEQUE')}
@@ -364,16 +421,21 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
           )}
         </div>
 
-        {/* Dropdown for Receipt Particulars (7 Items) */}
+        {/* Dropdown for Receipt Particulars */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars Dropdown'}</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars Dropdown'}</label>
+              <button type="button" onClick={addCustomParticular} style={{ background: 'none', border: 'none', color: '#d97706', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                ➕ {lang === 'mr' ? '+ नवीन बाब जोडा' : '+ Custom Item'}
+              </button>
+            </div>
             <select
               className="form-input"
               value={particularsSelect}
               onChange={e => setParticularsSelect(e.target.value)}
             >
-              {RECEIPT_PARTICULARS_OPTIONS.map(opt => (
+              {particularsOptions.map(opt => (
                 <option key={opt} value={opt}>
                   {lang === 'mr' ? (ITEM_TRANSLATIONS[opt] || opt) : opt}
                 </option>
@@ -462,8 +524,8 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         </div>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'पावती मेमो जतन करा' : 'Save Cash Memo')}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: editingId ? '#d97706' : undefined, borderColor: editingId ? '#d97706' : undefined }}>
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'पावती बदल जतन करा' : 'Update Cash Memo') : (lang === 'mr' ? 'पावती मेमो जतन करा' : 'Save Cash Memo')}
           </button>
           <button
             type="button"
@@ -485,12 +547,24 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
 
       {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-          {lang === 'mr' ? 'अलीकडील रोख पावती नोंदी (Cash Memos)' : 'Recent Cash Receipt Vouchers (Cash Memos)'}
-        </h4>
-        {history.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            {lang === 'mr' ? 'कोणत्याही पावती नोंदी आढळल्या नाहीत.' : 'No receipt vouchers found.'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
+            {lang === 'mr' ? 'रोख पावती नोंदवही (Cash Memos)' : 'Cash Receipt Vouchers History'}
+          </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Calendar size={15} color="var(--blue-600)" />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+            <span style={{ fontSize: 12 }}>to</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+            <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+            <input type="text" className="form-input" style={{ width: 160, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search from, bill no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+        </div>
+
+        {history.filter(h => h.received_from.toLowerCase().includes(searchTerm.toLowerCase()) || h.bill_no.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16, background: '#f8fafc', borderRadius: 6, textAlign: 'center' }}>
+            {lang === 'mr' ? 'निवडलेल्या कालावधीत कोणत्याही नोंदी आढळल्या नाहीत.' : 'No receipt vouchers found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
@@ -508,37 +582,42 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {history.map(row => (
-                  <tr key={row.id}>
-                    <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
-                    <td>{row.date}</td>
-                    <td>{row.received_from}</td>
-                    <td>
-                      <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
-                        {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
-                      </span>
-                    </td>
-                    <td>{lang === 'mr' ? (ITEM_TRANSLATIONS[row.particulars || ''] || row.particulars) : row.particulars}</td>
-                    <td>
-                      {row.receipt_doc_path ? (
-                        <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
-                          <Download size={12} /> Doc
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.total_amount).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 6 }}>
-                        <Printer size={13} /> {lang === 'mr' ? 'मेमो' : 'Memo'}
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {history
+                  .filter(h => h.received_from.toLowerCase().includes(searchTerm.toLowerCase()) || h.bill_no.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map(row => (
+                    <tr key={row.id}>
+                      <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
+                      <td>{row.date}</td>
+                      <td>{row.received_from}</td>
+                      <td>
+                        <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
+                          {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
+                        </span>
+                      </td>
+                      <td>{lang === 'mr' ? (ITEM_TRANSLATIONS[row.particulars || ''] || row.particulars) : row.particulars}</td>
+                      <td>
+                        {row.receipt_doc_path ? (
+                          <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
+                            <Download size={12} /> Doc
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.total_amount).toFixed(2)}</td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Receipt">
+                          <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 4 }} title="Print Memo">
+                          <Printer size={13} /> {lang === 'mr' ? 'मेमो' : 'Memo'}
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Receipt">
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

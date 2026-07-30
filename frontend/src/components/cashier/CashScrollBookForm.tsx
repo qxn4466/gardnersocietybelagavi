@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages } from 'lucide-react';
 import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-
+import { translateToMarathi } from '../../utils/translator';
 
 interface CashScrollBookFormProps {
   user?: User | null;
@@ -12,6 +12,7 @@ interface CashScrollBookFormProps {
 const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [pageNo, setPageNo] = useState('');
@@ -20,6 +21,11 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const [receivedAmount, setReceivedAmount] = useState<string>('0');
   const [paidAmount, setPaidAmount] = useState<string>('0');
   const [chequeAmount, setChequeAmount] = useState<string>('0');
+
+  // Date Filter & Search
+  const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
+  const [endDateFilter, setEndDateFilter] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -31,7 +37,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   useEffect(() => {
     loadHistory();
     loadOffice();
-  }, [date]);
+  }, [startDateFilter, endDateFilter]);
 
   const loadOffice = async () => {
     try {
@@ -44,10 +50,17 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
 
   const loadHistory = async () => {
     try {
-      const data = await fetchCashScrollEntries(date, date);
+      const data = await fetchCashScrollEntries(startDateFilter, endDateFilter);
       setHistory(data);
     } catch {
       // ignore
+    }
+  };
+
+  const handleTranslateParticulars = async () => {
+    if (particulars.trim()) {
+      const tr = await translateToMarathi(particulars);
+      setParticulars(tr);
     }
   };
 
@@ -213,7 +226,16 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
         </div>
 
         <div className="form-group" style={{ marginBottom: 14 }}>
-          <label className="form-label">{lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'}</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'}</label>
+            <button
+              type="button"
+              onClick={handleTranslateParticulars}
+              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+            </button>
+          </div>
           <input
             type="text"
             className="form-input"
@@ -271,10 +293,15 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
       </form>
 
       {/* Date Filter & Totals Bar matching Document #662 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, background: '#f8fafc', padding: '10px 16px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'दिनांकानुसार स्क्रोल पाहा:' : 'Filter Scroll by Date:'}</label>
-          <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={date} onChange={e => setDate(e.target.value)} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, background: '#f8fafc', padding: '10px 16px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Calendar size={15} color="var(--blue-600)" />
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी अनुसार स्क्रोल:' : 'Filter Scroll Period:'}</span>
+          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+          <span style={{ fontSize: 12 }}>to</span>
+          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+          <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+          <input type="text" className="form-input" style={{ width: 150, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
 
         <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
@@ -300,29 +327,31 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {history.length === 0 ? (
+            {history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                   {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत.' : 'No cash scroll entries found for this date.'}
                 </td>
               </tr>
             ) : (
-              history.map(row => (
-                <tr key={row.id}>
-                  <td>{row.date}</td>
-                  <td>{row.page_no || '-'}</td>
-                  <td style={{ fontWeight: 600 }}>{row.voucher_no || '-'}</td>
-                  <td>{row.from_received_paid}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toFixed(2)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toFixed(2)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toFixed(2)}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+              history
+                .filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map(row => (
+                  <tr key={row.id}>
+                    <td>{row.date}</td>
+                    <td>{row.page_no || '-'}</td>
+                    <td style={{ fontWeight: 600 }}>{row.voucher_no || '-'}</td>
+                    <td>{row.from_received_paid}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
             )}
           </tbody>
           {history.length > 0 && (

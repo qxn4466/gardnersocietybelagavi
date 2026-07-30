@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap } from 'lucide-react';
-import { fetchNextPaymentVoucherNo, createPaymentVoucher, fetchPaymentVouchers, deletePaymentVoucher, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages } from 'lucide-react';
+import { fetchNextPaymentVoucherNo, createPaymentVoucher, updatePaymentVoucher, fetchPaymentVouchers, deletePaymentVoucher, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 
 import type { CashPaymentVoucher, User, VoucherItemRow } from '../../types';
 import { PAYMENT_PARTICULARS_OPTIONS } from '../../types';
@@ -39,6 +39,7 @@ const numberToWords = (num: number): string => {
 const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [voucherNo, setVoucherNo] = useState('');
@@ -50,10 +51,19 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const [bankName, setBankName] = useState('');
   const [receiptDocPath, setReceiptDocPath] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Date Range Filters & Search
+  const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
+  const [endDateFilter, setEndDateFilter] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Particulars list
+  const [particularsOptions, setParticularsOptions] = useState<string[]>(PAYMENT_PARTICULARS_OPTIONS);
 
   // Multi-item addable rows with CGST and SGST
   const [items, setItems] = useState<VoucherItemRow[]>([
-    { id: '1', particular: 'Daily wages pay', ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }
+    { id: '1', particular: PAYMENT_PARTICULARS_OPTIONS[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }
   ]);
 
   const [loading, setLoading] = useState(false);
@@ -64,9 +74,9 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const [selectedVoucher, setSelectedVoucher] = useState<CashPaymentVoucher | null>(null);
 
   useEffect(() => {
-    loadNextVoucherNo(date);
+    if (!editingId) loadNextVoucherNo(date);
     loadHistory();
-  }, [date]);
+  }, [date, startDateFilter, endDateFilter]);
 
   const loadNextVoucherNo = async (d: string) => {
     try {
@@ -79,10 +89,52 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
 
   const loadHistory = async () => {
     try {
-      const data = await fetchPaymentVouchers();
+      const data = await fetchPaymentVouchers(startDateFilter, endDateFilter);
       setHistory(data);
     } catch {
       // ignore
+    }
+  };
+
+  const handleTranslatePaidTo = async () => {
+    if (paidTo.trim()) {
+      const tr = await translateToMarathi(paidTo);
+      setPaidTo(tr);
+    }
+  };
+
+  const handleEdit = (v: CashPaymentVoucher) => {
+    setEditingId(v.id);
+    setDate(v.date);
+    setVoucherNo(v.voucher_no);
+    setPaidTo(v.paid_to);
+    setPurpose(v.purpose_remarks || '');
+    setPaymentMode((v.payment_mode || 'CASH') as 'CASH' | 'CHEQUE');
+    setChequeNo(v.cheque_no || '');
+    setChequeDate(v.cheque_date || today);
+    setBankName(v.bank_name || '');
+    setReceiptDocPath(v.receipt_doc_path || '');
+    setItems([
+      {
+        id: '1',
+        particular: v.details_of_expenditure || PAYMENT_PARTICULARS_OPTIONS[0],
+        ref_no: '',
+        amount: Number(v.amount_rs) || 0,
+        cgst_rate: 0,
+        sgst_rate: 0,
+        total_amount: Number(v.amount_rs) || 0
+      }
+    ]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const addCustomParticular = () => {
+    const custom = window.prompt(lang === 'mr' ? 'नवीन बाबीचे नाव प्रविष्ट करा:' : 'Enter new payment particular name:');
+    if (custom && custom.trim()) {
+      const trimmed = custom.trim();
+      if (!particularsOptions.includes(trimmed)) {
+        setParticularsOptions([...particularsOptions, trimmed]);
+      }
     }
   };
 
@@ -106,7 +158,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const addRow = () => {
     setItems([
       ...items,
-      { id: Date.now().toString(), particular: PAYMENT_PARTICULARS_OPTIONS[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }
+      { id: Date.now().toString(), particular: particularsOptions[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }
     ]);
   };
 
@@ -138,6 +190,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   };
 
   const handleReset = () => {
+    setEditingId(null);
     setDate(today);
     setPaidTo('');
     setPurpose('');
@@ -146,7 +199,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
     setChequeDate(today);
     setBankName('');
     setReceiptDocPath('');
-    setItems([{ id: '1', particular: PAYMENT_PARTICULARS_OPTIONS[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }]);
+    setItems([{ id: '1', particular: particularsOptions[0], ref_no: '', amount: 0, cgst_rate: 0, sgst_rate: 0, total_amount: 0 }]);
     setMsg(null);
     loadNextVoucherNo(today);
   };
@@ -161,10 +214,6 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया किमान एका बाबीची रक्कम प्रविष्ट करा.' : 'Please enter amount for at least one item.' });
       return;
     }
-    if (paymentMode === 'CHEQUE' && !chequeNo.trim()) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया चेक क्रमांक प्रविष्ट करा.' : 'Please enter Cheque Number for cheque payment.' });
-      return;
-    }
 
     const detailsStr = items.map((r, idx) => {
       const pName = lang === 'mr' ? (ITEM_TRANSLATIONS[r.particular] || r.particular) : r.particular;
@@ -176,7 +225,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
     setLoading(true);
     setMsg(null);
     try {
-      const created = await createPaymentVoucher({
+      const payload = {
         date,
         voucher_no: voucherNo,
         paid_to: paidTo.trim(),
@@ -190,17 +239,27 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
         cheque_date: paymentMode === 'CHEQUE' ? chequeDate : undefined,
         bank_name: paymentMode === 'CHEQUE' ? bankName.trim() : undefined,
         created_by: user?.username || 'cashier',
-      });
+      };
 
-      const modeNote = paymentMode === 'CHEQUE'
-        ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book & Cheque Issue Book!')
-        : (lang === 'mr' ? ' स्क्रोल पुस्तक (नावे/Paid) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
+      if (editingId) {
+        const updated = await updatePaymentVoucher(editingId, payload);
+        setMsg({
+          type: 'success',
+          text: lang === 'mr' ? `पेमेंट व्हाऊचर ${updated.voucher_no} अपडेट केले!` : `Payment Voucher ${updated.voucher_no} updated successfully!`
+        });
+      } else {
+        const created = await createPaymentVoucher(payload);
+        const modeNote = paymentMode === 'CHEQUE'
+          ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book & Cheque Issue Book!')
+          : (lang === 'mr' ? ' स्क्रोल पुस्तक (नावे/Paid) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
 
-      setMsg({
-        type: 'success',
-        text: (lang === 'mr' ? `पेमेंट व्हाऊचर ${created.voucher_no} जतन केले!` : `Payment Voucher ${created.voucher_no} saved!`) + modeNote
-      });
-      setSelectedVoucher(created);
+        setMsg({
+          type: 'success',
+          text: (lang === 'mr' ? `पेमेंट व्हाऊचर ${created.voucher_no} जतन केले!` : `Payment Voucher ${created.voucher_no} saved!`) + modeNote
+        });
+        setSelectedVoucher(created);
+      }
+
       loadHistory();
       handleReset();
     } catch {
@@ -313,7 +372,16 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'}</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'}</label>
+              <button
+                type="button"
+                onClick={handleTranslatePaidTo}
+                style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+              </button>
+            </div>
             <input
               type="text"
               className="form-input"
@@ -408,9 +476,14 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
               {lang === 'mr' ? 'खर्चाचा तपशील व बाबी (Particulars Expenditure Items)' : 'Particulars Expenditure Items'}
             </h4>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
-              <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={addCustomParticular} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 600 }}>
+                ➕ {lang === 'mr' ? '+ नवीन बाब जोडा' : '+ Add Custom Particular'}
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
+                <Plus size={14} /> {lang === 'mr' ? '+ बाब ओळ जोडा (Add Row)' : '+ Add Item Row'}
+              </button>
+            </div>
           </div>
 
           <div className="table-responsive">
@@ -418,7 +491,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
               <thead>
                 <tr>
                   <th style={{ width: 40 }}>#</th>
-                  <th>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars'}</th>
+                  <th>{lang === 'mr' ? 'तपशील खाते (Particulars)' : 'Particulars'}</th>
                   <th style={{ width: 140 }}>{lang === 'mr' ? 'संदर्भ / खाते क्र.' : 'Ref / Account No.'}</th>
                   <th style={{ width: 120, textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम ₹' : 'Amount (₹)'}</th>
                   <th style={{ width: 100 }}>{lang === 'mr' ? 'सीजीएसटी %' : 'CGST %'}</th>
@@ -437,7 +510,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                         value={row.particular}
                         onChange={e => updateRow(idx, 'particular', e.target.value)}
                       >
-                        {PAYMENT_PARTICULARS_OPTIONS.map(opt => (
+                        {particularsOptions.map(opt => (
                           <option key={opt} value={opt}>
                             {lang === 'mr' ? (ITEM_TRANSLATIONS[opt] || opt) : opt}
                           </option>
@@ -461,41 +534,37 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                         style={{ textAlign: 'right' }}
                         value={row.amount || ''}
                         onChange={e => updateRow(idx, 'amount', e.target.value)}
+                        placeholder="0.00"
+                        required
                       />
                     </td>
                     <td>
-                      <select
+                      <input
+                        type="number"
+                        step="0.01"
                         className="form-input"
-                        value={row.cgst_rate}
+                        value={row.cgst_rate || ''}
                         onChange={e => updateRow(idx, 'cgst_rate', e.target.value)}
-                      >
-                        <option value="0">0%</option>
-                        <option value="2.5">2.5%</option>
-                        <option value="6">6%</option>
-                        <option value="9">9%</option>
-                        <option value="14">14%</option>
-                      </select>
+                        placeholder="0"
+                      />
                     </td>
                     <td>
-                      <select
+                      <input
+                        type="number"
+                        step="0.01"
                         className="form-input"
-                        value={row.sgst_rate}
+                        value={row.sgst_rate || ''}
                         onChange={e => updateRow(idx, 'sgst_rate', e.target.value)}
-                      >
-                        <option value="0">0%</option>
-                        <option value="2.5">2.5%</option>
-                        <option value="6">6%</option>
-                        <option value="9">9%</option>
-                        <option value="14">14%</option>
-                      </select>
+                        placeholder="0"
+                      />
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700 }}>
-                      ₹{Number(row.total_amount).toFixed(2)}
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>
+                      ₹{Number(row.total_amount || 0).toFixed(2)}
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       {items.length > 1 && (
                         <button type="button" className="btn btn-danger btn-sm" onClick={() => removeRow(idx)}>
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       )}
                     </td>
@@ -560,8 +629,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
         </div>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'व्हाऊचर जतन करा' : 'Save Voucher')}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: editingId ? '#d97706' : undefined, borderColor: editingId ? '#d97706' : undefined }}>
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'व्हाऊचर बदल जतन करा' : 'Update Voucher') : (lang === 'mr' ? 'व्हाऊचर जतन करा' : 'Save Voucher')}
           </button>
           <button
             type="button"
@@ -590,12 +659,24 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
 
       {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-          {lang === 'mr' ? 'अलीकडील रोख पेमेंट व्हाऊचर नोंदी' : 'Recent Cash Payment Vouchers'}
-        </h4>
-        {history.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            {lang === 'mr' ? 'कोणत्याही नोंदी उपलब्ध नाहीत.' : 'No payment vouchers found.'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
+            {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर नोंदवही' : 'Cash Payment Vouchers History'}
+          </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Calendar size={15} color="var(--blue-600)" />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+            <span style={{ fontSize: 12 }}>to</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+            <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+            <input type="text" className="form-input" style={{ width: 160, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search paid to, no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+        </div>
+
+        {history.filter(h => h.paid_to.toLowerCase().includes(searchTerm.toLowerCase()) || h.voucher_no.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16, background: '#f8fafc', borderRadius: 6, textAlign: 'center' }}>
+            {lang === 'mr' ? 'निवडलेल्या कालावधीत कोणत्याही नोंदी आढळल्या नाहीत.' : 'No payment vouchers found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
@@ -612,36 +693,41 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {history.map(row => (
-                  <tr key={row.id}>
-                    <td style={{ fontWeight: 600 }}>{row.voucher_no}</td>
-                    <td>{row.date}</td>
-                    <td>{row.paid_to}</td>
-                    <td>
-                      <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
-                        {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
-                      </span>
-                    </td>
-                    <td>
-                      {row.receipt_doc_path ? (
-                        <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
-                          <Download size={12} /> Doc
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.amount_rs).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 6 }}>
-                        <Printer size={13} /> {lang === 'mr' ? 'व्हाऊचर' : 'Voucher'}
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {history
+                  .filter(h => h.paid_to.toLowerCase().includes(searchTerm.toLowerCase()) || h.voucher_no.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map(row => (
+                    <tr key={row.id}>
+                      <td style={{ fontWeight: 600 }}>{row.voucher_no}</td>
+                      <td>{row.date}</td>
+                      <td>{row.paid_to}</td>
+                      <td>
+                        <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
+                          {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
+                        </span>
+                      </td>
+                      <td>
+                        {row.receipt_doc_path ? (
+                          <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
+                            <Download size={12} /> Doc
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.amount_rs).toFixed(2)}</td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Voucher">
+                          <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 4 }} title="Print Voucher">
+                          <Printer size={13} /> {lang === 'mr' ? 'व्हाऊचर' : 'Voucher'}
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Voucher">
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
