@@ -47,9 +47,32 @@ class BatchTranslateResponse(BaseModel):
     target_lang: str
 
 
+import urllib.parse
+
+# ─── Helper: call Google Translate free GTX API ──────────────────────────────
+def call_google_translate_free(text: str) -> str:
+    """Call Google Translate GTX API to perform real Marathi semantic translation."""
+    if not text or not text.strip():
+        return text
+    try:
+        encoded = urllib.parse.quote(text)
+        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q={encoded}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
+                translated_parts = [segment[0] for segment in data[0] if isinstance(segment, list) and len(segment) > 0 and segment[0]]
+                res = "".join(translated_parts).strip()
+                if res and res != text:
+                    return res
+    except Exception as e:
+        print(f"[GoogleTranslate] Error: {e}")
+    return text
+
+
 # ─── Helper: call IndicTrans2 microservice ────────────────────────────────────
 def call_indictrans2(text: str, target_lang: str) -> str:
-    """Call the IndicTrans2 service and return translated text."""
+    """Call IndicTrans2 microservice or Google Translate fallback."""
     if not text or not text.strip():
         return text
     urls = [
@@ -66,7 +89,7 @@ def call_indictrans2(text: str, target_lang: str) -> str:
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if isinstance(data, dict):
                     res = (
@@ -81,7 +104,9 @@ def call_indictrans2(text: str, target_lang: str) -> str:
                     return data
         except Exception as e:
             print(f"[TranslationService] Call to {url} failed: {e}")
-    return text
+
+    # Fallback to Google Translate
+    return call_google_translate_free(text)
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────

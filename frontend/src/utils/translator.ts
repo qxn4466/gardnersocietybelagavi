@@ -369,16 +369,20 @@ export const translateToMarathi = async (text: string): Promise<string> => {
     }).join(' ');
   }
 
-  // Tier 2: Call IndicTrans2 Microservice / Backend API
+  // Tier 2: Call Backend API (which routes to IndicTrans2 / Google Translate)
   try {
     const res = await translateText(trimmed, 'mar_Deva');
-    if (res && res.translated_text && res.translated_text.trim() !== trimmed && !res.translated_text.includes('अ-व')) {
+    if (res && res.translated_text && res.translated_text.trim() !== trimmed) {
       return res.translated_text.trim();
     }
   } catch {
     // Fallthrough to Tier 3
   }
 
-  // Tier 3: Syllable-Aware Phonetic Transliteration Algorithm
-  return phoneticTransliterate(trimmed);
+  // Tier 3: Phonetic Transliteration ONLY for short names (1-2 words), not for sentences/paragraphs
+  if (words.length <= 2) {
+    return phoneticTransliterate(trimmed);
+  }
+
+  return trimmed;
 };
