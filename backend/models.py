@@ -235,6 +235,7 @@ class ShopSellingRateEntry(Base):
     selling_rate = Column(Numeric(12, 2), nullable=False, default=0.0)
     stock_book_no = Column(String(50), nullable=True)
     sign_status = Column(String(100), nullable=True, default="Signed")
+    doc_path = Column(String(500), nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -253,6 +254,7 @@ class ShopTaxInvoice(Base):
     qty = Column(Numeric(10, 2), nullable=False, default=1.0)
     rate = Column(Numeric(12, 2), nullable=False, default=0.0)
     amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    doc_path = Column(String(500), nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -270,6 +272,7 @@ class ShopRetailBill(Base):
     rate = Column(Numeric(12, 2), nullable=False, default=0.0)
     amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     seller_signature = Column(String(100), nullable=True, default="Seller Signed")
+    doc_path = Column(String(500), nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -287,6 +290,7 @@ class PesticideSaleEntry(Base):
     amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     batch_no = Column(String(50), nullable=True)
     remarks = Column(Text, nullable=True)
+    doc_path = Column(String(500), nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 

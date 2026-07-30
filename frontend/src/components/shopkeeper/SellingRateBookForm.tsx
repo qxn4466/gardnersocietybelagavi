@@ -41,6 +41,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const [name, setName] = useState('');
   const [stockBookNo, setStockBookNo] = useState('');
   const [signStatus, setSignStatus] = useState('Signed');
+  const [docPath, setDocPath] = useState('');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -670,6 +671,23 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
+        <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
+          </label>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            className="form-input"
+            style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setDocPath(file.name);
+            }}
+          />
+          {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
+        </div>
+
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Entry') : (lang === 'mr' ? 'दर पुस्तक नोंदी जतन करा' : 'Save Rate Entries'))}
@@ -735,7 +753,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
                   <th style={{ color: '#2563eb' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
                   <th>{lang === 'mr' ? 'स्टॉक बुक क्र.' : 'Stock Book No.'}</th>
-                  <th>{lang === 'mr' ? 'स्वाक्षरी' : 'Sign'}</th>
+                  <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
                   <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
@@ -755,10 +773,18 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                     <td>₹{Number(row.net_rate).toFixed(2)}</td>
                     <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{Number(row.selling_rate).toFixed(2)}</td>
                     <td>{row.stock_book_no || '-'}</td>
-                    <td>{row.sign_status || 'Signed'}</td>
+                    <td>
+                      {row.doc_path ? (
+                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                          📎 Doc
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Entry">
-                        <Edit size={13} color="#2563eb" />
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
+                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
                         <Trash2 size={13} />
@@ -793,9 +819,14 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
 
             <div className="printable-rate-book" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  THE BELGAUM GARDENERS CO-OP PRO SUPPLY AND SALE SOCIETY LTD. BELGAUM
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
+                  BELAGAVI GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
+                <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span>📍 Address: Belagavi, Karnataka - 590001</span>
+                  <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
+                  <span>🆔 GSTN: 29AAATB1234C1Z5</span>
+                </div>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   SEEDS, PESTICIDES, SPRAYPUMP AND OTHER SELLING RATE BOOK
                 </div>

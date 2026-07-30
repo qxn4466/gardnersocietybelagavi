@@ -317,6 +317,7 @@ class ShopSellingRateCreate(BaseModel):
     selling_rate: Decimal = Decimal("0.00")
     stock_book_no: Optional[str] = None
     sign_status: Optional[str] = "Signed"
+    doc_path: Optional[str] = None
     created_by: Optional[str] = None
 
 
@@ -337,6 +338,7 @@ class ShopTaxInvoiceCreate(BaseModel):
     qty: Decimal = Decimal("1.00")
     rate: Decimal = Decimal("0.00")
     amount: Decimal = Decimal("0.00")
+    doc_path: Optional[str] = None
     created_by: Optional[str] = None
 
 
@@ -357,6 +359,7 @@ class ShopRetailBillCreate(BaseModel):
     rate: Decimal = Decimal("0.00")
     amount: Decimal = Decimal("0.00")
     seller_signature: Optional[str] = "Seller Signed"
+    doc_path: Optional[str] = None
     created_by: Optional[str] = None
 
 
@@ -377,6 +380,7 @@ class PesticideSaleEntryCreate(BaseModel):
     amount: Decimal = Decimal("0.00")
     batch_no: Optional[str] = None
     remarks: Optional[str] = None
+    doc_path: Optional[str] = None
     created_by: Optional[str] = None
 
 

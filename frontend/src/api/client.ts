@@ -398,6 +398,9 @@ export const fetchPesticideSales = (startDate?: string, endDate?: string): Promi
 export const createPesticideSale = (payload: import('../types').PesticideSaleEntryCreate): Promise<import('../types').PesticideSaleEntry> =>
   api.post('/shopkeeper/pesticide-sales', payload).then(r => r.data);
 
+export const updatePesticideSale = (id: number, payload: import('../types').PesticideSaleEntryCreate): Promise<import('../types').PesticideSaleEntry> =>
+  api.put(`/shopkeeper/pesticide-sales/${id}`, payload).then(r => r.data);
+
 export const deletePesticideSale = (id: number): Promise<void> =>
   api.delete(`/shopkeeper/pesticide-sales/${id}`).then(r => r.data);
 

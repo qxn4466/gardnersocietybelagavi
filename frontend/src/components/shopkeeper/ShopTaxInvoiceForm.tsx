@@ -38,6 +38,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [date, setDate] = useState(today);
   const [invoiceNo, setInvoiceNo] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [docPath, setDocPath] = useState('');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -631,6 +632,23 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           </div>
         </div>
 
+        <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
+          </label>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            className="form-input"
+            style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setDocPath(file.name);
+            }}
+          />
+          {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
+        </div>
+
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#2563eb', borderColor: '#2563eb' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Invoice') : (lang === 'mr' ? 'टॅक्स इनव्हॉईस जतन करा' : 'Save Tax Invoice'))}
@@ -638,7 +656,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#bfdbfe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={handleTranslateAllFields}
           >
             <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
@@ -649,7 +667,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         </div>
       </form>
 
-      {/* Date Range Filter Bar & Search Input Bar */}
+      {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -666,17 +684,16 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
               type="text"
               className="form-input"
               style={{ width: 240, padding: '4px 10px', fontSize: 13 }}
-              placeholder={lang === 'mr' ? 'इनव्हॉईस क्र. किंवा नाव शोधा...' : 'Search Invoice No, Customer Name...'}
+              placeholder={lang === 'mr' ? 'ग्राहक नाव, इनव्हॉईस क्र. शोधा...' : 'Search Customer, Invoice No...'}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
-            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणतेही टॅक्स इनव्हॉईस आढळले नाहीत.' : 'No shop tax invoices found for selected date range.'}
+            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणताही टॅक्स इनव्हॉईस आढळला नाही.' : 'No tax invoices found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
@@ -692,6 +709,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST (9%)'}</th>
                   <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST (9%)'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
+                  <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
                   <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
@@ -707,12 +725,21 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                     <td>₹{Number(row.sgst_amount).toFixed(2)}</td>
                     <td>₹{Number(row.cgst_amount).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.total_amount).toFixed(2)}</td>
+                    <td>
+                      {row.doc_path ? (
+                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                          📎 Doc
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Invoice">
+                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                      </button>
                       <button className="btn btn-primary btn-sm" onClick={() => setSelectedInvoiceForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Invoice">
                         <Printer size={13} />
-                      </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Invoice">
-                        <Edit size={13} color="#2563eb" />
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
                         <Trash2 size={13} />
@@ -747,14 +774,13 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
             <div className="printable-tax-invoice" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
+                  BELAGAVI GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
-                <div style={{ fontSize: 12, marginTop: 4 }}>930/1A Zanda Chowk Market, Belagavi – 590002</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 6, fontWeight: 'bold' }}>
-                  <span>H.O. Phone: 2460534</span>
-                  <span>Cold Storage Phone: 2478234</span>
-                  <span>PPO / INSAT Phone: 2461468</span>
+                <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span>📍 Address: Belagavi, Karnataka - 590001</span>
+                  <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
+                  <span>🆔 GSTN: 29AAATB1234C1Z5</span>
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 10, textDecoration: 'underline' }}>
                   TAX INVOICE

@@ -30,6 +30,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const [date, setDate] = useState(today);
   const [billNo, setBillNo] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [docPath, setDocPath] = useState('');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -506,6 +507,23 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
+        <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
+          </label>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            className="form-input"
+            style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setDocPath(file.name);
+            }}
+          />
+          {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
+        </div>
+
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#ea580c', borderColor: '#ea580c' }}>
             <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Bill') : (lang === 'mr' ? 'रोख बिल जतन करा' : 'Save Retail Bill'))}
@@ -564,6 +582,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
                   <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
+                  <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
                   <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
@@ -576,12 +595,21 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                     <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
                     <td>₹{Number(row.rate).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{Number(row.amount).toFixed(2)}</td>
+                    <td>
+                      {row.doc_path ? (
+                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                          📎 Doc
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Bill">
+                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                      </button>
                       <button className="btn btn-primary btn-sm" onClick={() => setSelectedBillForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }} title="Print Bill">
                         <Printer size={13} />
-                      </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Bill">
-                        <Edit size={13} color="#ea580c" />
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
                         <Trash2 size={13} />
@@ -616,10 +644,14 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
             <div className="printable-retail-bill" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
+                  BELAGAVI GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
-                <div style={{ fontSize: 12, marginTop: 4 }}>TIN: 29540268502 | PPO / INSAT / BLG/48 | Phone: 2460534</div>
+                <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span>📍 Address: Belagavi, Karnataka - 590001</span>
+                  <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
+                  <span>🆔 GSTN: 29AAATB1234C1Z5</span>
+                </div>
                 <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 10, textDecoration: 'underline' }}>
                   RETAIL CASH BILL
                 </div>

@@ -362,9 +362,29 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
         amount=payload.amount,
         batch_no=payload.batch_no,
         remarks=payload.remarks,
+        doc_path=payload.doc_path,
         created_by=payload.created_by
     )
     db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+@router.put("/pesticide-sales/{id}", response_model=PesticideSaleEntryOut)
+def update_pesticide_sale(id: int, payload: PesticideSaleEntryCreate, db: Session = Depends(get_db)):
+    record = db.query(PesticideSaleEntry).filter(PesticideSaleEntry.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Pesticide sale entry not found")
+    record.date = payload.date
+    record.customer_name = payload.customer_name
+    record.product_name = payload.product_name
+    record.qty = payload.qty
+    record.rate = payload.rate
+    record.amount = payload.amount
+    record.batch_no = payload.batch_no
+    record.remarks = payload.remarks
+    record.doc_path = payload.doc_path
     db.commit()
     db.refresh(record)
     return record
@@ -603,6 +623,13 @@ import random
 
 @router.post("/generate-30-days-test-data")
 def generate_30_days_test_data(db: Session = Depends(get_db)):
+    # Clear existing test data to avoid unique constraint key collisions
+    db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.created_by == "Test Generator").delete()
+    db.query(ShopTaxInvoice).filter(ShopTaxInvoice.created_by == "Test Generator").delete()
+    db.query(ShopRetailBill).filter(ShopRetailBill.created_by == "Test Generator").delete()
+    db.query(PesticideSaleEntry).filter(PesticideSaleEntry.created_by == "Test Generator").delete()
+    db.commit()
+
     today_dt = date.today()
     sample_customers = ["Avinash Suregaonkar", "Ramesh Patil", "Suresh Pawar", "Mahesh Deshmukh", "Ganesh Kulkarni"]
     sample_products = ["Chlorpyriphos", "Imidacloprid", "Mancozeb", "Neem Oil", "Boric Acid", "Gibberellic Acid (GA3)"]
@@ -641,7 +668,7 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         selling_count += 1
 
         # 2. Shop Tax Invoice
-        rnd_tag = random.randint(1000, 9999)
+        rnd_tag = random.randint(10000, 99999)
         inv_no = f"STX-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
         tax_inv = ShopTaxInvoice(
             invoice_no=inv_no,

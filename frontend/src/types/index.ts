@@ -445,6 +445,7 @@ export interface ShopSellingRateEntry {
   selling_rate: number;
   stock_book_no?: string | null;
   sign_status?: string | null;
+  doc_path?: string | null;
   created_by?: string | null;
   created_at?: string | null;
 }
@@ -464,6 +465,7 @@ export interface ShopSellingRateCreate {
   selling_rate?: number;
   stock_book_no?: string;
   sign_status?: string;
+  doc_path?: string;
   created_by?: string;
 }
 
@@ -483,6 +485,7 @@ export interface ShopTaxInvoice {
   cgst_rate?: number;
   cgst_amount?: number;
   total_amount?: number;
+  doc_path?: string | null;
   created_by?: string | null;
   created_at?: string | null;
 }
@@ -502,6 +505,7 @@ export interface ShopTaxInvoiceCreate {
   cgst_rate?: number;
   cgst_amount?: number;
   total_amount?: number;
+  doc_path?: string;
   created_by?: string;
 }
 
@@ -516,6 +520,7 @@ export interface ShopRetailBill {
   rate: number;
   amount: number;
   seller_signature?: string | null;
+  doc_path?: string | null;
   created_by?: string | null;
   created_at?: string | null;
 }
@@ -530,6 +535,7 @@ export interface ShopRetailBillCreate {
   rate?: number;
   amount?: number;
   seller_signature?: string;
+  doc_path?: string;
   created_by?: string;
 }
 
@@ -543,6 +549,7 @@ export interface PesticideSaleEntry {
   amount: number;
   batch_no?: string | null;
   remarks?: string | null;
+  doc_path?: string | null;
   created_by?: string | null;
   created_at?: string | null;
 }
@@ -556,6 +563,7 @@ export interface PesticideSaleEntryCreate {
   amount?: number;
   batch_no?: string;
   remarks?: string;
+  doc_path?: string;
   created_by?: string;
 }
 

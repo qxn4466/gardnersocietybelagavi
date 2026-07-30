@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical } from 'lucide-react';
-import { createPesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical } from 'lucide-react';
+import { createPesticideSale, updatePesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -15,6 +15,8 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [productList, setProductList] = useState<string[]>(getStoredProducts());
 
@@ -39,6 +41,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const [batchNo, setBatchNo] = useState('');
   const [remarks, setRemarks] = useState('');
   const [amount, setAmount] = useState<number>(0);
+  const [docPath, setDocPath] = useState('');
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -71,13 +74,29 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   };
 
   const handleReset = () => {
+    setEditingId(null);
+    setDate(today);
     setCustomerName('');
     setProductName('Boric Acid');
     setQty('1');
     setRate('');
     setBatchNo('');
     setRemarks('');
+    setDocPath('');
     setMsg(null);
+  };
+
+  const handleEdit = (entry: PesticideSaleEntry) => {
+    setEditingId(entry.id);
+    setDate(entry.date);
+    setCustomerName(entry.customer_name);
+    setProductName(entry.product_name);
+    setQty(entry.qty.toString());
+    setRate(entry.rate.toString());
+    setBatchNo(entry.batch_no || '');
+    setRemarks(entry.remarks || '');
+    setDocPath(entry.doc_path || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,7 +113,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
     setLoading(true);
     setMsg(null);
     try {
-      await createPesticideSale({
+      const payload = {
         date,
         customer_name: customerName.trim(),
         product_name: productName,
@@ -103,13 +122,23 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         amount,
         batch_no: batchNo.trim() || undefined,
         remarks: remarks.trim() || undefined,
+        doc_path: docPath || undefined,
         created_by: user?.username || 'shopkeeper',
-      });
+      };
 
-      setMsg({
-        type: 'success',
-        text: lang === 'mr' ? 'कीटकनाशक नोंदणी पुस्तक नोंद जतन झाली!' : 'Pesticide sale register entry saved successfully!'
-      });
+      if (editingId) {
+        await updatePesticideSale(editingId, payload);
+        setMsg({
+          type: 'success',
+          text: lang === 'mr' ? 'कीटकनाशक विक्री नोंद अपडेट झाली!' : 'Pesticide sale entry updated successfully!'
+        });
+      } else {
+        await createPesticideSale(payload);
+        setMsg({
+          type: 'success',
+          text: lang === 'mr' ? 'कीटकनाशक नोंदणी पुस्तक नोंद जतन झाली!' : 'Pesticide sale register entry saved successfully!'
+        });
+      }
       loadHistory();
       handleReset();
     } catch {
@@ -255,9 +284,26 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           </div>
         </div>
 
+        <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
+          </label>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            className="form-input"
+            style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setDocPath(file.name);
+            }}
+          />
+          {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
+        </div>
+
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary btn-sm" disabled={loading} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
-            <Save size={14} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जतन करा' : 'Save Pesticide Sale')}
+            <Save size={14} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Entry') : (lang === 'mr' ? 'नोंद जतन करा' : 'Save Pesticide Sale'))}
           </button>
           <button
             type="button"
@@ -383,13 +429,14 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               <th>Qty</th>
               <th>Rate (₹)</th>
               <th style={{ textAlign: 'right' }}>Amount (₹)</th>
+              <th>Doc</th>
               <th style={{ textAlign: 'center' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredHistory.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                   {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
                 </td>
               </tr>
@@ -407,7 +454,19 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                   <td>{row.qty}</td>
                   <td>₹{Number(row.rate).toFixed(2)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>₹{Number(row.amount).toFixed(2)}</td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td>
+                    {row.doc_path ? (
+                      <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                        📎 Doc
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
+                      <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                    </button>
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
                       <Trash2 size={12} />
                     </button>
@@ -421,7 +480,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               <tr style={{ background: '#faf5ff', fontWeight: 700 }}>
                 <td colSpan={6} style={{ textAlign: 'right' }}>Grand Total Pesticide Sales:</td>
                 <td style={{ textAlign: 'right', color: '#7c3aed', fontSize: 14 }}>₹{grandTotalAmount.toFixed(2)}</td>
-                <td></td>
+                <td colSpan={2}></td>
               </tr>
             </tfoot>
           )}
@@ -449,9 +508,14 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
             <div className="printable-pesticide-register" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
-                  The Belgaum Gardeners Co-Op Pro Supply and Sale Society Ltd. Belgaum
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
+                  BELAGAVI GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
+                <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span>📍 Address: Belagavi, Karnataka - 590001</span>
+                  <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
+                  <span>🆔 GSTN: 29AAATB1234C1Z5</span>
+                </div>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   PESTICIDE SALE REGISTER
                 </div>
