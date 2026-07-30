@@ -306,4 +306,22 @@ class PesticideProductMaster(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class MeetingNotice(Base):
+    """Accountant Meeting Notice (मिटिंग नोटीस)"""
+    __tablename__ = "meeting_notices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    notice_no = Column(String(100), nullable=False, unique=True, index=True)
+    meeting_date = Column(Date, nullable=False, default=date.today)
+    meeting_time = Column(String(50), nullable=False, default="11:00 AM")
+    time_of_day = Column(String(50), nullable=False, default="सकाळी (Morning)")
+    recipient_name = Column(String(250), nullable=False)
+    meeting_type = Column(String(250), nullable=False, default="Managing Committee Meeting / मॅ. कमिटी मिटिंग")
+    agenda_subjects = Column(Text, nullable=False)
+    doc_path = Column(String(500), nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+
 

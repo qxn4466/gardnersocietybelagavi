@@ -322,6 +322,20 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                   </span>
                 </div>
               </NavLink>
+
+              <NavLink
+                to="/meeting-notice"
+                onClick={onClose}
+                className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+              >
+                <FileText size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? 'मिटिंग नोटीस' : 'Meeting Notice'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'मॅ. कमिटी मिटिंग नोटीस' : 'MC MEETING NOTICE'}
+                  </span>
+                </div>
+              </NavLink>
             </>
           )}
         </nav>

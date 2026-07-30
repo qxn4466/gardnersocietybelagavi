@@ -430,4 +430,25 @@ class PesticideProductOut(BaseModel):
     created_at: Optional[datetime] = None
 
 
+# Meeting Notice (मिटिंग नोटीस)
+class MeetingNoticeCreate(BaseModel):
+    notice_no: Optional[str] = None
+    meeting_date: date
+    meeting_time: str = "11:00 AM"
+    time_of_day: str = "सकाळी (Morning)"
+    recipient_name: str
+    meeting_type: str = "Managing Committee Meeting / मॅ. कमिटी मिटिंग"
+    agenda_subjects: str
+    doc_path: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class MeetingNoticeOut(MeetingNoticeCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    notice_no: str
+    created_at: Optional[datetime] = None
+
+
+
 

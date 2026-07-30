@@ -429,6 +429,28 @@ export const generate30DaysTestData = (): Promise<{ message: string; selling_rat
 export const delete30DaysTestData = (): Promise<{ message: string; selling_rate_deleted: number; tax_invoices_deleted: number; retail_bills_deleted: number; pesticide_sales_deleted: number }> =>
   api.delete('/shopkeeper/delete-test-data').then(r => r.data);
 
+// ─── Meeting Notice (Accountant) API ───────────────────────────────────────
+export const fetchNextMeetingNoticeNo = (): Promise<{ notice_no: string }> =>
+  api.get('/accountant/meeting-notices/next-notice-no').then(r => r.data);
+
+export const fetchMeetingNotices = (startDate?: string, endDate?: string, search?: string): Promise<import('../types').MeetingNotice[]> =>
+  api.get('/accountant/meeting-notices', { params: { start_date: startDate, end_date: endDate, search } }).then(r => r.data);
+
+export const createMeetingNotice = (payload: import('../types').MeetingNoticeCreate): Promise<import('../types').MeetingNotice> =>
+  api.post('/accountant/meeting-notices', payload).then(r => r.data);
+
+export const updateMeetingNotice = (id: number, payload: import('../types').MeetingNoticeCreate): Promise<import('../types').MeetingNotice> =>
+  api.put(`/accountant/meeting-notices/${id}`, payload).then(r => r.data);
+
+export const deleteMeetingNotice = (id: number): Promise<void> =>
+  api.delete(`/accountant/meeting-notices/${id}`).then(r => r.data);
+
+export const generate30DaysMeetingNoticesTestData = (): Promise<{ message: string; count: number }> =>
+  api.post('/accountant/meeting-notices/generate-30-days-test-data').then(r => r.data);
+
+export const delete30DaysMeetingNoticesTestData = (): Promise<{ message: string; deleted_count: number }> =>
+  api.delete('/accountant/meeting-notices/delete-test-data').then(r => r.data);
+
 
 
 

@@ -682,5 +682,31 @@ export const PESTICIDE_PRODUCT_LIST = [
   "Brass Nozzle Set",
 ];
 
+export interface MeetingNotice {
+  id: number;
+  notice_no: string;
+  meeting_date: string;
+  meeting_time: string;
+  time_of_day: string;
+  recipient_name: string;
+  meeting_type: string;
+  agenda_subjects: string;
+  doc_path?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+}
+
+export interface MeetingNoticeCreate {
+  notice_no?: string;
+  meeting_date: string;
+  meeting_time?: string;
+  time_of_day?: string;
+  recipient_name: string;
+  meeting_type?: string;
+  agenda_subjects: string;
+  doc_path?: string;
+  created_by?: string;
+}
+
 
 

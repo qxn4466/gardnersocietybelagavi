@@ -7,6 +7,7 @@ import DebitBook from './pages/DebitBook';
 import GeneralLedger from './pages/GeneralLedger';
 import SavingsAccounts from './pages/SavingsAccounts';
 import AuditPackage from './pages/AuditPackage';
+import MeetingNoticePage from './pages/MeetingNoticePage';
 import CashierDashboard from './pages/CashierDashboard';
 import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
 import Login from './pages/Login';
@@ -101,6 +102,10 @@ const App: React.FC = () => {
               <Route
                 path="/audit-package"
                 element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+              />
+              <Route
+                path="/meeting-notice"
+                element={<MeetingNoticePage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
               />
               <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
             </Routes>
