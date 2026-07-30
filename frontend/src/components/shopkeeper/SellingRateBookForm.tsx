@@ -5,6 +5,8 @@ import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
+import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+
 
 interface SellingRateBookFormProps {
   user?: User | null;
@@ -40,6 +42,22 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Dynamically manageable products list
+  const [productList, setProductList] = useState<string[]>(getStoredProducts());
+
+  const handleAddNewProduct = (index: number) => {
+    const newProd = window.prompt(
+      lang === 'mr'
+        ? 'नवीन उत्पादनाचे नाव प्रविष्ट करा (उदा. Tata Fungicide, Urea 50kg):'
+        : 'Enter new product name (e.g. Tata Fungicide, Urea 50kg):'
+    );
+    if (newProd && newProd.trim()) {
+      const updatedList = addStoredProduct(newProd.trim());
+      setProductList(updatedList);
+      updateRow(index, 'particulars', newProd.trim());
+    }
+  };
 
   // Multi-item addable grid rows
   const [items, setItems] = useState<SellingRateRow[]>([
@@ -410,13 +428,22 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         className="form-input"
                         style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.particulars}
-                        onChange={e => updateRow(idx, 'particulars', e.target.value)}
+                        onChange={e => {
+                          if (e.target.value === '__ADD_NEW__') {
+                            handleAddNewProduct(idx);
+                          } else {
+                            updateRow(idx, 'particulars', e.target.value);
+                          }
+                        }}
                       >
-                        {PESTICIDE_PRODUCT_LIST.map(p => (
+                        {productList.map(p => (
                           <option key={p} value={p}>
                             {lang === 'mr' ? getMarathiItem(p) : p}
                           </option>
                         ))}
+                        <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#16a34a' }}>
+                          {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add New Product...'}
+                        </option>
                       </select>
                     </td>
                     <td style={{ padding: '6px 4px' }}>

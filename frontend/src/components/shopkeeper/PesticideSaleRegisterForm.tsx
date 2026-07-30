@@ -4,8 +4,8 @@ import { createPesticideSale, fetchPesticideSales, deletePesticideSale } from '.
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateToMarathi } from '../../utils/translator';
-
+import { translateToMarathi, getMarathiItem } from '../../utils/translator';
+import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
 
 interface PesticideSaleRegisterFormProps {
   user?: User | null;
@@ -15,6 +15,21 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+  const [productList, setProductList] = useState<string[]>(getStoredProducts());
+
+  const handleAddNewProduct = () => {
+    const newProd = window.prompt(
+      lang === 'mr'
+        ? 'नवीन उत्पादनाचे नाव प्रविष्ट करा (उदा. Tata Fungicide, Urea 50kg):'
+        : 'Enter new product name (e.g. Tata Fungicide, Urea 50kg):'
+    );
+    if (newProd && newProd.trim()) {
+      const updatedList = addStoredProduct(newProd.trim());
+      setProductList(updatedList);
+      setProductName(newProd.trim());
+    }
+  };
 
   const [date, setDate] = useState(today);
   const [customerName, setCustomerName] = useState('');
@@ -194,10 +209,25 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'कीटकनाशक उत्पादन नाव' : 'Pesticide Product Name'}</label>
-            <select className="form-input" value={productName} onChange={e => setProductName(e.target.value)}>
-              {PESTICIDE_PRODUCT_LIST.map(p => (
-                <option key={p} value={p}>{p}</option>
+            <select
+              className="form-input"
+              value={productName}
+              onChange={e => {
+                if (e.target.value === '__ADD_NEW__') {
+                  handleAddNewProduct();
+                } else {
+                  setProductName(e.target.value);
+                }
+              }}
+            >
+              {productList.map(p => (
+                <option key={p} value={p}>
+                  {lang === 'mr' ? getMarathiItem(p) : p}
+                </option>
               ))}
+              <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#7c3aed' }}>
+                {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add New Product...'}
+              </option>
             </select>
           </div>
           <div className="form-group">
