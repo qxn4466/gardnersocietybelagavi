@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical } from 'lucide-react';
 import { createPesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -119,28 +119,38 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
     (row.remarks && row.remarks.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Group pesticide sales by product columns for Specification 4 Grid
-  const productsTotal = PESTICIDE_PRODUCT_LIST.map(prod => {
-    const totalQty = filteredHistory.filter(h => h.product_name.toLowerCase().includes(prod.toLowerCase())).reduce((s, h) => s + Number(h.qty || 0), 0);
-    const totalAmt = filteredHistory.filter(h => h.product_name.toLowerCase().includes(prod.toLowerCase())).reduce((s, h) => s + Number(h.amount || 0), 0);
-    return { name: prod, qty: totalQty, amount: totalAmt };
-  });
+  // Key pesticide products for the actual Product-Wise Grid Table columns
+  const mainPesticides = [
+    'Boric Acid',
+    'Chlorpyrifos 20% EC',
+    'Monocrotophos 36% SL',
+    'Mancozeb 75% WP',
+    'Neem Oil 10000 PPM',
+    'Malathion 50% EC',
+    'Copper Oxychloride 50% WP',
+    'Carbendazim 50% WP'
+  ];
 
   const grandTotalAmount = filteredHistory.reduce((s, h) => s + Number(h.amount || 0), 0);
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #7c3aed', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            4. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'विक्री दर पुस्तक, टॅक्स इनव्हॉईस व किरकोळ बिलांमधून स्वयंचलित नोंदवणारी नोंदवही' : 'Auto-populated from Selling Rate Book, Shop Tax Invoices & Retail Bills'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#f3e8ff', padding: 10, borderRadius: 8, color: '#6b21a8' }}>
+            <FlaskConical size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              4. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'ऑटो-कीटकनाशके तक्ता · विक्री दर पुस्तक, टॅक्स इनव्हॉईस व किरकोळ बिलांमधून नोंद' : 'Auto-populated from Selling Rate Book, Shop Tax Invoices & Retail Bills'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
@@ -157,9 +167,9 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       )}
 
       {/* Manual Entry Form */}
-      <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: 'var(--surface-subtle)', padding: 16, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-          {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा' : 'Add Manual Pesticide Sale Entry'}
+      <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: '#faf5ff', padding: 18, borderRadius: 8, border: '1px solid #e9d5ff' }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#6b21a8' }}>
+          {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा (Manual Entry)' : 'Add Manual Pesticide Sale Entry'}
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 14 }}>
           <div className="form-group">
@@ -202,7 +212,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               type="number"
               step="0.01"
               className="form-input"
-              style={{ fontWeight: 700, color: '#16a34a', background: '#f0fdf4' }}
+              style={{ fontWeight: 700, color: '#6b21a8', background: '#f3e8ff' }}
               value={amount.toFixed(2)}
               readOnly
             />
@@ -214,7 +224,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={loading} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
             <Save size={14} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जतन करा' : 'Save Pesticide Sale')}
           </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
@@ -226,16 +236,14 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          {/* Date Range Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Calendar size={16} color="var(--blue-600)" />
+            <Calendar size={16} color="#7c3aed" />
             <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
             <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
 
-          {/* Search Input Bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={16} color="var(--text-muted)" />
             <input
@@ -249,32 +257,72 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           </div>
         </div>
 
-        {/* Product Summary Grid matching Specification 4 */}
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
-          {lang === 'mr' ? 'उत्पादननिहाय विक्री उलाढाल (Product-wise Sales Grid)' : 'Product-wise Sales Grid'}
-        </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
-          {productsTotal.map(p => (
-            <div key={p.name} style={{ background: p.name === 'Boric Acid' ? '#f0fdf4' : '#f8fafc', padding: 10, borderRadius: 6, border: p.name === 'Boric Acid' ? '1px solid #86efac' : '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: p.name === 'Boric Acid' ? '#166534' : 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>
-                {p.name}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                Qty: {p.qty}
-              </div>
-              <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
-                ₹{p.amount.toFixed(2)}
-              </div>
-            </div>
-          ))}
+        {/* ACTUAL STRUCTURED PRODUCT-WISE SALES TABLE GRID (Fixes Requirement 3 & Screenshot 2) */}
+        <div style={{ background: '#fff', border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ background: '#7c3aed', color: '#fff', padding: '12px 16px', fontWeight: 700, fontSize: 14 }}>
+            📊 {lang === 'mr' ? 'उत्पादननिहाय विक्री नोंदवही तक्ता (Product-wise Sales Grid)' : 'Product-wise Sales Grid Table'}
+          </div>
+
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f3e8ff', borderBottom: '2px solid #d8b4fe' }}>
+                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'left' }}>Product Name</th>
+                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', width: 90 }}>Total Qty</th>
+                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'right', width: 120 }}>Total Sales (₹)</th>
+                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', width: 100 }}>Share (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mainPesticides.map((pName) => {
+                  const matching = filteredHistory.filter(h => h.product_name.toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+                  const totalQ = matching.reduce((s, h) => s + Number(h.qty || 0), 0);
+                  const totalA = matching.reduce((s, h) => s + Number(h.amount || 0), 0);
+                  const pct = grandTotalAmount > 0 ? ((totalA / grandTotalAmount) * 100).toFixed(1) : '0.0';
+
+                  return (
+                    <tr key={pName} style={{ background: matching.length > 0 ? '#faf5ff' : '#fff' }}>
+                      <td style={{ padding: 8, border: '1px solid #e9d5ff', fontWeight: 600, color: pName.includes('Boric') ? '#6b21a8' : 'var(--text-primary)' }}>
+                        {pName}
+                      </td>
+                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', fontWeight: 700 }}>
+                        {totalQ}
+                      </td>
+                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>
+                        ₹{totalA.toFixed(2)}
+                      </td>
+                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {pct}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: '#f3e8ff', fontWeight: 800 }}>
+                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right' }}>GRID GRAND TOTAL:</td>
+                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center' }}>
+                    {filteredHistory.reduce((s, h) => s + Number(h.qty || 0), 0)}
+                  </td>
+                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8', fontSize: 14 }}>
+                    ₹{grandTotalAmount.toFixed(2)}
+                  </td>
+                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center' }}>100%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* History Register Table */}
+      {/* History Detailed Register Table */}
+      <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)' }}>
+        {lang === 'mr' ? 'दैनंदिन हस्ते व ऑटो नोंदवही (Detailed Transactions Log)' : 'Detailed Transactions Log'}
+      </h4>
       <div className="table-responsive">
         <table className="table" style={{ width: '100%', fontSize: 13 }}>
           <thead>
-            <tr>
+            <tr style={{ background: '#faf5ff' }}>
               <th>Date</th>
               <th>Customer Name</th>
               <th>Product Name</th>
@@ -305,7 +353,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
                   <td>{row.qty}</td>
                   <td>₹{Number(row.rate).toFixed(2)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.amount).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>₹{Number(row.amount).toFixed(2)}</td>
                   <td style={{ textAlign: 'center' }}>
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
                       <Trash2 size={12} />
@@ -317,9 +365,9 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           </tbody>
           {filteredHistory.length > 0 && (
             <tfoot>
-              <tr style={{ background: 'var(--surface-subtle)', fontWeight: 700 }}>
+              <tr style={{ background: '#faf5ff', fontWeight: 700 }}>
                 <td colSpan={6} style={{ textAlign: 'right' }}>Grand Total Pesticide Sales:</td>
-                <td style={{ textAlign: 'right', color: '#16a34a' }}>₹{grandTotalAmount.toFixed(2)}</td>
+                <td style={{ textAlign: 'right', color: '#7c3aed', fontSize: 14 }}>₹{grandTotalAmount.toFixed(2)}</td>
                 <td></td>
               </tr>
             </tfoot>
@@ -337,7 +385,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
               <h4 style={{ fontWeight: 700 }}>Pesticide Sale Register Print ({startDate} to {endDate})</h4>
               <div>
-                <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8 }}>
+                <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#7c3aed', borderColor: '#7c3aed' }}>
                   <Printer size={14} /> Print
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowPrintModal(false)}>
@@ -346,7 +394,6 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               </div>
             </div>
 
-            {/* Print Container matching Specification 4 */}
             <div className="printable-pesticide-register" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0 }}>
@@ -356,18 +403,6 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                   PESTICIDE SALE REGISTER
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Period: {startDate} to {endDate}</div>
-              </div>
-
-              {/* Product Grid Columns */}
-              <div style={{ marginBottom: 16, border: '1px solid #000', padding: 10 }}>
-                <strong style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Period Product Summary:</strong>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontSize: 11 }}>
-                  {productsTotal.slice(0, 12).map(p => (
-                    <div key={p.name} style={{ borderBottom: '1px solid #eee', paddingBottom: 4 }}>
-                      <strong>{p.name}:</strong> Qty {p.qty} (₹{p.amount.toFixed(2)})
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 20 }}>

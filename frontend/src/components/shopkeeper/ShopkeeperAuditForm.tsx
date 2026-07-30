@@ -36,17 +36,22 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #4f46e5', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            5. {lang === 'mr' ? 'दुकानदार लेखापरीक्षा पुस्तक (Shopkeeper Audit Book)' : 'Shopkeeper Audit Book'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'दुकान विक्री, दर पुस्तक, टॅक्स इनव्हॉईस व कीटकनाशके विक्रीचा लेखापरीक्षा अहवाल' : 'Audit Package for Shop Sales, Invoices, Retail Bills & Pesticide Register'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#e0e7ff', padding: 10, borderRadius: 8, color: '#3730a3' }}>
+            <ShieldCheck size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              5. {lang === 'mr' ? 'दुकानदार लेखापरीक्षा पुस्तक (Shopkeeper Audit Book)' : 'Shopkeeper Audit Book'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'दुकान विक्री, दर पुस्तक, टॅक्स इनव्हॉईस व कीटकनाशके विक्रीचा लेखापरीक्षा अहवाल' : 'Audit Package for Shop Sales, Invoices, Retail Bills & Pesticide Register'}
+            </p>
+          </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
+        <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ background: '#4f46e5', borderColor: '#4f46e5' }}>
           <Printer size={14} /> {lang === 'mr' ? 'लेखापरीक्षा अहवाल मुद्रित करा' : 'Print Audit Binder'}
         </button>
       </div>
@@ -54,7 +59,7 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
       {/* Date Range Selector */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Calendar size={16} color="var(--blue-600)" />
+          <Calendar size={16} color="#4f46e5" />
           <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी निवडा:' : 'Audit Period:'}</label>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -107,9 +112,9 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
           </div>
 
           {/* Total Sales Volume Hero Banner */}
-          <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#fff', padding: 24, borderRadius: 10, marginBottom: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ background: 'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)', color: '#fff', padding: 24, borderRadius: 10, marginBottom: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 8px 20px rgba(49, 46, 129, 0.25)' }}>
             <div>
-              <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+              <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a5b4fc' }}>
                 {lang === 'mr' ? 'एकूण दुकान विक्री उलाढाल (Grand Shop Sales Total)' : 'Grand Shop Sales Total Volume'}
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: '#4ade80' }}>
@@ -119,8 +124,8 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
                 Period: {summary.start_date} to {summary.end_date}
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 12 }}>
-              <TrendingUp size={36} color="#4ade80" />
+            <div style={{ background: 'rgba(255,255,255,0.1)', padding: 14, borderRadius: 12 }}>
+              <TrendingUp size={38} color="#4ade80" />
             </div>
           </div>
         </>

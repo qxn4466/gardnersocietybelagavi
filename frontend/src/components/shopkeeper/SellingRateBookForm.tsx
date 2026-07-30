@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search } from 'lucide-react';
-import { createSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry } from '../../api/client';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X } from 'lucide-react';
+import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry } from '../../api/client';
 import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -27,6 +27,8 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [date, setDate] = useState(today);
   const [name, setName] = useState('');
@@ -126,6 +128,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const grandTotal = items.reduce((s, r) => s + (r.total_amount || 0), 0);
 
   const handleReset = () => {
+    setEditingId(null);
     setDate(today);
     setName('');
     setStockBookNo('');
@@ -148,6 +151,30 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     setMsg(null);
   };
 
+  const handleEdit = (entry: ShopSellingRateEntry) => {
+    setEditingId(entry.id);
+    setDate(entry.date);
+    setName(entry.name);
+    setStockBookNo(entry.stock_book_no || '');
+    setSignStatus(entry.sign_status || 'Signed');
+    setItems([
+      {
+        id: entry.id.toString(),
+        particulars: entry.particulars,
+        qty: entry.qty,
+        amount: entry.amount,
+        sgst: entry.sgst,
+        cgst: entry.cgst,
+        hmall: entry.hmall,
+        motor_rent: entry.motor_rent,
+        total_amount: entry.total_amount,
+        net_rate: entry.net_rate,
+        selling_rate: entry.selling_rate,
+      }
+    ]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -162,33 +189,60 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     setLoading(true);
     setMsg(null);
     try {
-      for (const item of items) {
-        if (item.total_amount > 0) {
-          await createSellingRateEntry({
-            date,
-            name: name.trim(),
-            particulars: item.particulars,
-            qty: Number(item.qty) || 1,
-            amount: Number(item.amount) || 0,
-            sgst: Number(item.sgst) || 0,
-            cgst: Number(item.cgst) || 0,
-            hmall: Number(item.hmall) || 0,
-            motor_rent: Number(item.motor_rent) || 0,
-            total_amount: item.total_amount,
-            net_rate: item.net_rate,
-            selling_rate: item.selling_rate,
-            stock_book_no: stockBookNo.trim() || undefined,
-            sign_status: signStatus,
-            created_by: user?.username || 'shopkeeper',
-          });
+      if (editingId) {
+        // Edit single entry update
+        const item = items[0];
+        await updateSellingRateEntry(editingId, {
+          date,
+          name: name.trim(),
+          particulars: item.particulars,
+          qty: Number(item.qty) || 1,
+          amount: Number(item.amount) || 0,
+          sgst: Number(item.sgst) || 0,
+          cgst: Number(item.cgst) || 0,
+          hmall: Number(item.hmall) || 0,
+          motor_rent: Number(item.motor_rent) || 0,
+          total_amount: item.total_amount,
+          net_rate: item.net_rate,
+          selling_rate: item.selling_rate,
+          stock_book_no: stockBookNo.trim() || undefined,
+          sign_status: signStatus,
+          created_by: user?.username || 'shopkeeper',
+        });
+        setMsg({
+          type: 'success',
+          text: lang === 'mr' ? 'विक्री दर पुस्तक नोंद अपडेट केली!' : 'Selling Rate Book entry updated successfully!'
+        });
+      } else {
+        // Create new multi-item entries
+        for (const item of items) {
+          if (item.total_amount > 0) {
+            await createSellingRateEntry({
+              date,
+              name: name.trim(),
+              particulars: item.particulars,
+              qty: Number(item.qty) || 1,
+              amount: Number(item.amount) || 0,
+              sgst: Number(item.sgst) || 0,
+              cgst: Number(item.cgst) || 0,
+              hmall: Number(item.hmall) || 0,
+              motor_rent: Number(item.motor_rent) || 0,
+              total_amount: item.total_amount,
+              net_rate: item.net_rate,
+              selling_rate: item.selling_rate,
+              stock_book_no: stockBookNo.trim() || undefined,
+              sign_status: signStatus,
+              created_by: user?.username || 'shopkeeper',
+            });
+          }
         }
+        setMsg({
+          type: 'success',
+          text: (lang === 'mr' ? 'विक्री दर पुस्तक नोंद जतन केली!' : 'Selling Rate Book entries saved successfully!') +
+            (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडली गेली)' : ' (Auto-posted to Pesticide Register if applicable)')
+        });
       }
 
-      setMsg({
-        type: 'success',
-        text: (lang === 'mr' ? 'विक्री दर पुस्तक नोंद जतन केली!' : 'Selling Rate Book entries saved successfully!') +
-          (lang === 'mr' ? ' (कीटकनाशके नोंदवहीत स्वयंचलित जोडली गेली)' : ' (Auto-posted to Pesticide Register if applicable)')
-      });
       loadHistory();
       handleReset();
     } catch {
@@ -215,18 +269,23 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   );
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #16a34a', boxShadow: '0 4px 12px rgba(22, 163, 74, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            1. {lang === 'mr' ? 'बियाणे, कीटकनाशके, स्प्रेपंप व इतर विक्री दर पुस्तक' : 'Seeds, Pesticides, Spraypump and Other Selling Rate Book'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'अनेक बाबी जोडा ("+ Add Item"), दर पुस्तक नोंद, ऑटो-कीटकनाशके नोंद' : 'Multi-item grid with "+ Add Item" button (Auto-posts to Pesticide Register)'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#dcfce7', padding: 10, borderRadius: 8, color: '#15803d' }}>
+            <Tag size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              1. {lang === 'mr' ? 'बियाणे, कीटकनाशके, स्प्रेपंप व इतर विक्री दर पुस्तक' : 'Seeds, Pesticides, Spraypump and Other Selling Rate Book'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'दर पुस्तक नोंद तक्ता · कीटकनाशके नोंदवहीत स्वयंचलित नोंद' : 'Selling Rate Book Grid · Auto-posts to Pesticide Register'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
@@ -242,8 +301,19 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         </div>
       )}
 
+      {editingId && (
+        <div style={{ background: '#fef3c7', padding: '10px 16px', borderRadius: 8, border: '1px solid #fde68a', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>
+            ✏️ Edit Mode: Updating Selling Rate Entry #{editingId}
+          </span>
+          <button className="btn btn-secondary btn-sm" onClick={handleReset}>
+            <X size={14} /> Cancel Edit
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -271,43 +341,45 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Multi-Item Dynamic Table Grid matching Screenshot */}
-        <div style={{ background: 'var(--surface-subtle)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
+        {/* Spacious, Consistent Multi-Item Dynamic Table Grid */}
+        <div style={{ background: '#f0fdf4', padding: 18, borderRadius: 8, border: '1px solid #bbf7d0', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#166534' }}>
               {lang === 'mr' ? 'उत्पादन दर व खर्च तक्ता (Selling Rate Grid Items)' : 'Selling Rate Grid Items'}
             </h4>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
-              <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
-            </button>
+            {!editingId && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
+                <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
+              </button>
+            )}
           </div>
 
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 12 }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', minWidth: 950, fontSize: 13, borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ width: 35 }}>#</th>
-                  <th style={{ minWidth: 160 }}>Particulars</th>
-                  <th style={{ width: 70 }}>Qty</th>
-                  <th style={{ width: 90 }}>Base Amt (₹)</th>
-                  <th style={{ width: 80 }}>SGST (₹)</th>
-                  <th style={{ width: 80 }}>CGST (₹)</th>
-                  <th style={{ width: 80 }}>HMall (₹)</th>
-                  <th style={{ width: 90 }}>Motor Rent (₹)</th>
-                  <th style={{ width: 100, textAlign: 'right' }}>Total (₹)</th>
-                  <th style={{ width: 90 }}>Net Rate</th>
-                  <th style={{ width: 100 }}>Selling Rate</th>
-                  <th style={{ width: 40, textAlign: 'center' }}></th>
+                <tr style={{ background: '#dcfce7', borderBottom: '2px solid #86efac' }}>
+                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
+                  <th style={{ minWidth: 200, padding: '8px 6px' }}>Particulars</th>
+                  <th style={{ width: 75, padding: '8px 6px' }}>Qty</th>
+                  <th style={{ width: 100, padding: '8px 6px' }}>Base Amt (₹)</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>SGST (₹)</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>CGST (₹)</th>
+                  <th style={{ width: 85, padding: '8px 6px' }}>HMall (₹)</th>
+                  <th style={{ width: 95, padding: '8px 6px' }}>Motor Rent (₹)</th>
+                  <th style={{ width: 110, padding: '8px 6px', textAlign: 'right' }}>Total (₹)</th>
+                  <th style={{ width: 95, padding: '8px 6px' }}>Net Rate</th>
+                  <th style={{ width: 105, padding: '8px 6px' }}>Selling Rate</th>
+                  <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((row, idx) => (
-                  <tr key={row.id}>
-                    <td>{idx + 1}</td>
-                    <td>
+                  <tr key={row.id} style={{ background: '#fff' }}>
+                    <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
+                    <td style={{ padding: '6px 4px' }}>
                       <select
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.particulars}
                         onChange={e => updateRow(idx, 'particulars', e.target.value)}
                       >
@@ -316,86 +388,86 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         ))}
                       </select>
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.1"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.qty}
                         onChange={e => updateRow(idx, 'qty', e.target.value)}
                       />
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.amount || ''}
                         onChange={e => updateRow(idx, 'amount', e.target.value)}
                       />
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.sgst || ''}
                         onChange={e => updateRow(idx, 'sgst', e.target.value)}
                       />
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.cgst || ''}
                         onChange={e => updateRow(idx, 'cgst', e.target.value)}
                       />
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.hmall || ''}
                         onChange={e => updateRow(idx, 'hmall', e.target.value)}
                       />
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4 }}
+                        style={{ fontSize: 13, padding: '6px 8px' }}
                         value={row.motor_rent || ''}
                         onChange={e => updateRow(idx, 'motor_rent', e.target.value)}
                       />
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>
+                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: 14 }}>
                       ₹{row.total_amount.toFixed(2)}
                     </td>
-                    <td style={{ fontSize: 11 }}>
+                    <td style={{ padding: '6px 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
                       ₹{row.net_rate.toFixed(2)}
                     </td>
-                    <td>
+                    <td style={{ padding: '6px 4px' }}>
                       <input
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 12, padding: 4, fontWeight: 700, color: '#2563eb' }}
+                        style={{ fontSize: 13, padding: '6px 8px', fontWeight: 700, color: '#2563eb' }}
                         value={row.selling_rate || ''}
                         onChange={e => updateRow(idx, 'selling_rate', e.target.value)}
                       />
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {items.length > 1 && (
-                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: 2 }} onClick={() => removeRow(idx)}>
-                          <Trash2 size={12} />
+                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                      {items.length > 1 && !editingId && (
+                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: 4 }} onClick={() => removeRow(idx)}>
+                          <Trash2 size={13} />
                         </button>
                       )}
                     </td>
@@ -405,14 +477,14 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             </table>
           </div>
 
-          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 700, fontSize: 15, color: '#16a34a' }}>
+          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#15803d' }}>
             Grand Total Amount: ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'दर पुस्तक नोंदी जतन करा' : 'Save Rate Entries')}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Entry') : (lang === 'mr' ? 'दर पुस्तक नोंदी जतन करा' : 'Save Rate Entries'))}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
@@ -423,16 +495,14 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
       {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          {/* Date Range Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Calendar size={16} color="var(--blue-600)" />
+            <Calendar size={16} color="#16a34a" />
             <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
             <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
 
-          {/* Search Input Bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={16} color="var(--text-muted)" />
             <input
@@ -446,7 +516,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* History Register Table matching Grid 1 */}
+        {/* History Register Table with Edit Option */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही नोंदी आढळल्या नाहीत.' : 'No rate book entries found for selected date range.'}
@@ -455,7 +525,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           <div className="table-responsive">
             <table className="table" style={{ width: '100%', fontSize: 12 }}>
               <thead>
-                <tr>
+                <tr style={{ background: '#f0fdf4' }}>
                   <th>Date</th>
                   <th>Name</th>
                   <th>Particulars</th>
@@ -470,7 +540,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <th style={{ color: '#2563eb' }}>Selling Rate</th>
                   <th>Stock Book No.</th>
                   <th>Sign</th>
-                  <th style={{ textAlign: 'center' }}>Action</th>
+                  <th style={{ textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -490,9 +560,12 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                     <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{Number(row.selling_rate).toFixed(2)}</td>
                     <td>{row.stock_book_no || '-'}</td>
                     <td>{row.sign_status || 'Signed'}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                        <Trash2 size={12} />
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px' }} title="Edit Entry">
+                        <Edit size={13} color="#2563eb" />
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
@@ -513,7 +586,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
               <h4 style={{ fontWeight: 700 }}>Selling Rate Book Register Print ({startDate} to {endDate})</h4>
               <div>
-                <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8 }}>
+                <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#16a34a', borderColor: '#16a34a' }}>
                   <Printer size={14} /> Print
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowPrintModal(false)}>

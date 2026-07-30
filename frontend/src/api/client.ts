@@ -343,6 +343,9 @@ export const fetchSellingRateEntries = (startDate?: string, endDate?: string): P
 export const createSellingRateEntry = (payload: import('../types').ShopSellingRateCreate): Promise<import('../types').ShopSellingRateEntry> =>
   api.post('/shopkeeper/selling-rate-entries', payload).then(r => r.data);
 
+export const updateSellingRateEntry = (id: number, payload: import('../types').ShopSellingRateCreate): Promise<import('../types').ShopSellingRateEntry> =>
+  api.put(`/shopkeeper/selling-rate-entries/${id}`, payload).then(r => r.data);
+
 export const deleteSellingRateEntry = (id: number): Promise<void> =>
   api.delete(`/shopkeeper/selling-rate-entries/${id}`).then(r => r.data);
 
@@ -352,6 +355,9 @@ export const fetchShopTaxInvoices = (startDate?: string, endDate?: string): Prom
 
 export const createShopTaxInvoice = (payload: import('../types').ShopTaxInvoiceCreate): Promise<import('../types').ShopTaxInvoice> =>
   api.post('/shopkeeper/tax-invoices', payload).then(r => r.data);
+
+export const updateShopTaxInvoice = (id: number, payload: import('../types').ShopTaxInvoiceCreate): Promise<import('../types').ShopTaxInvoice> =>
+  api.put(`/shopkeeper/tax-invoices/${id}`, payload).then(r => r.data);
 
 export const deleteShopTaxInvoice = (id: number): Promise<void> =>
   api.delete(`/shopkeeper/tax-invoices/${id}`).then(r => r.data);
@@ -363,8 +369,12 @@ export const fetchShopRetailBills = (startDate?: string, endDate?: string): Prom
 export const createShopRetailBill = (payload: import('../types').ShopRetailBillCreate): Promise<import('../types').ShopRetailBill> =>
   api.post('/shopkeeper/retail-bills', payload).then(r => r.data);
 
+export const updateShopRetailBill = (id: number, payload: import('../types').ShopRetailBillCreate): Promise<import('../types').ShopRetailBill> =>
+  api.put(`/shopkeeper/retail-bills/${id}`, payload).then(r => r.data);
+
 export const deleteShopRetailBill = (id: number): Promise<void> =>
   api.delete(`/shopkeeper/retail-bills/${id}`).then(r => r.data);
+
 
 // 4. Pesticide Sale Register
 export const fetchPesticideSales = (startDate?: string, endDate?: string): Promise<import('../types').PesticideSaleEntry[]> =>

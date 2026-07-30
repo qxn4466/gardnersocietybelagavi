@@ -135,6 +135,32 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
     return record
 
 
+@router.put("/selling-rate-entries/{id}", response_model=ShopSellingRateOut)
+def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Session = Depends(get_db)):
+    record = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Selling rate entry not found")
+    
+    record.date = payload.date
+    record.name = payload.name
+    record.particulars = payload.particulars
+    record.qty = payload.qty
+    record.amount = payload.amount
+    record.sgst = payload.sgst
+    record.cgst = payload.cgst
+    record.hmall = payload.hmall
+    record.motor_rent = payload.motor_rent
+    record.total_amount = payload.total_amount
+    record.net_rate = payload.net_rate
+    record.selling_rate = payload.selling_rate
+    record.stock_book_no = payload.stock_book_no
+    record.sign_status = payload.sign_status or "Signed"
+    
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 @router.delete("/selling-rate-entries/{id}")
 def delete_selling_rate_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.id == id).first()
@@ -191,6 +217,27 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         created_by=payload.created_by
     )
 
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+@router.put("/tax-invoices/{id}", response_model=ShopTaxInvoiceOut)
+def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db)):
+    record = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Shop tax invoice not found")
+    
+    record.invoice_no = payload.invoice_no or record.invoice_no
+    record.date = payload.date
+    record.customer_name = payload.customer_name
+    record.customer_phone = payload.customer_phone
+    record.product_name = payload.product_name
+    record.hsn_code = payload.hsn_code or "3808"
+    record.qty = payload.qty
+    record.rate = payload.rate
+    record.amount = payload.amount
+    
     db.commit()
     db.refresh(record)
     return record
@@ -254,6 +301,27 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
     db.commit()
     db.refresh(record)
     return record
+
+
+@router.put("/retail-bills/{id}", response_model=ShopRetailBillOut)
+def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
+    record = db.query(ShopRetailBill).filter(ShopRetailBill.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Retail bill not found")
+    
+    record.bill_no = payload.bill_no or record.bill_no
+    record.date = payload.date
+    record.tin_no = payload.tin_no or "29540268502"
+    record.customer_name = payload.customer_name
+    record.particulars = payload.particulars
+    record.rate = payload.rate
+    record.amount = payload.amount
+    record.seller_signature = payload.seller_signature or "Seller Signed"
+    
+    db.commit()
+    db.refresh(record)
+    return record
+
 
 
 @router.delete("/retail-bills/{id}")
