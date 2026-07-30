@@ -8,11 +8,11 @@ import GeneralLedger from './pages/GeneralLedger';
 import SavingsAccounts from './pages/SavingsAccounts';
 import AuditPackage from './pages/AuditPackage';
 import CashierDashboard from './pages/CashierDashboard';
+import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
 import Login from './pages/Login';
 import type { User } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './index.css';
-
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(() => {
@@ -43,7 +43,13 @@ const App: React.FC = () => {
     );
   }
 
-  const isCashier = user.role === 'CASHIER' || user.username.toLowerCase() === 'cashier';
+  const userRole = user.role?.toUpperCase() || '';
+  const username = user.username?.toLowerCase() || '';
+
+  const isCashier = userRole === 'CASHIER' || username === 'cashier';
+  const isShopkeeper = userRole === 'SHOPKEEPER' || username === 'shopkeeper';
+
+  const defaultRedirect = isShopkeeper ? "/shopkeeper" : isCashier ? "/cashier" : "/";
 
   return (
     <LanguageProvider>
@@ -55,12 +61,18 @@ const App: React.FC = () => {
               <Route
                 path="/"
                 element={
-                  isCashier ? (
+                  isShopkeeper ? (
+                    <Navigate to="/shopkeeper" replace />
+                  ) : isCashier ? (
                     <Navigate to="/cashier" replace />
                   ) : (
                     <CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />
                   )
                 }
+              />
+              <Route
+                path="/shopkeeper"
+                element={<ShopkeeperDashboard user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
               />
               <Route
                 path="/cashier"
@@ -90,7 +102,7 @@ const App: React.FC = () => {
                 path="/audit-package"
                 element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
               />
-              <Route path="*" element={<Navigate to={isCashier ? "/cashier" : "/"} replace />} />
+              <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
             </Routes>
           </main>
         </div>
@@ -98,6 +110,5 @@ const App: React.FC = () => {
     </LanguageProvider>
   );
 };
-
 
 export default App;

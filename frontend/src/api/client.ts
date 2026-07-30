@@ -327,5 +327,60 @@ export const uploadCashierReceipt = (file: File): Promise<{ filename: string; fi
 };
 
 
+// ─── Shopkeeper API ──────────────────────────────────────────────────────────
+
+// Auto-number generators
+export const fetchNextShopTaxInvoiceNo = (date?: string): Promise<{ invoice_no: string }> =>
+  api.get('/shopkeeper/next-tax-invoice-no', { params: { v_date: date } }).then(r => r.data);
+
+export const fetchNextShopRetailBillNo = (date?: string): Promise<{ bill_no: string }> =>
+  api.get('/shopkeeper/next-retail-bill-no', { params: { v_date: date } }).then(r => r.data);
+
+// 1. Selling Rate Book
+export const fetchSellingRateEntries = (startDate?: string, endDate?: string): Promise<import('../types').ShopSellingRateEntry[]> =>
+  api.get('/shopkeeper/selling-rate-entries', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createSellingRateEntry = (payload: import('../types').ShopSellingRateCreate): Promise<import('../types').ShopSellingRateEntry> =>
+  api.post('/shopkeeper/selling-rate-entries', payload).then(r => r.data);
+
+export const deleteSellingRateEntry = (id: number): Promise<void> =>
+  api.delete(`/shopkeeper/selling-rate-entries/${id}`).then(r => r.data);
+
+// 2. Shop Tax Invoices
+export const fetchShopTaxInvoices = (startDate?: string, endDate?: string): Promise<import('../types').ShopTaxInvoice[]> =>
+  api.get('/shopkeeper/tax-invoices', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createShopTaxInvoice = (payload: import('../types').ShopTaxInvoiceCreate): Promise<import('../types').ShopTaxInvoice> =>
+  api.post('/shopkeeper/tax-invoices', payload).then(r => r.data);
+
+export const deleteShopTaxInvoice = (id: number): Promise<void> =>
+  api.delete(`/shopkeeper/tax-invoices/${id}`).then(r => r.data);
+
+// 3. Shop Retail Bills
+export const fetchShopRetailBills = (startDate?: string, endDate?: string): Promise<import('../types').ShopRetailBill[]> =>
+  api.get('/shopkeeper/retail-bills', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createShopRetailBill = (payload: import('../types').ShopRetailBillCreate): Promise<import('../types').ShopRetailBill> =>
+  api.post('/shopkeeper/retail-bills', payload).then(r => r.data);
+
+export const deleteShopRetailBill = (id: number): Promise<void> =>
+  api.delete(`/shopkeeper/retail-bills/${id}`).then(r => r.data);
+
+// 4. Pesticide Sale Register
+export const fetchPesticideSales = (startDate?: string, endDate?: string): Promise<import('../types').PesticideSaleEntry[]> =>
+  api.get('/shopkeeper/pesticide-sales', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+export const createPesticideSale = (payload: import('../types').PesticideSaleEntryCreate): Promise<import('../types').PesticideSaleEntry> =>
+  api.post('/shopkeeper/pesticide-sales', payload).then(r => r.data);
+
+export const deletePesticideSale = (id: number): Promise<void> =>
+  api.delete(`/shopkeeper/pesticide-sales/${id}`).then(r => r.data);
+
+// 5. Shopkeeper Audit Summary
+export const fetchShopkeeperAuditSummary = (startDate: string, endDate: string): Promise<import('../types').ShopkeeperAuditSummary> =>
+  api.get('/shopkeeper/audit-summary', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
+
+
+
 
 

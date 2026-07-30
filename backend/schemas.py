@@ -292,6 +292,117 @@ class CashierAuditSummary(BaseModel):
     total_receipt_vouchers_count: int
     total_receipt_amount: Decimal
     total_rent_bills_count: int
+    total_rent_amount: Decimal
+    total_cash_scroll_received: Decimal
+    total_cash_scroll_paid: Decimal
+    total_cheques_issued_count: int
+    total_cheques_amount: Decimal
+
+
+# ─── SHOP KEEPER SCHEMAS ──────────────────────────────────────────────────────
+
+# 1. Selling Rate Book
+class ShopSellingRateCreate(BaseModel):
+    date: date
+    name: str
+    particulars: str
+    qty: Decimal = Decimal("1.00")
+    amount: Decimal = Decimal("0.00")
+    sgst: Decimal = Decimal("0.00")
+    cgst: Decimal = Decimal("0.00")
+    hmall: Decimal = Decimal("0.00")
+    motor_rent: Decimal = Decimal("0.00")
+    total_amount: Decimal = Decimal("0.00")
+    net_rate: Decimal = Decimal("0.00")
+    selling_rate: Decimal = Decimal("0.00")
+    stock_book_no: Optional[str] = None
+    sign_status: Optional[str] = "Signed"
+    created_by: Optional[str] = None
+
+
+class ShopSellingRateOut(ShopSellingRateCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: Optional[datetime] = None
+
+
+# 2. Shop Tax Invoice
+class ShopTaxInvoiceCreate(BaseModel):
+    date: date
+    invoice_no: Optional[str] = None
+    customer_name: str
+    customer_phone: Optional[str] = None
+    product_name: str
+    hsn_code: Optional[str] = "3808"
+    qty: Decimal = Decimal("1.00")
+    rate: Decimal = Decimal("0.00")
+    amount: Decimal = Decimal("0.00")
+    created_by: Optional[str] = None
+
+
+class ShopTaxInvoiceOut(ShopTaxInvoiceCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    invoice_no: str
+    created_at: Optional[datetime] = None
+
+
+# 3. Shop Retail Bill
+class ShopRetailBillCreate(BaseModel):
+    date: date
+    bill_no: Optional[str] = None
+    tin_no: Optional[str] = "29540268502"
+    customer_name: str
+    particulars: str
+    rate: Decimal = Decimal("0.00")
+    amount: Decimal = Decimal("0.00")
+    seller_signature: Optional[str] = "Seller Signed"
+    created_by: Optional[str] = None
+
+
+class ShopRetailBillOut(ShopRetailBillCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    bill_no: str
+    created_at: Optional[datetime] = None
+
+
+# 4. Pesticide Sale Entry
+class PesticideSaleEntryCreate(BaseModel):
+    date: date
+    customer_name: str
+    product_name: str = "Boric Acid"
+    qty: Decimal = Decimal("1.00")
+    rate: Decimal = Decimal("0.00")
+    amount: Decimal = Decimal("0.00")
+    batch_no: Optional[str] = None
+    remarks: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class PesticideSaleEntryOut(PesticideSaleEntryCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: Optional[datetime] = None
+
+
+# 5. Shopkeeper Audit Summary
+class ShopkeeperAuditSummary(BaseModel):
+    start_date: str
+    end_date: str
+    total_selling_rate_entries_count: int
+    total_selling_rate_amount: Decimal
+    total_tax_invoices_count: int
+    total_tax_invoice_amount: Decimal
+    total_retail_bills_count: int
+    total_retail_bill_amount: Decimal
+    total_pesticide_sales_count: int
+    total_pesticide_sale_amount: Decimal
+    grand_shop_sales_total: Decimal
+
+    total_receipt_vouchers_count: int
+    total_receipt_amount: Decimal
+    total_rent_bills_count: int
     total_rent_bill_amount: Decimal
     total_scroll_received: Decimal
     total_scroll_paid: Decimal

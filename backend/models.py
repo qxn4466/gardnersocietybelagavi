@@ -213,3 +213,81 @@ class ChequeIssueBookEntry(Base):
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
+
+# ─── SHOP KEEPER MODELS ──────────────────────────────────────────────────────
+
+class ShopSellingRateEntry(Base):
+    """1. Seeds, Pesticides, Spraypump and Other Selling Rate Book"""
+    __tablename__ = "shop_selling_rate_book"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    name = Column(String(250), nullable=False)
+    particulars = Column(String(250), nullable=False)
+    qty = Column(Numeric(10, 2), nullable=False, default=1.0)
+    amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    sgst = Column(Numeric(12, 2), nullable=False, default=0.0)
+    cgst = Column(Numeric(12, 2), nullable=False, default=0.0)
+    hmall = Column(Numeric(12, 2), nullable=False, default=0.0)
+    motor_rent = Column(Numeric(12, 2), nullable=False, default=0.0)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    net_rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    selling_rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    stock_book_no = Column(String(50), nullable=True)
+    sign_status = Column(String(100), nullable=True, default="Signed")
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ShopTaxInvoice(Base):
+    """2. Shop Tax Invoice"""
+    __tablename__ = "shop_tax_invoices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_no = Column(String(50), nullable=False, unique=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    customer_name = Column(String(250), nullable=False)
+    customer_phone = Column(String(30), nullable=True)
+    product_name = Column(String(250), nullable=False)
+    hsn_code = Column(String(50), nullable=True, default="3808")
+    qty = Column(Numeric(10, 2), nullable=False, default=1.0)
+    rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ShopRetailBill(Base):
+    """3. Retail Cash Bill (PPO / INSAT / BLG/48)"""
+    __tablename__ = "shop_retail_bills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bill_no = Column(String(50), nullable=False, unique=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    tin_no = Column(String(50), nullable=True, default="29540268502")
+    customer_name = Column(String(250), nullable=False)
+    particulars = Column(Text, nullable=False)
+    rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    seller_signature = Column(String(100), nullable=True, default="Seller Signed")
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class PesticideSaleEntry(Base):
+    """4. Pesticide Sale Register"""
+    __tablename__ = "pesticide_sale_register"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=date.today)
+    customer_name = Column(String(250), nullable=False)
+    product_name = Column(String(250), nullable=False, default="Boric Acid")
+    qty = Column(Numeric(10, 2), nullable=False, default=1.0)
+    rate = Column(Numeric(12, 2), nullable=False, default=0.0)
+    amount = Column(Numeric(12, 2), nullable=False, default=0.0)
+    batch_no = Column(String(50), nullable=True)
+    remarks = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+

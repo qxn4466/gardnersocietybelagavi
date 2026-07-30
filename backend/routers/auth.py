@@ -10,17 +10,20 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 DEFAULT_USERS = [
     {"username": "accountant", "password": "pass123", "full_name": "Accounts Officer", "role": "ACCOUNTS"},
     {"username": "cashier", "password": "pass123", "full_name": "Cashier", "role": "CASHIER"},
+    {"username": "shopkeeper", "password": "pass123", "full_name": "Shop Keeper", "role": "SHOPKEEPER"},
 ]
 
 
 def seed_default_users_if_empty(db: Session):
     try:
-        if db.query(User).count() == 0:
-            for u in DEFAULT_USERS:
+        for u in DEFAULT_USERS:
+            existing = db.query(User).filter(User.username == u["username"]).first()
+            if not existing:
                 db.add(User(**u))
-            db.commit()
-    except Exception as e:
+        db.commit()
+    except Exception:
         db.rollback()
+
 
 
 @router.post("/login", response_model=UserOut)

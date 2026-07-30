@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, ClipboardCheck, X, Receipt, Landmark, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
+import { FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, ClipboardCheck, X, Receipt, Landmark, BookOpen, CreditCard, ShieldCheck, ShoppingBag, Tag, ShoppingCart, FlaskConical, BarChart3 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 import type { User } from '../types';
 
@@ -17,13 +17,15 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
   const savedUser = localStorage.getItem('user');
   const user: User | null = propUser || (savedUser ? JSON.parse(savedUser) : null);
 
-  // Strict check if current user is Cashier (by role or username)
-  const isCashier =
-    user?.role?.toUpperCase() === 'CASHIER' ||
-    user?.username?.toLowerCase() === 'cashier';
+  // Role Checks
+  const userRole = user?.role?.toUpperCase() || '';
+  const username = user?.username?.toLowerCase() || '';
+
+  const isCashier = userRole === 'CASHIER' || username === 'cashier';
+  const isShopkeeper = userRole === 'SHOPKEEPER' || username === 'shopkeeper';
 
   const searchParams = new URLSearchParams(location.search);
-  const currentTab = searchParams.get('tab') || 'payment-voucher';
+  const currentTab = searchParams.get('tab') || (isShopkeeper ? 'selling-rate' : 'payment-voucher');
 
   const societyName = lang === 'mr'
     ? <>बेळगाव गार्डनर्स<br />को-ऑप सोसायटी लि.</>
@@ -60,14 +62,95 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
         </div>
 
         <nav className="sidebar-nav">
-          {/* WHEN CASHIER LOGS IN: SHOW ONLY THE 6 CASHIER FORMS (NO ACCOUNTANT FORMS) */}
-          {isCashier ? (
+          {/* 1. SHOP KEEPER LOGGED IN: SHOW ONLY 5 SHOP KEEPER FORMS */}
+          {isShopkeeper ? (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', padding: '8px 12px 6px', letterSpacing: '0.05em' }}>
+                {lang === 'mr' ? 'दुकानदार डॅशबोर्ड फॉर्म्स' : 'Shop Keeper Forms'}
+              </div>
+
+              {/* Form 1: Selling Rate Book */}
+              <NavLink
+                to="/shopkeeper?tab=selling-rate"
+                onClick={onClose}
+                className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'selling-rate' ? ' active' : ''}`}
+              >
+                <Tag size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? '१. विक्री दर पुस्तक' : '1. Selling Rate Book'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'बियाणे, कीटकनाशके दर' : 'Seeds & Pesticide Rates'}
+                  </span>
+                </div>
+              </NavLink>
+
+              {/* Form 2: Shop Tax Invoice */}
+              <NavLink
+                to="/shopkeeper?tab=tax-invoice"
+                onClick={onClose}
+                className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'tax-invoice' ? ' active' : ''}`}
+              >
+                <Receipt size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? '२. टॅक्स इनव्हॉईस' : '2. Shop Tax Invoice'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'जीएसटी कर इनव्हॉईस' : 'GST Tax Invoice'}
+                  </span>
+                </div>
+              </NavLink>
+
+              {/* Form 3: Retail Cash Bill */}
+              <NavLink
+                to="/shopkeeper?tab=retail-bill"
+                onClick={onClose}
+                className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'retail-bill' ? ' active' : ''}`}
+              >
+                <ShoppingCart size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? '३. किरकोळ रोख बिल' : '3. Retail Cash Bill'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'TIN / PPO INSAT मेमो' : 'TIN / PPO INSAT Memo'}
+                  </span>
+                </div>
+              </NavLink>
+
+              {/* Form 4: Pesticide Sale Register */}
+              <NavLink
+                to="/shopkeeper?tab=pesticide-register"
+                onClick={onClose}
+                className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'pesticide-register' ? ' active' : ''}`}
+              >
+                <FlaskConical size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? '४. कीटकनाशके विक्री नोंद' : '4. Pesticide Sale Register'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'बोरीक ॲसिड व उत्पादने' : 'Boric Acid & Products'}
+                  </span>
+                </div>
+              </NavLink>
+
+              {/* Form 5: Shopkeeper Audit Book */}
+              <NavLink
+                to="/shopkeeper?tab=audit-book"
+                onClick={onClose}
+                className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'audit-book' ? ' active' : ''}`}
+              >
+                <BarChart3 size={18} className="nav-icon" />
+                <div className="nav-label-group">
+                  <span>{lang === 'mr' ? '५. दुकान लेखापरीक्षा पुस्तक' : '5. Shopkeeper Audit Book'}</span>
+                  <span className="nav-level-badge">
+                    {lang === 'mr' ? 'दुकान विक्री अहवाल' : 'Shop Sales Audit'}
+                  </span>
+                </div>
+              </NavLink>
+            </>
+          ) : isCashier ? (
+            /* 2. CASHIER LOGGED IN: SHOW ONLY 6 CASHIER FORMS */
             <>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', padding: '8px 12px 6px', letterSpacing: '0.05em' }}>
                 {lang === 'mr' ? 'कॅशियर डॅशबोर्ड फॉर्म्स' : 'Cashier Dashboard Forms'}
               </div>
 
-              {/* Form 1: Cash Payment Voucher */}
               <NavLink
                 to="/cashier?tab=payment-voucher"
                 onClick={onClose}
@@ -82,7 +165,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 </div>
               </NavLink>
 
-              {/* Form 2: Cash Receipt Voucher */}
               <NavLink
                 to="/cashier?tab=receipt-voucher"
                 onClick={onClose}
@@ -97,7 +179,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 </div>
               </NavLink>
 
-              {/* Form 3: Rent Bill Form */}
               <NavLink
                 to="/cashier?tab=rent-bill"
                 onClick={onClose}
@@ -112,7 +193,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 </div>
               </NavLink>
 
-              {/* Form 4: Cash Scroll Book */}
               <NavLink
                 to="/cashier?tab=cash-scroll"
                 onClick={onClose}
@@ -127,7 +207,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 </div>
               </NavLink>
 
-              {/* Form 5: Cheque Issue Book */}
               <NavLink
                 to="/cashier?tab=cheque-issue"
                 onClick={onClose}
@@ -142,7 +221,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 </div>
               </NavLink>
 
-              {/* Form 6: Cashier Audit Form */}
               <NavLink
                 to="/cashier?tab=audit-form"
                 onClick={onClose}
@@ -158,7 +236,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               </NavLink>
             </>
           ) : (
-            /* WHEN ACCOUNTANT LOGS IN: SHOW ONLY ACCOUNTANT MENU (NO CASHIER DASHBOARD LINK) */
+            /* 3. ACCOUNTANT LOGGED IN: SHOW ONLY ACCOUNTANT FORMS */
             <>
               <NavLink
                 to="/savings-accounts"

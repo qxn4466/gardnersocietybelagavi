@@ -758,6 +758,101 @@ ALTER SEQUENCE public.cheque_issue_book_id_seq OWNED BY public.cheque_issue_book
 ALTER TABLE ONLY public.cheque_issue_book ALTER COLUMN id SET DEFAULT nextval('public.cheque_issue_book_id_seq'::regclass);
 ALTER TABLE ONLY public.cheque_issue_book ADD CONSTRAINT cheque_issue_book_pkey PRIMARY KEY (id);
 
+
+-- ─── SHOP KEEPER TABLES ──────────────────────────────────────────────────────
+
+CREATE TABLE public.shop_selling_rate_book (
+    id integer NOT NULL,
+    date date NOT NULL,
+    name character varying(250) NOT NULL,
+    particulars character varying(250) NOT NULL,
+    qty numeric(10,2) DEFAULT 1.0 NOT NULL,
+    amount numeric(12,2) DEFAULT 0 NOT NULL,
+    sgst numeric(12,2) DEFAULT 0 NOT NULL,
+    cgst numeric(12,2) DEFAULT 0 NOT NULL,
+    hmall numeric(12,2) DEFAULT 0 NOT NULL,
+    motor_rent numeric(12,2) DEFAULT 0 NOT NULL,
+    total_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    net_rate numeric(12,2) DEFAULT 0 NOT NULL,
+    selling_rate numeric(12,2) DEFAULT 0 NOT NULL,
+    stock_book_no character varying(50),
+    sign_status character varying(100) DEFAULT 'Signed'::character varying,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.shop_selling_rate_book_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.shop_selling_rate_book_id_seq OWNED BY public.shop_selling_rate_book.id;
+ALTER TABLE ONLY public.shop_selling_rate_book ALTER COLUMN id SET DEFAULT nextval('public.shop_selling_rate_book_id_seq'::regclass);
+ALTER TABLE ONLY public.shop_selling_rate_book ADD CONSTRAINT shop_selling_rate_book_pkey PRIMARY KEY (id);
+
+
+CREATE TABLE public.shop_tax_invoices (
+    id integer NOT NULL,
+    invoice_no character varying(50) NOT NULL,
+    date date NOT NULL,
+    customer_name character varying(250) NOT NULL,
+    customer_phone character varying(30),
+    product_name character varying(250) NOT NULL,
+    hsn_code character varying(50) DEFAULT '3808'::character varying,
+    qty numeric(10,2) DEFAULT 1.0 NOT NULL,
+    rate numeric(12,2) DEFAULT 0 NOT NULL,
+    amount numeric(12,2) DEFAULT 0 NOT NULL,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.shop_tax_invoices_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.shop_tax_invoices_id_seq OWNED BY public.shop_tax_invoices.id;
+ALTER TABLE ONLY public.shop_tax_invoices ALTER COLUMN id SET DEFAULT nextval('public.shop_tax_invoices_id_seq'::regclass);
+ALTER TABLE ONLY public.shop_tax_invoices ADD CONSTRAINT shop_tax_invoices_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.shop_tax_invoices ADD CONSTRAINT shop_tax_invoices_invoice_no_key UNIQUE (invoice_no);
+
+
+CREATE TABLE public.shop_retail_bills (
+    id integer NOT NULL,
+    bill_no character varying(50) NOT NULL,
+    date date NOT NULL,
+    tin_no character varying(50) DEFAULT '29540268502'::character varying,
+    customer_name character varying(250) NOT NULL,
+    particulars text NOT NULL,
+    rate numeric(12,2) DEFAULT 0 NOT NULL,
+    amount numeric(12,2) DEFAULT 0 NOT NULL,
+    seller_signature character varying(100) DEFAULT 'Seller Signed'::character varying,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.shop_retail_bills_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.shop_retail_bills_id_seq OWNED BY public.shop_retail_bills.id;
+ALTER TABLE ONLY public.shop_retail_bills ALTER COLUMN id SET DEFAULT nextval('public.shop_retail_bills_id_seq'::regclass);
+ALTER TABLE ONLY public.shop_retail_bills ADD CONSTRAINT shop_retail_bills_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.shop_retail_bills ADD CONSTRAINT shop_retail_bills_bill_no_key UNIQUE (bill_no);
+
+
+CREATE TABLE public.pesticide_sale_register (
+    id integer NOT NULL,
+    date date NOT NULL,
+    customer_name character varying(250) NOT NULL,
+    product_name character varying(250) DEFAULT 'Boric Acid'::character varying NOT NULL,
+    qty numeric(10,2) DEFAULT 1.0 NOT NULL,
+    rate numeric(12,2) DEFAULT 0 NOT NULL,
+    amount numeric(12,2) DEFAULT 0 NOT NULL,
+    batch_no character varying(50),
+    remarks text,
+    created_by character varying(100),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.pesticide_sale_register_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.pesticide_sale_register_id_seq OWNED BY public.pesticide_sale_register.id;
+ALTER TABLE ONLY public.pesticide_sale_register ALTER COLUMN id SET DEFAULT nextval('public.pesticide_sale_register_id_seq'::regclass);
+ALTER TABLE ONLY public.pesticide_sale_register ADD CONSTRAINT pesticide_sale_register_pkey PRIMARY KEY (id);
+
+ALTER SEQUENCE public.cheque_issue_book_id_seq OWNED BY public.cheque_issue_book.id;
+ALTER TABLE ONLY public.cheque_issue_book ALTER COLUMN id SET DEFAULT nextval('public.cheque_issue_book_id_seq'::regclass);
+ALTER TABLE ONLY public.cheque_issue_book ADD CONSTRAINT cheque_issue_book_pkey PRIMARY KEY (id);
+
 --
 -- PostgreSQL database dump complete
 --

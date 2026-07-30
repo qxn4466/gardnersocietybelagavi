@@ -426,3 +426,154 @@ export interface CashierAuditSummary {
   total_cheques_issued_amount: number;
 }
 
+
+// ─── SHOP KEEPER TYPES ────────────────────────────────────────────────────────
+
+export interface ShopSellingRateEntry {
+  id: number;
+  date: string;
+  name: string;
+  particulars: string;
+  qty: number;
+  amount: number;
+  sgst: number;
+  cgst: number;
+  hmall: number;
+  motor_rent: number;
+  total_amount: number;
+  net_rate: number;
+  selling_rate: number;
+  stock_book_no?: string | null;
+  sign_status?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+}
+
+export interface ShopSellingRateCreate {
+  date: string;
+  name: string;
+  particulars: string;
+  qty?: number;
+  amount?: number;
+  sgst?: number;
+  cgst?: number;
+  hmall?: number;
+  motor_rent?: number;
+  total_amount?: number;
+  net_rate?: number;
+  selling_rate?: number;
+  stock_book_no?: string;
+  sign_status?: string;
+  created_by?: string;
+}
+
+export interface ShopTaxInvoice {
+  id: number;
+  invoice_no: string;
+  date: string;
+  customer_name: string;
+  customer_phone?: string | null;
+  product_name: string;
+  hsn_code?: string | null;
+  qty: number;
+  rate: number;
+  amount: number;
+  created_by?: string | null;
+  created_at?: string | null;
+}
+
+export interface ShopTaxInvoiceCreate {
+  date: string;
+  invoice_no?: string;
+  customer_name: string;
+  customer_phone?: string;
+  product_name: string;
+  hsn_code?: string;
+  qty?: number;
+  rate?: number;
+  amount?: number;
+  created_by?: string;
+}
+
+export interface ShopRetailBill {
+  id: number;
+  bill_no: string;
+  date: string;
+  tin_no?: string | null;
+  customer_name: string;
+  particulars: string;
+  rate: number;
+  amount: number;
+  seller_signature?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+}
+
+export interface ShopRetailBillCreate {
+  date: string;
+  bill_no?: string;
+  tin_no?: string;
+  customer_name: string;
+  particulars: string;
+  rate?: number;
+  amount?: number;
+  seller_signature?: string;
+  created_by?: string;
+}
+
+export interface PesticideSaleEntry {
+  id: number;
+  date: string;
+  customer_name: string;
+  product_name: string;
+  qty: number;
+  rate: number;
+  amount: number;
+  batch_no?: string | null;
+  remarks?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+}
+
+export interface PesticideSaleEntryCreate {
+  date: string;
+  customer_name: string;
+  product_name: string;
+  qty?: number;
+  rate?: number;
+  amount?: number;
+  batch_no?: string;
+  remarks?: string;
+  created_by?: string;
+}
+
+export interface ShopkeeperAuditSummary {
+  start_date: string;
+  end_date: string;
+  total_selling_rate_entries_count: number;
+  total_selling_rate_amount: number;
+  total_tax_invoices_count: number;
+  total_tax_invoice_amount: number;
+  total_retail_bills_count: number;
+  total_retail_bill_amount: number;
+  total_pesticide_sales_count: number;
+  total_pesticide_sale_amount: number;
+  grand_shop_sales_total: number;
+}
+
+export const PESTICIDE_PRODUCT_LIST = [
+  "Boric Acid",
+  "Chlorpyrifos 20% EC",
+  "Monocrotophos 36% SL",
+  "Mancozeb 75% WP",
+  "Neem Oil 10000 PPM",
+  "Malathion 50% EC",
+  "Copper Oxychloride 50% WP",
+  "Carbendazim 50% WP",
+  "Imidacloprid 17.8% SL",
+  "Cypermethrin 10% EC",
+  "Spray Pump Battery 16L",
+  "Brass Nozzle Set",
+];
+
+

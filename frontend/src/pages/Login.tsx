@@ -158,25 +158,34 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
               {lang === 'mr' ? 'प्रात्यक्षिक जलद लॉगिन (भरण्यासाठी क्लिक करा)' : 'Demo Quick Logins (Click to Fill)'}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleFillDemo('accountant', 'pass123')}
-                style={{ fontSize: 12, justifyContent: 'flex-start' }}
+                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
               >
-                <Shield size={13} color="var(--blue-400)" /> {lang === 'mr' ? 'लेखापाल अधिकारी' : 'Accounts Officer'}
+                <Shield size={12} color="var(--blue-400)" /> {lang === 'mr' ? 'लेखापाल' : 'Accountant'}
               </button>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleFillDemo('cashier', 'pass123')}
-                style={{ fontSize: 12, justifyContent: 'flex-start' }}
+                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
               >
-                <Shield size={13} color="var(--amber-400)" /> {lang === 'mr' ? 'कॅशियर' : 'Cashier'}
+                <Shield size={12} color="var(--amber-400)" /> {lang === 'mr' ? 'कॅशियर' : 'Cashier'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleFillDemo('shopkeeper', 'pass123')}
+                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
+              >
+                <Shield size={12} color="var(--emerald-500)" /> {lang === 'mr' ? 'दुकानदार' : 'Shop Keeper'}
               </button>
             </div>
           </div>
+
 
         </div>
       </div>
