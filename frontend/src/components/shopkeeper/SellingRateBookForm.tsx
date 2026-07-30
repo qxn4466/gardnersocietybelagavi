@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search } from 'lucide-react';
 import { createSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry } from '../../api/client';
 import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -9,27 +9,51 @@ interface SellingRateBookFormProps {
   user?: User | null;
 }
 
+interface SellingRateRow {
+  id: string;
+  particulars: string;
+  qty: number;
+  amount: number;
+  sgst: number;
+  cgst: number;
+  hmall: number;
+  motor_rent: number;
+  total_amount: number;
+  net_rate: number;
+  selling_rate: number;
+}
+
 const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [name, setName] = useState('');
-  const [particulars, setParticulars] = useState(PESTICIDE_PRODUCT_LIST[0]);
-  const [customParticulars, setCustomParticulars] = useState('');
-  const [qty, setQty] = useState<string>('1');
-  const [amount, setAmount] = useState<string>('');
-  const [sgst, setSgst] = useState<string>('0');
-  const [cgst, setCgst] = useState<string>('0');
-  const [hmall, setHmall] = useState<string>('0');
-  const [motorRent, setMotorRent] = useState<string>('0');
   const [stockBookNo, setStockBookNo] = useState('');
   const [signStatus, setSignStatus] = useState('Signed');
 
-  // Calculated fields
-  const [totalAmount, setTotalAmount] = useState<number>(0);
-  const [netRate, setNetRate] = useState<number>(0);
-  const [sellingRate, setSellingRate] = useState<number>(0);
+  // Filter & Search states
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Multi-item addable grid rows
+  const [items, setItems] = useState<SellingRateRow[]>([
+    {
+      id: '1',
+      particulars: PESTICIDE_PRODUCT_LIST[0],
+      qty: 1,
+      amount: 0,
+      sgst: 0,
+      cgst: 0,
+      hmall: 0,
+      motor_rent: 0,
+      total_amount: 0,
+      net_rate: 0,
+      selling_rate: 0,
+    }
+  ]);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -39,48 +63,88 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
 
   useEffect(() => {
     loadHistory();
-  }, [date]);
-
-  useEffect(() => {
-    const q = parseFloat(qty) || 1;
-    const baseAmt = parseFloat(amount) || 0;
-    const sgstAmt = parseFloat(sgst) || 0;
-    const cgstAmt = parseFloat(cgst) || 0;
-    const hmallAmt = parseFloat(hmall) || 0;
-    const rentAmt = parseFloat(motorRent) || 0;
-
-    const total = baseAmt + sgstAmt + cgstAmt + hmallAmt + rentAmt;
-    setTotalAmount(total);
-
-    const net = q > 0 ? total / q : 0;
-    setNetRate(net);
-
-    // Default selling rate = Net rate + 5% margin
-    setSellingRate(net > 0 ? Math.ceil(net * 1.05) : 0);
-  }, [qty, amount, sgst, cgst, hmall, motorRent]);
+  }, [startDate, endDate]);
 
   const loadHistory = async () => {
     try {
-      const data = await fetchSellingRateEntries();
+      const data = await fetchSellingRateEntries(startDate, endDate);
       setHistory(data);
     } catch {
       // ignore
     }
   };
 
+  const updateRow = (index: number, field: keyof SellingRateRow, val: any) => {
+    const updated = [...items];
+    const row = { ...updated[index], [field]: val };
+
+    const q = parseFloat(String(row.qty)) || 1;
+    const baseAmt = parseFloat(String(row.amount)) || 0;
+    const sgstAmt = parseFloat(String(row.sgst)) || 0;
+    const cgstAmt = parseFloat(String(row.cgst)) || 0;
+    const hmallAmt = parseFloat(String(row.hmall)) || 0;
+    const rentAmt = parseFloat(String(row.motor_rent)) || 0;
+
+    const total = baseAmt + sgstAmt + cgstAmt + hmallAmt + rentAmt;
+    row.total_amount = total;
+
+    const net = q > 0 ? total / q : 0;
+    row.net_rate = net;
+
+    if (field !== 'selling_rate') {
+      row.selling_rate = net > 0 ? Math.ceil(net * 1.05) : 0;
+    }
+
+    updated[index] = row;
+    setItems(updated);
+  };
+
+  const addRow = () => {
+    setItems([
+      ...items,
+      {
+        id: Date.now().toString(),
+        particulars: PESTICIDE_PRODUCT_LIST[0],
+        qty: 1,
+        amount: 0,
+        sgst: 0,
+        cgst: 0,
+        hmall: 0,
+        motor_rent: 0,
+        total_amount: 0,
+        net_rate: 0,
+        selling_rate: 0,
+      }
+    ]);
+  };
+
+  const removeRow = (index: number) => {
+    if (items.length <= 1) return;
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const grandTotal = items.reduce((s, r) => s + (r.total_amount || 0), 0);
+
   const handleReset = () => {
     setDate(today);
     setName('');
-    setParticulars(PESTICIDE_PRODUCT_LIST[0]);
-    setCustomParticulars('');
-    setQty('1');
-    setAmount('');
-    setSgst('0');
-    setCgst('0');
-    setHmall('0');
-    setMotorRent('0');
     setStockBookNo('');
     setSignStatus('Signed');
+    setItems([
+      {
+        id: '1',
+        particulars: PESTICIDE_PRODUCT_LIST[0],
+        qty: 1,
+        amount: 0,
+        sgst: 0,
+        cgst: 0,
+        hmall: 0,
+        motor_rent: 0,
+        total_amount: 0,
+        net_rate: 0,
+        selling_rate: 0,
+      }
+    ]);
     setMsg(null);
   };
 
@@ -90,44 +154,45 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter Customer / Member Name.' });
       return;
     }
-    if (totalAmount <= 0) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'अमान्य रक्कम.' : 'Please enter valid Amount.' });
+    if (grandTotal <= 0) {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया किमान एका बाबीची रक्कम प्रविष्ट करा.' : 'Please enter valid Amount for at least one item.' });
       return;
     }
-
-    const finalParticulars = customParticulars.trim()
-      ? `${particulars} (${customParticulars.trim()})`
-      : particulars;
 
     setLoading(true);
     setMsg(null);
     try {
-      await createSellingRateEntry({
-        date,
-        name: name.trim(),
-        particulars: finalParticulars,
-        qty: parseFloat(qty) || 1,
-        amount: parseFloat(amount) || 0,
-        sgst: parseFloat(sgst) || 0,
-        cgst: parseFloat(cgst) || 0,
-        hmall: parseFloat(hmall) || 0,
-        motor_rent: parseFloat(motorRent) || 0,
-        total_amount: totalAmount,
-        net_rate: netRate,
-        selling_rate: sellingRate,
-        stock_book_no: stockBookNo.trim() || undefined,
-        sign_status: signStatus,
-        created_by: user?.username || 'shopkeeper',
-      });
+      for (const item of items) {
+        if (item.total_amount > 0) {
+          await createSellingRateEntry({
+            date,
+            name: name.trim(),
+            particulars: item.particulars,
+            qty: Number(item.qty) || 1,
+            amount: Number(item.amount) || 0,
+            sgst: Number(item.sgst) || 0,
+            cgst: Number(item.cgst) || 0,
+            hmall: Number(item.hmall) || 0,
+            motor_rent: Number(item.motor_rent) || 0,
+            total_amount: item.total_amount,
+            net_rate: item.net_rate,
+            selling_rate: item.selling_rate,
+            stock_book_no: stockBookNo.trim() || undefined,
+            sign_status: signStatus,
+            created_by: user?.username || 'shopkeeper',
+          });
+        }
+      }
 
       setMsg({
         type: 'success',
-        text: lang === 'mr' ? 'विक्री दर पुस्तक नोंद यशस्वीरित्या जतन केली!' : 'Selling rate book entry saved successfully!'
+        text: (lang === 'mr' ? 'विक्री दर पुस्तक नोंद जतन केली!' : 'Selling Rate Book entries saved successfully!') +
+          (lang === 'mr' ? ' (कीटकनाशके नोंदवहीत स्वयंचलित जोडली गेली)' : ' (Auto-posted to Pesticide Register if applicable)')
       });
       loadHistory();
       handleReset();
     } catch {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'नोंद जतन करताना त्रुटी आली.' : 'Error saving selling rate book entry.' });
+      setMsg({ type: 'error', text: lang === 'mr' ? 'नोंद जतन करताना त्रुटी आली.' : 'Error saving selling rate book entries.' });
     } finally {
       setLoading(false);
     }
@@ -143,6 +208,12 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     }
   };
 
+  const filteredHistory = history.filter(row =>
+    row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    row.particulars.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (row.stock_book_no && row.stock_book_no.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
@@ -151,12 +222,12 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             1. {lang === 'mr' ? 'बियाणे, कीटकनाशके, स्प्रेपंप व इतर विक्री दर पुस्तक' : 'Seeds, Pesticides, Spraypump and Other Selling Rate Book'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'दुकान विक्री दर, हमाली, मोटार भाडे, SGST/CGST व स्टॉक पुस्तक नोंद' : 'Record product cost breakdown, taxes, motor rent & selling rate'}
+            {lang === 'mr' ? 'अनेक बाबी जोडा ("+ Add Item"), दर पुस्तक नोंद, ऑटो-कीटकनाशके नोंद' : 'Multi-item grid with "+ Add Item" button (Auto-posts to Pesticide Register)'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
-            <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print'}
+            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
             <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
@@ -188,138 +259,160 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
               required
             />
           </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars'}</label>
-            <select className="form-input" value={particulars} onChange={e => setParticulars(e.target.value)}>
-              {PESTICIDE_PRODUCT_LIST.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'अतिरिक्त तपशील / ग्रेड' : 'Custom Ref / Grade'}</label>
+            <label className="form-label">{lang === 'mr' ? 'स्टॉक बुक क्र. (Stock Book No)' : 'Stock Book No.'}</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. 500ml bottle"
-              value={customParticulars}
-              onChange={e => setCustomParticulars(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'नग / प्रमाण (Qty)' : 'Qty'}</label>
-            <input
-              type="number"
-              step="0.1"
-              className="form-input"
-              value={qty}
-              onChange={e => setQty(e.target.value)}
-              required
+              placeholder="e.g. SB-402"
+              value={stockBookNo}
+              onChange={e => setStockBookNo(e.target.value)}
             />
           </div>
         </div>
 
-        {/* Cost Breakdown Grid matching User Request Grid 1 */}
-        <div style={{ background: 'var(--surface-subtle)', padding: 16, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-            {lang === 'mr' ? 'रक्कम व कर तपशील (Cost, Tax & Charges Breakdown)' : 'Cost, Tax & Charges Breakdown'}
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-            <div className="form-group">
-              <label className="form-label">{lang === 'mr' ? 'मूळ रक्कम ₹ (Amount)' : 'Base Amount (₹)'}</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">SGST ₹</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={sgst}
-                onChange={e => setSgst(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">CGST ₹</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={cgst}
-                onChange={e => setCgst(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">{lang === 'mr' ? 'हमाली ₹ (HMall)' : 'HMall (₹)'}</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={hmall}
-                onChange={e => setHmall(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">{lang === 'mr' ? 'मोटार भाडे ₹ (Motor Rent)' : 'Motor Rent (₹)'}</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={motorRent}
-                onChange={e => setMotorRent(e.target.value)}
-              />
-            </div>
+        {/* Multi-Item Dynamic Table Grid matching Screenshot */}
+        <div style={{ background: 'var(--surface-subtle)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              {lang === 'mr' ? 'उत्पादन दर व खर्च तक्ता (Selling Rate Grid Items)' : 'Selling Rate Grid Items'}
+            </h4>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
+              <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
+            </button>
           </div>
 
-          {/* Calculated Output Row */}
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-subtle)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, fontSize: 13 }}>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Total Amount:</span>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#16a34a' }}>₹{totalAmount.toFixed(2)}</div>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Net Rate / Unit:</span>
-              <div style={{ fontWeight: 600 }}>₹{netRate.toFixed(2)}</div>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Selling Rate:</span>
-              <div style={{ fontWeight: 700, color: '#2563eb' }}>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input"
-                  style={{ width: 110, display: 'inline-block', fontWeight: 700 }}
-                  value={sellingRate}
-                  onChange={e => setSellingRate(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Stock Book No:</span>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. SB-104"
-                value={stockBookNo}
-                onChange={e => setStockBookNo(e.target.value)}
-              />
-            </div>
+          <div className="table-responsive">
+            <table className="table" style={{ width: '100%', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9' }}>
+                  <th style={{ width: 35 }}>#</th>
+                  <th style={{ minWidth: 160 }}>Particulars</th>
+                  <th style={{ width: 70 }}>Qty</th>
+                  <th style={{ width: 90 }}>Base Amt (₹)</th>
+                  <th style={{ width: 80 }}>SGST (₹)</th>
+                  <th style={{ width: 80 }}>CGST (₹)</th>
+                  <th style={{ width: 80 }}>HMall (₹)</th>
+                  <th style={{ width: 90 }}>Motor Rent (₹)</th>
+                  <th style={{ width: 100, textAlign: 'right' }}>Total (₹)</th>
+                  <th style={{ width: 90 }}>Net Rate</th>
+                  <th style={{ width: 100 }}>Selling Rate</th>
+                  <th style={{ width: 40, textAlign: 'center' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((row, idx) => (
+                  <tr key={row.id}>
+                    <td>{idx + 1}</td>
+                    <td>
+                      <select
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.particulars}
+                        onChange={e => updateRow(idx, 'particulars', e.target.value)}
+                      >
+                        {PESTICIDE_PRODUCT_LIST.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.qty}
+                        onChange={e => updateRow(idx, 'qty', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.amount || ''}
+                        onChange={e => updateRow(idx, 'amount', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.sgst || ''}
+                        onChange={e => updateRow(idx, 'sgst', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.cgst || ''}
+                        onChange={e => updateRow(idx, 'cgst', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.hmall || ''}
+                        onChange={e => updateRow(idx, 'hmall', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4 }}
+                        value={row.motor_rent || ''}
+                        onChange={e => updateRow(idx, 'motor_rent', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>
+                      ₹{row.total_amount.toFixed(2)}
+                    </td>
+                    <td style={{ fontSize: 11 }}>
+                      ₹{row.net_rate.toFixed(2)}
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: 4, fontWeight: 700, color: '#2563eb' }}
+                        value={row.selling_rate || ''}
+                        onChange={e => updateRow(idx, 'selling_rate', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {items.length > 1 && (
+                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: 2 }} onClick={() => removeRow(idx)}>
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 700, fontSize: 15, color: '#16a34a' }}>
+            Grand Total Amount: ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'दर पुस्तक नोंद जतन करा' : 'Save Rate Entry')}
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'दर पुस्तक नोंदी जतन करा' : 'Save Rate Entries')}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
@@ -327,14 +420,36 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         </div>
       </form>
 
-      {/* History Register Table matching Grid 1 */}
+      {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-          {lang === 'mr' ? 'अलीकडील विक्री दर पुस्तक नोंदी' : 'Recent Selling Rate Book Entries'}
-        </h4>
-        {history.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            {lang === 'mr' ? 'कोणत्याही दर पुस्तक नोंदी आढळल्या नाहीत.' : 'No rate book entries found.'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          {/* Date Range Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Calendar size={16} color="var(--blue-600)" />
+            <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          </div>
+
+          {/* Search Input Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input
+              type="text"
+              className="form-input"
+              style={{ width: 240, padding: '4px 10px', fontSize: 13 }}
+              placeholder={lang === 'mr' ? 'नाव, स्टॉक क्र. किंवा तपशीलाने शोधा...' : 'Search by Name, Stock No, Particulars...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* History Register Table matching Grid 1 */}
+        {filteredHistory.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
+            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही नोंदी आढळल्या नाहीत.' : 'No rate book entries found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
@@ -359,7 +474,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {history.map(row => (
+                {filteredHistory.map(row => (
                   <tr key={row.id}>
                     <td>{row.date}</td>
                     <td style={{ fontWeight: 600 }}>{row.name}</td>
@@ -388,7 +503,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         )}
       </div>
 
-      {/* Printable Register Modal */}
+      {/* Printable Register Modal for Range / Full Month */}
       {showPrintModal && (
         <div className="modal-backdrop" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -396,7 +511,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '95%', maxWidth: 950, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>Selling Rate Book Print</h4>
+              <h4 style={{ fontWeight: 700 }}>Selling Rate Book Register Print ({startDate} to {endDate})</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8 }}>
                   <Printer size={14} /> Print
@@ -415,6 +530,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   SEEDS, PESTICIDES, SPRAYPUMP AND OTHER SELLING RATE BOOK
                 </div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>Period: {startDate} to {endDate}</div>
               </div>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 20 }}>
@@ -437,10 +553,10 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.length === 0 ? (
+                  {filteredHistory.length === 0 ? (
                     <tr><td colSpan={14} style={{ textAlign: 'center', padding: 12 }}>No entries found</td></tr>
                   ) : (
-                    history.map(row => (
+                    filteredHistory.map(row => (
                       <tr key={row.id}>
                         <td style={{ border: '1px solid #000', padding: 4 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 4 }}>{row.name}</td>

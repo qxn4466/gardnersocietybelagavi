@@ -17,6 +17,39 @@ from schemas import (
 router = APIRouter(prefix="/shopkeeper", tags=["shopkeeper"])
 
 
+PESTICIDE_KEYWORDS = [
+    "pesticide", "boric acid", "chlorpyrifos", "monocrotophos", "mancozeb",
+    "neem oil", "malathion", "copper oxychloride", "carbendazim", "imidacloprid",
+    "cypermethrin", "spray pump", "nozzle", "acid"
+]
+
+
+def check_and_auto_post_pesticide(
+    db: Session,
+    date_val: date,
+    customer_name: str,
+    prod_name: str,
+    qty_val: Decimal,
+    rate_val: Decimal,
+    amt_val: Decimal,
+    source_ref: str,
+    created_by: Optional[str]
+):
+    lowered = prod_name.lower()
+    if any(k in lowered for k in PESTICIDE_KEYWORDS):
+        pest_entry = PesticideSaleEntry(
+            date=date_val,
+            customer_name=customer_name,
+            product_name=prod_name,
+            qty=qty_val,
+            rate=rate_val,
+            amount=amt_val,
+            remarks=f"Auto-posted from {source_ref}",
+            created_by=created_by
+        )
+        db.add(pest_entry)
+
+
 # ─── Number Generator Helpers ────────────────────────────────────────────────
 
 def generate_shop_invoice_no(db: Session, v_date: date) -> str:
@@ -31,7 +64,6 @@ def generate_shop_retail_bill_no(db: Session, v_date: date) -> str:
     prefix = f"SRB-{year_str}-"
     count = db.query(ShopRetailBill).filter(ShopRetailBill.bill_no.like(f"{prefix}%")).count()
     return f"{prefix}{count + 1:04d}"
-
 
 
 # ─── Numbering Endpoints ─────────────────────────────────────────────────────
@@ -84,6 +116,20 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
         created_by=payload.created_by
     )
     db.add(record)
+
+    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
+    check_and_auto_post_pesticide(
+        db=db,
+        date_val=payload.date,
+        customer_name=payload.name,
+        prod_name=payload.particulars,
+        qty_val=payload.qty,
+        rate_val=payload.selling_rate or payload.net_rate,
+        amt_val=payload.total_amount,
+        source_ref="Selling Rate Book",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -131,6 +177,20 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         created_by=payload.created_by
     )
     db.add(record)
+
+    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
+    check_and_auto_post_pesticide(
+        db=db,
+        date_val=payload.date,
+        customer_name=payload.customer_name,
+        prod_name=payload.product_name,
+        qty_val=payload.qty,
+        rate_val=payload.rate,
+        amt_val=payload.amount,
+        source_ref=f"Tax Invoice {inv_no}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -177,12 +237,27 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         created_by=payload.created_by
     )
     db.add(record)
+
+    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
+    check_and_auto_post_pesticide(
+        db=db,
+        date_val=payload.date,
+        customer_name=payload.customer_name,
+        prod_name=payload.particulars,
+        qty_val=Decimal("1.0"),
+        rate_val=payload.rate,
+        amt_val=payload.amount,
+        source_ref=f"Retail Bill {b_no}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
 
 
 @router.delete("/retail-bills/{id}")
+
 def delete_shop_retail_bill(id: int, db: Session = Depends(get_db)):
     record = db.query(ShopRetailBill).filter(ShopRetailBill.id == id).first()
     if not record:

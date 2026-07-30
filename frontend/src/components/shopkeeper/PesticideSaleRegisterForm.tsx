@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search } from 'lucide-react';
 import { createPesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -12,6 +12,7 @@ interface PesticideSaleRegisterFormProps {
 const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [customerName, setCustomerName] = useState('');
@@ -20,8 +21,12 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const [rate, setRate] = useState<string>('');
   const [batchNo, setBatchNo] = useState('');
   const [remarks, setRemarks] = useState('');
-
   const [amount, setAmount] = useState<number>(0);
+
+  // Filter & Search states
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -31,7 +36,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
   useEffect(() => {
     loadHistory();
-  }, [date]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     const q = parseFloat(qty) || 0;
@@ -41,7 +46,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
   const loadHistory = async () => {
     try {
-      const data = await fetchPesticideSales(date, date);
+      const data = await fetchPesticideSales(startDate, endDate);
       setHistory(data);
     } catch {
       // ignore
@@ -107,14 +112,21 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
     }
   };
 
+  const filteredHistory = history.filter(row =>
+    row.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    row.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (row.batch_no && row.batch_no.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (row.remarks && row.remarks.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   // Group pesticide sales by product columns for Specification 4 Grid
   const productsTotal = PESTICIDE_PRODUCT_LIST.map(prod => {
-    const totalQty = history.filter(h => h.product_name === prod).reduce((s, h) => s + Number(h.qty || 0), 0);
-    const totalAmt = history.filter(h => h.product_name === prod).reduce((s, h) => s + Number(h.amount || 0), 0);
+    const totalQty = filteredHistory.filter(h => h.product_name.toLowerCase().includes(prod.toLowerCase())).reduce((s, h) => s + Number(h.qty || 0), 0);
+    const totalAmt = filteredHistory.filter(h => h.product_name.toLowerCase().includes(prod.toLowerCase())).reduce((s, h) => s + Number(h.amount || 0), 0);
     return { name: prod, qty: totalQty, amount: totalAmt };
   });
 
-  const grandTotalAmount = history.reduce((s, h) => s + Number(h.amount || 0), 0);
+  const grandTotalAmount = filteredHistory.reduce((s, h) => s + Number(h.amount || 0), 0);
 
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30 }}>
@@ -124,15 +136,15 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             4. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'बोरीक ॲसिड व इतर कीटकनाशके उत्पादनांचा दैनंदिन नोंदवही तक्ता' : 'Daily sales grid for Boric Acid & Pesticides'}
+            {lang === 'mr' ? 'विक्री दर पुस्तक, टॅक्स इनव्हॉईस व किरकोळ बिलांमधून स्वयंचलित नोंदवणारी नोंदवही' : 'Auto-populated from Selling Rate Book, Shop Tax Invoices & Retail Bills'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
-            <Printer size={14} /> {lang === 'mr' ? 'नोंदवही प्रिंट करा' : 'Print Register'}
+            <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-            <Plus size={14} /> {lang === 'mr' ? 'नवीन नोंद' : 'New Sale Entry'}
+            <Plus size={14} /> {lang === 'mr' ? 'नवीन हस्ते नोंद' : 'New Sale Entry'}
           </button>
         </div>
       </div>
@@ -144,8 +156,11 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         </div>
       )}
 
-      {/* Entry Form */}
+      {/* Manual Entry Form */}
       <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: 'var(--surface-subtle)', padding: 16, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
+          {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा' : 'Add Manual Pesticide Sale Entry'}
+        </h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 14 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक' : 'Date'}</label>
@@ -208,12 +223,37 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         </div>
       </form>
 
-      {/* Product Summary Grid matching Specification 4 */}
+      {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          {/* Date Range Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Calendar size={16} color="var(--blue-600)" />
+            <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          </div>
+
+          {/* Search Input Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input
+              type="text"
+              className="form-input"
+              style={{ width: 240, padding: '4px 10px', fontSize: 13 }}
+              placeholder={lang === 'mr' ? 'ग्राहक, कीटकनाशक किंवा बॅच क्र. शोधा...' : 'Search Customer, Product, Batch...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Product Summary Grid matching Specification 4 */}
         <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
-          {lang === 'mr' ? 'दैनंदिन उत्पादननिहाय विक्री तक्ता (Product-wise Sales Grid)' : 'Daily Product-wise Sales Grid'}
+          {lang === 'mr' ? 'उत्पादननिहाय विक्री उलाढाल (Product-wise Sales Grid)' : 'Product-wise Sales Grid'}
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
           {productsTotal.map(p => (
             <div key={p.name} style={{ background: p.name === 'Boric Acid' ? '#f0fdf4' : '#f8fafc', padding: 10, borderRadius: 6, border: p.name === 'Boric Acid' ? '1px solid #86efac' : '1px solid #e2e8f0' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: p.name === 'Boric Acid' ? '#166534' : 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>
@@ -230,7 +270,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         </div>
       </div>
 
-      {/* History Register */}
+      {/* History Register Table */}
       <div className="table-responsive">
         <table className="table" style={{ width: '100%', fontSize: 13 }}>
           <thead>
@@ -238,7 +278,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               <th>Date</th>
               <th>Customer Name</th>
               <th>Product Name</th>
-              <th>Batch No</th>
+              <th>Batch / Source Ref</th>
               <th>Qty</th>
               <th>Rate (₹)</th>
               <th style={{ textAlign: 'right' }}>Amount (₹)</th>
@@ -246,23 +286,23 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             </tr>
           </thead>
           <tbody>
-            {history.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                  {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for this date.'}
+                  {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
                 </td>
               </tr>
             ) : (
-              history.map(row => (
+              filteredHistory.map(row => (
                 <tr key={row.id}>
                   <td>{row.date}</td>
                   <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
                   <td>
-                    <span className={`badge ${row.product_name === 'Boric Acid' ? 'badge-primary' : 'badge-secondary'}`}>
+                    <span className={`badge ${row.product_name.toLowerCase().includes('boric acid') ? 'badge-primary' : 'badge-secondary'}`}>
                       {row.product_name}
                     </span>
                   </td>
-                  <td>{row.batch_no || '-'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
                   <td>{row.qty}</td>
                   <td>₹{Number(row.rate).toFixed(2)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.amount).toFixed(2)}</td>
@@ -275,10 +315,10 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               ))
             )}
           </tbody>
-          {history.length > 0 && (
+          {filteredHistory.length > 0 && (
             <tfoot>
               <tr style={{ background: 'var(--surface-subtle)', fontWeight: 700 }}>
-                <td colSpan={6} style={{ textAlign: 'right' }}>Grand Daily Sales Total:</td>
+                <td colSpan={6} style={{ textAlign: 'right' }}>Grand Total Pesticide Sales:</td>
                 <td style={{ textAlign: 'right', color: '#16a34a' }}>₹{grandTotalAmount.toFixed(2)}</td>
                 <td></td>
               </tr>
@@ -295,7 +335,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         }}>
           <div className="modal-content" style={{ background: '#fff', width: '95%', maxWidth: 900, padding: 30, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h4 style={{ fontWeight: 700 }}>Pesticide Sale Register Print</h4>
+              <h4 style={{ fontWeight: 700 }}>Pesticide Sale Register Print ({startDate} to {endDate})</h4>
               <div>
                 <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8 }}>
                   <Printer size={14} /> Print
@@ -315,12 +355,12 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   PESTICIDE SALE REGISTER
                 </div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>Date: {date}</div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>Period: {startDate} to {endDate}</div>
               </div>
 
               {/* Product Grid Columns */}
               <div style={{ marginBottom: 16, border: '1px solid #000', padding: 10 }}>
-                <strong style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Daily Product Summary:</strong>
+                <strong style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Period Product Summary:</strong>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontSize: 11 }}>
                   {productsTotal.slice(0, 12).map(p => (
                     <div key={p.name} style={{ borderBottom: '1px solid #eee', paddingBottom: 4 }}>
@@ -336,22 +376,22 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                     <th style={{ border: '1px solid #000', padding: 6 }}>Date</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Customer Name</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Product Name</th>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>Batch No</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Batch / Source Ref</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Qty</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Rate (₹)</th>
                     <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Amount (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {history.length === 0 ? (
+                  {filteredHistory.length === 0 ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 12 }}>No entries found</td></tr>
                   ) : (
-                    history.map(row => (
+                    filteredHistory.map(row => (
                       <tr key={row.id}>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.customer_name}</td>
                         <td style={{ border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>{row.product_name}</td>
-                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.batch_no || '-'}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.batch_no || row.remarks || '-'}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.qty}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>₹{Number(row.rate).toFixed(2)}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{Number(row.amount).toFixed(2)}</td>
@@ -361,7 +401,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                 </tbody>
                 <tfoot>
                   <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
-                    <td colSpan={6} style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>TOTAL DAILY PESTICIDE SALES:</td>
+                    <td colSpan={6} style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>TOTAL PESTICIDE SALES:</td>
                     <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{grandTotalAmount.toFixed(2)}</td>
                   </tr>
                 </tfoot>

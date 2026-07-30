@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Calendar, Search } from 'lucide-react';
 import { fetchNextShopRetailBillNo, createShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
 import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -9,19 +9,33 @@ interface ShopRetailBillFormProps {
   user?: User | null;
 }
 
+interface RetailBillRow {
+  id: string;
+  particulars: string;
+  rate: number;
+  amount: number;
+}
+
 const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
+  const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
   const [date, setDate] = useState(today);
   const [billNo, setBillNo] = useState('');
   const [tinNo, setTinNo] = useState('29540268502');
   const [customerName, setCustomerName] = useState('');
-  const [particularsSelect, setParticularsSelect] = useState(PESTICIDE_PRODUCT_LIST[0]);
-  const [customParticulars, setCustomParticulars] = useState('');
-  const [rate, setRate] = useState<string>('');
-  const [amount, setAmount] = useState<number>(0);
   const [sellerSig, setSellerSig] = useState('Seller Signed');
+
+  // Filter & Search states
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(today);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Multi-item addable grid rows
+  const [items, setItems] = useState<RetailBillRow[]>([
+    { id: '1', particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }
+  ]);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -32,13 +46,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   useEffect(() => {
     loadNextBillNo(date);
-    loadHistory();
   }, [date]);
 
   useEffect(() => {
-    const r = parseFloat(rate) || 0;
-    setAmount(r);
-  }, [rate]);
+    loadHistory();
+  }, [startDate, endDate]);
 
   const loadNextBillNo = async (d: string) => {
     try {
@@ -51,19 +63,40 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   const loadHistory = async () => {
     try {
-      const data = await fetchShopRetailBills();
+      const data = await fetchShopRetailBills(startDate, endDate);
       setHistory(data);
     } catch {
       // ignore
     }
   };
 
+  const updateRow = (index: number, field: keyof RetailBillRow, val: any) => {
+    const updated = [...items];
+    const row = { ...updated[index], [field]: val };
+    const r = parseFloat(String(row.rate)) || 0;
+    row.amount = r;
+    updated[index] = row;
+    setItems(updated);
+  };
+
+  const addRow = () => {
+    setItems([
+      ...items,
+      { id: Date.now().toString(), particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }
+    ]);
+  };
+
+  const removeRow = (index: number) => {
+    if (items.length <= 1) return;
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const grandTotal = items.reduce((s, r) => s + (r.amount || 0), 0);
+
   const handleReset = () => {
     setDate(today);
     setCustomerName('');
-    setParticularsSelect(PESTICIDE_PRODUCT_LIST[0]);
-    setCustomParticulars('');
-    setRate('');
+    setItems([{ id: '1', particulars: PESTICIDE_PRODUCT_LIST[0], rate: 0, amount: 0 }]);
     setSellerSig('Seller Signed');
     setMsg(null);
     loadNextBillNo(today);
@@ -75,35 +108,37 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter Customer Name.' });
       return;
     }
-    if (amount <= 0) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया रक्कम प्रविष्ट करा.' : 'Please enter Rate / Amount.' });
+    if (grandTotal <= 0) {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया रक्कम प्रविष्ट करा.' : 'Please enter Rate / Amount for at least one item.' });
       return;
     }
-
-    const finalParticulars = customParticulars.trim()
-      ? `${particularsSelect} - ${customParticulars.trim()}`
-      : particularsSelect;
 
     setLoading(true);
     setMsg(null);
     try {
-      const created = await createShopRetailBill({
-        date,
-        bill_no: billNo,
-        tin_no: tinNo.trim() || '29540268502',
-        customer_name: customerName.trim(),
-        particulars: finalParticulars,
-        rate: parseFloat(rate) || 0,
-        amount,
-        seller_signature: sellerSig,
-        created_by: user?.username || 'shopkeeper',
-      });
+      let createdLast: ShopRetailBill | null = null;
+      for (const item of items) {
+        if (item.amount > 0) {
+          createdLast = await createShopRetailBill({
+            date,
+            bill_no: billNo,
+            tin_no: tinNo.trim() || '29540268502',
+            customer_name: customerName.trim(),
+            particulars: item.particulars,
+            rate: Number(item.rate) || 0,
+            amount: item.amount,
+            seller_signature: sellerSig,
+            created_by: user?.username || 'shopkeeper',
+          });
+        }
+      }
 
       setMsg({
         type: 'success',
-        text: lang === 'mr' ? `किरकोळ बिल ${created.bill_no} जतन केले!` : `Retail Cash Bill ${created.bill_no} saved successfully!`
+        text: (lang === 'mr' ? `किरकोळ बिल ${billNo} जतन केले!` : `Retail Cash Bill ${billNo} saved successfully!`) +
+          (lang === 'mr' ? ' (ऑटो-कीटकनाशके नोंदवहीत जोडले गेले)' : ' (Auto-posted to Pesticide Register if applicable)')
       });
-      setSelectedBill(created);
+      if (createdLast) setSelectedBill(createdLast);
       loadHistory();
       handleReset();
     } catch {
@@ -128,6 +163,12 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     setShowPrintModal(true);
   };
 
+  const filteredHistory = history.filter(row =>
+    row.bill_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    row.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    row.particulars.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
@@ -142,7 +183,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         <div style={{ display: 'flex', gap: 8 }}>
           {history.length > 0 && (
             <button className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
-              <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print'}
+              <Printer size={14} /> {lang === 'mr' ? 'प्रिंट करा' : 'Print Bill'}
             </button>
           )}
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
@@ -185,45 +226,70 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Particulars, Rate, Amount Grid matching Specification 3 */}
-        <div style={{ background: 'var(--surface-subtle)', padding: 16, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-            {lang === 'mr' ? 'तपशील व दर मेमो (Particulars, Rate, Amount Grid)' : 'Particulars, Rate, Amount Grid'}
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 14 }}>
-            <div className="form-group">
-              <label className="form-label">{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars'}</label>
-              <select className="form-input" value={particularsSelect} onChange={e => setParticularsSelect(e.target.value)}>
-                {PESTICIDE_PRODUCT_LIST.map(p => (
-                  <option key={p} value={p}>{p}</option>
+        {/* Multi-Item Dynamic Table Grid matching Specification 3 */}
+        <div style={{ background: 'var(--surface-subtle)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              {lang === 'mr' ? 'तपशील व दर मेमो (Particulars, Rate, Amount Grid)' : 'Particulars, Rate, Amount Grid'}
+            </h4>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
+              <Plus size={14} /> {lang === 'mr' ? '+ बाब जोडा (Add Item)' : '+ Add Item'}
+            </button>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table" style={{ width: '100%', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9' }}>
+                  <th style={{ width: 40 }}>#</th>
+                  <th>Particulars</th>
+                  <th style={{ width: 140 }}>Rate (₹)</th>
+                  <th style={{ width: 160, textAlign: 'right' }}>Amount (₹)</th>
+                  <th style={{ width: 50, textAlign: 'center' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((row, idx) => (
+                  <tr key={row.id}>
+                    <td>{idx + 1}</td>
+                    <td>
+                      <select
+                        className="form-input"
+                        value={row.particulars}
+                        onChange={e => updateRow(idx, 'particulars', e.target.value)}
+                      >
+                        {PESTICIDE_PRODUCT_LIST.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        value={row.rate || ''}
+                        onChange={e => updateRow(idx, 'rate', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>
+                      ₹{row.amount.toFixed(2)}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {items.length > 1 && (
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => removeRow(idx)}>
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
                 ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">{lang === 'mr' ? 'अतिरिक्त माहिती' : 'Notes / Ref'}</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Retail sale"
-                value={customParticulars}
-                onChange={e => setCustomParticulars(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Rate (₹)</label>
-              <input type="number" step="0.01" className="form-input" value={rate} onChange={e => setRate(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 700 }}>Total Amount (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                style={{ fontWeight: 700, color: '#16a34a', background: '#f0fdf4' }}
-                value={amount.toFixed(2)}
-                readOnly
-              />
-            </div>
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 700, fontSize: 16, color: '#16a34a' }}>
+            Grand Total Retail Amount: ₹{grandTotal.toFixed(2)}
           </div>
         </div>
 
@@ -237,14 +303,36 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         </div>
       </form>
 
-      {/* History Register */}
+      {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-          {lang === 'mr' ? 'अलीकडील किरकोळ रोख बिल नोंदी' : 'Recent Retail Cash Bills'}
-        </h4>
-        {history.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            {lang === 'mr' ? 'कोणत्याही बिल नोंदी आढळल्या नाहीत.' : 'No retail bills found.'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          {/* Date Range Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Calendar size={16} color="var(--blue-600)" />
+            <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
+            <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          </div>
+
+          {/* Search Input Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input
+              type="text"
+              className="form-input"
+              style={{ width: 240, padding: '4px 10px', fontSize: 13 }}
+              placeholder={lang === 'mr' ? 'बिल क्र. किंवा नाव शोधा...' : 'Search Bill No, Customer Name...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* History Register Table */}
+        {filteredHistory.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
+            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही बिल नोंदी आढळल्या नाहीत.' : 'No retail bills found for selected date range.'}
           </div>
         ) : (
           <div className="table-responsive">
@@ -261,7 +349,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {history.map(row => (
+                {filteredHistory.map(row => (
                   <tr key={row.id}>
                     <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
                     <td>{row.date}</td>
