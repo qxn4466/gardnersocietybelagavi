@@ -217,18 +217,22 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
   });
 
   return (
-    <div className="form-card" style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileText size={22} color="#1d4ed8" />
-            {lang === 'mr' ? 'मिटिंग नोटीस फॉर्म' : 'Meeting Notice Form'}
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-            {lang === 'mr'
-              ? 'बेळगाव गार्डनर्स को-ऑप सोसायटीच्या मॅनेजिंग कमिटी सभेची नोटीस तयार करा, जतन करा, संपादन करा व प्रिंट करा.'
-              : 'Create, store, edit, and print official Managing Committee Meeting Notices.'}
-          </p>
+    <div className="card" style={{ maxWidth: 1100, margin: '0 auto 30px auto', padding: 24, borderTop: '4px solid #6d28d9', boxShadow: '0 4px 16px rgba(109, 40, 217, 0.09)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#ede9fe', padding: 10, borderRadius: 8, color: '#5b21b6' }}>
+            <FileText size={22} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              {lang === 'mr' ? 'मिटिंग नोटीस फॉर्म' : 'Meeting Notice Form'}
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr'
+                ? 'बेळगाव गार्डनर्स को-ऑप सोसायटीच्या मॅनेजिंग कमिटी सभेची नोटीस तयार करा, जतन करा, संपादन करा व प्रिंट करा.'
+                : 'Create, store, edit, and print official Managing Committee Meeting Notices.'}
+            </p>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

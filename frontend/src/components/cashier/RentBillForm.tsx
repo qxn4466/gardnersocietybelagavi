@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages, Landmark } from 'lucide-react';
 import { fetchNextRentInvoiceNo, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { RentBill, User } from '../../types';
 
@@ -258,15 +258,20 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #7c3aed', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            3. {lang === 'mr' ? 'भाडे बिल फॉर्म / टॅक्स इनव्हॉईस (Rent Bill Form)' : 'Rent Bill Form (Tax Invoice)'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'गाळा/दुकान भाड्याचे जीएसटी इनव्हॉईस (स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create GST Tax Invoice (Auto-posts to Cash Scroll & Cheque Book)'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#f3e8ff', padding: 10, borderRadius: 8, color: '#6b21a8' }}>
+            <Landmark size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              3. {lang === 'mr' ? 'भाडे बिल फॉर्म / टॅक्स इनव्हॉईस (Rent Bill Form)' : 'Rent Bill Form (Tax Invoice)'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'गाळा/दुकान भाड्याचे जीएसटी इनव्हॉईस (स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create GST Tax Invoice (Auto-posts to Cash Scroll & Cheque Book)'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button

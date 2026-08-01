@@ -453,7 +453,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
         )}
 
         {/* ── Overhauled Modern Savings Account Form ── */}
-        <div className="card" style={{ marginBottom: 32, border: '1px solid #cbd5e1', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+        <div className="card" style={{ marginBottom: 32, borderTop: '4px solid #0d9488', boxShadow: '0 8px 30px rgba(13, 148, 136, 0.09)' }}>
           <div className="card-header" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff', borderRadius: '12px 12px 0 0', padding: '16px 24px' }}>
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ffffff', fontSize: 18 }}>

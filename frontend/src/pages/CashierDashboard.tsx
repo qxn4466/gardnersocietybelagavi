@@ -101,18 +101,21 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+              className={`tab-button ${isActive ? 'active' : ''}`}
               style={{
-                fontSize: 13, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8,
-                whiteSpace: 'nowrap', fontWeight: isActive ? 700 : 500,
-                borderBottom: isActive ? '3px solid var(--blue-600)' : '1px solid var(--border-subtle)'
+                padding: '10px 16px', borderRadius: '6px 6px 0 0', fontWeight: isActive ? 700 : 500, fontSize: 13,
+                display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', border: 'none',
+                background: isActive ? 'var(--blue-600)' : 'transparent',
+                color: isActive ? '#fff' : 'var(--text-secondary)',
+                whiteSpace: 'nowrap',
+                boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none',
               }}
             >
               {tab.icon}
               {tab.label}
               <span className="badge" style={{
                 fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--surface-subtle)',
+                background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--slate-200)',
                 color: isActive ? '#fff' : 'var(--text-secondary)'
               }}>
                 {tab.badge}

@@ -191,7 +191,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
         )}
 
         {/* Table */}
-        <div className="card">
+        <div className="card" style={{ borderTop: '4px solid #b91c1c', boxShadow: '0 4px 14px rgba(185, 28, 28, 0.08)' }}>
           {/* Column View Mode Controls */}
           {rows.length > 0 && (
             <div className="no-print" style={{ padding: '12px 20px', borderBottom: '1px solid #fee2e2', background: '#fff5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>

@@ -1058,9 +1058,9 @@ body {
   text-transform: uppercase;
 }
 
-.level-1 { background: #eff6ff; color: var(--blue-700); border: 1px solid #bfdbfe; }
-.level-2 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.level-3 { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.level-1 { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; box-shadow: 0 1px 4px rgba(21, 128, 61, 0.12); }
+.level-2 { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: 0 1px 4px rgba(29, 78, 216, 0.12); }
+.level-3 { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; box-shadow: 0 1px 4px rgba(107, 33, 168, 0.12); }
 
 /* ─── Mobile, Tablet & Desktop Responsive Layout System ─────────────────────── */
 @media (max-width: 900px) {

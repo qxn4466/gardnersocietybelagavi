@@ -156,8 +156,8 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
 
       <div className="page-content">
 
-        {/* ── Controls & Controls Bar ── */}
-        <div className="card no-print" style={{ marginBottom: 24 }}>
+        {/* ── AUDIT CONTROLS CARD (NO PRINT) ── */}
+        <div className="card no-print" style={{ marginBottom: 24, borderTop: '4px solid #0f172a', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.1)' }}>
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -208,7 +208,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
         )}
 
         {/* Table */}
-        <div className="card">
+        <div className="card" style={{ borderTop: '4px solid #15803d', boxShadow: '0 4px 14px rgba(21, 128, 61, 0.08)' }}>
           {/* Column View Mode Controls */}
           {rows.length > 0 && (
             <div className="no-print" style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>

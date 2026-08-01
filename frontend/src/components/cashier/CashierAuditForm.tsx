@@ -107,17 +107,21 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #ea580c', boxShadow: '0 4px 14px rgba(234, 88, 12, 0.08)' }}>
       {/* Header controls */}
       <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ShieldCheck size={20} color="var(--blue-600)" />
-            6. {lang === 'mr' ? 'कॅशियर लेखापरीक्षा फॉर्म (Cashier Audit Package)' : 'Cashier Audit Form'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'कॅशियर सर्व व्हाऊचर, बिल, स्क्रोल व चेक नोंदींचे लेखापरीक्षण अहवाल बाइंडर' : 'Comprehensive Cashier binder & auditor verification package'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#ffedd5', padding: 10, borderRadius: 8, color: '#c2410c' }}>
+            <ShieldCheck size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              6. {lang === 'mr' ? 'कॅशियर लेखापरीक्षा फॉर्म (Cashier Audit Package)' : 'Cashier Audit Form'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'कॅशियर सर्व व्हाऊचर, बिल, स्क्रोल व चेक नोंदींचे लेखापरीक्षण अहवाल बाइंडर' : 'Comprehensive Cashier binder & auditor verification package'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button

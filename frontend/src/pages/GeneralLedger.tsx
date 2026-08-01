@@ -161,7 +161,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         )}
 
         {/* Table */}
-        <div className="card">
+        <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 16px rgba(79, 70, 229, 0.09)' }}>
           <div className="table-wrapper">
             {loading ? (
               <div className="loading-overlay">

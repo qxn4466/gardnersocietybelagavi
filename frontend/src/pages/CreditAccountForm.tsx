@@ -634,7 +634,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         </div>
 
         {/* ── Bill Form Card ── */}
-        <div className="card" style={{ marginBottom: 32 }}>
+        <div className="card" style={{ marginBottom: 32, borderTop: '4px solid #1d4ed8', boxShadow: '0 4px 16px rgba(29, 78, 216, 0.09)' }}>
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

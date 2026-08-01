@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, Banknote, CreditCard, Zap, Calendar, Search, Languages } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, Banknote, CreditCard, Zap, Calendar, Search, Languages, Receipt } from 'lucide-react';
 import { fetchNextReceiptBillNo, createReceiptVoucher, updateReceiptVoucher, fetchReceiptVouchers, deleteReceiptVoucher, fetchOffice, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashReceiptVoucher, User, OfficeMaster } from '../../types';
 import { RECEIPT_PARTICULARS_OPTIONS } from '../../types';
@@ -238,15 +238,20 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #16a34a', boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            2. {lang === 'mr' ? 'रोख पावती व्हाऊचर / कॅश मेमो (Receipt Voucher)' : 'Cash Receipt Voucher (Receipt Voucher)'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'प्राप्त रोख/चेक रकमेचा कॅश मेमो (स्क्रोल पुस्तक व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create cash receipt memo (Auto-posts to Cash Scroll & Cheque Book)'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#dcfce7', padding: 10, borderRadius: 8, color: '#15803d' }}>
+            <Receipt size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              2. {lang === 'mr' ? 'रोख पावती व्हाऊचर / कॅश मेमो (Receipt Voucher)' : 'Cash Receipt Voucher (Receipt Voucher)'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'प्राप्त रोख/चेक रकमेचा कॅश मेमो (स्क्रोल पुस्तक व चेक बुकमध्ये ऑटो-अपडेट)' : 'Create cash receipt memo (Auto-posts to Cash Scroll & Cheque Book)'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button

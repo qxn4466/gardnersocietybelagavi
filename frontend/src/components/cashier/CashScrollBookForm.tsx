@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen } from 'lucide-react';
 import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -131,15 +131,20 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const totalCheque = history.reduce((s, r) => s + Number(r.cheque_amount || 0), 0);
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30 }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #2563eb', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            4. {lang === 'mr' ? 'रोख स्क्रोल पुस्तक (Cash Scroll Book)' : 'Cash Scroll Book'}
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {lang === 'mr' ? 'व्हाऊचर, बिल व इनव्हॉईसमधून स्वयंचलित अपडेट होणारे दैनिक रोख स्क्रोल नोंदवही' : 'Daily Cash Scroll Register auto-updated from Vouchers, Bills & Invoices'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#dbeafe', padding: 10, borderRadius: 8, color: '#1e40af' }}>
+            <BookOpen size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              4. {lang === 'mr' ? 'रोख स्क्रोल पुस्तक (Cash Scroll Book)' : 'Cash Scroll Book'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'व्हाऊचर, बिल व इनव्हॉईसमधून स्वयंचलित अपडेट होणारे दैनिक रोख स्क्रोल नोंदवही' : 'Daily Cash Scroll Register auto-updated from Vouchers, Bills & Invoices'}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
