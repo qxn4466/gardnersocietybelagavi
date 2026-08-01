@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages, FileText } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages, FileText, Loader2 } from 'lucide-react';
 import { fetchNextPaymentVoucherNo, createPaymentVoucher, updatePaymentVoucher, fetchPaymentVouchers, deletePaymentVoucher, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 
 import type { CashPaymentVoucher, User, VoucherItemRow } from '../../types';
@@ -67,7 +67,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   ]);
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<CashPaymentVoucher[]>([]);
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -97,9 +98,26 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   };
 
   const handleTranslatePaidTo = async () => {
-    if (paidTo.trim()) {
+    if (!paidTo.trim()) return;
+    setTranslating(true);
+    setMsg({
+      type: 'info',
+      text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
       const tr = await translateToMarathi(paidTo);
       setPaidTo(tr);
+      setMsg({
+        type: 'success',
+        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -360,8 +378,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
       </div>
 
       {msg && (
-        <div className={`alert ${msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-          {msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           {msg.text}
         </div>
       )}
@@ -382,9 +400,11 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
               <button
                 type="button"
                 onClick={handleTranslatePaidTo}
-                style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+                disabled={translating}
+                style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
               >
-                <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
+                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
               </button>
             </div>
             <input
@@ -640,21 +660,49 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ background: '#e0e7ff', color: '#3730a3', borderColor: '#c7d2fe', fontWeight: 600 }}
+            style={{ background: '#e0e7ff', color: '#3730a3', borderColor: '#c7d2fe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={async () => {
-              if (paidTo) setPaidTo(await translateToMarathi(paidTo));
-              if (purpose) setPurpose(await translateToMarathi(purpose));
-              if (bankName) setBankName(await translateToMarathi(bankName));
-              const updatedItems = await Promise.all(
-                items.map(async item => ({
-                  ...item,
-                  particular: await translateToMarathi(item.particular),
-                }))
-              );
-              setItems(updatedItems);
+              setTranslating(true);
+              setMsg({
+                type: 'info',
+                text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+              });
+              try {
+                if (paidTo) setPaidTo(await translateToMarathi(paidTo));
+                if (purpose) setPurpose(await translateToMarathi(purpose));
+                if (bankName) setBankName(await translateToMarathi(bankName));
+                const updatedItems = await Promise.all(
+                  items.map(async item => ({
+                    ...item,
+                    particular: await translateToMarathi(item.particular),
+                  }))
+                );
+                setItems(updatedItems);
+                setMsg({
+                  type: 'success',
+                  text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+                });
+              } catch {
+                setMsg({
+                  type: 'error',
+                  text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+                });
+              } finally {
+                setTranslating(false);
+              }
             }}
+            disabled={translating || loading}
           >
-            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            {translating ? (
+              <>
+                <Loader2 size={16} className="spinner" />
+                {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+              </>
+            ) : (
+              <>
+                <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+              </>
+            )}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

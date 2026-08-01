@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen, Loader2 } from 'lucide-react';
 import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -28,7 +28,8 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<CashScrollBookEntry[]>([]);
   const [office, setOffice] = useState<OfficeMaster | null>(null);
@@ -58,9 +59,26 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   };
 
   const handleTranslateParticulars = async () => {
-    if (particulars.trim()) {
+    if (!particulars.trim()) return;
+    setTranslating(true);
+    setMsg({
+      type: 'info',
+      text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
       const tr = await translateToMarathi(particulars);
       setParticulars(tr);
+      setMsg({
+        type: 'success',
+        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -204,8 +222,8 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
       </div>
 
       {msg && (
-        <div className={`alert ${msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-          {msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           {msg.text}
         </div>
       )}
@@ -236,9 +254,11 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
             <button
               type="button"
               onClick={handleTranslateParticulars}
-              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+              disabled={translating}
+              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
             >
-              <Languages size={13} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+              {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
+              {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
             </button>
           </div>
           <input

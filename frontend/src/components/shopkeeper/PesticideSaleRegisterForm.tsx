@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical, Languages, Loader2 } from 'lucide-react';
 import { createPesticideSale, updatePesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -18,6 +18,18 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  const [date, setDate] = useState(today);
+  const [customerName, setCustomerName] = useState('');
+  const [productName, setProductName] = useState(PESTICIDE_PRODUCT_LIST[0]);
+  const [batchNo, setBatchNo] = useState('');
+  const [cibNo, setCibNo] = useState('');
+  const [qty, setQty] = useState<string>('1');
+  const [rate, setRate] = useState<string>('');
+  const [amount, setAmount] = useState<number>(0);
+  const [remarks, setRemarks] = useState('');
+  const [docPath, setDocPath] = useState('');
+
+  // Dynamically manageable products list
   const [productList, setProductList] = useState<string[]>(getStoredProducts());
 
   const handleAddNewProduct = () => {
@@ -33,23 +45,14 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
     }
   };
 
-  const [date, setDate] = useState(today);
-  const [customerName, setCustomerName] = useState('');
-  const [productName, setProductName] = useState('Boric Acid');
-  const [qty, setQty] = useState<string>('1');
-  const [rate, setRate] = useState<string>('');
-  const [batchNo, setBatchNo] = useState('');
-  const [remarks, setRemarks] = useState('');
-  const [amount, setAmount] = useState<number>(0);
-  const [docPath, setDocPath] = useState('');
-
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<PesticideSaleEntry[]>([]);
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -206,8 +209,8 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       </div>
 
       {msg && (
-        <div className={`alert ${msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-          {msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           {msg.text}
         </div>
       )}
@@ -308,23 +311,51 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            style={{ background: '#f3e8ff', color: '#6b21a8', borderColor: '#d8b4fe', fontWeight: 600 }}
+            style={{ background: '#f3e8ff', color: '#6b21a8', borderColor: '#d8b4fe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={async () => {
-              if (customerName) {
-                const translatedName = await translateToMarathi(customerName);
-                setCustomerName(translatedName);
-              }
-              if (productName) {
-                const translatedProd = await translateToMarathi(productName);
-                setProductName(translatedProd);
-              }
-              if (remarks) {
-                const translatedRem = await translateToMarathi(remarks);
-                setRemarks(translatedRem);
+              setTranslating(true);
+              setMsg({
+                type: 'info',
+                text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+              });
+              try {
+                if (customerName) {
+                  const translatedName = await translateToMarathi(customerName);
+                  setCustomerName(translatedName);
+                }
+                if (productName) {
+                  const translatedProd = await translateToMarathi(productName);
+                  setProductName(translatedProd);
+                }
+                if (remarks) {
+                  const translatedRem = await translateToMarathi(remarks);
+                  setRemarks(translatedRem);
+                }
+                setMsg({
+                  type: 'success',
+                  text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+                });
+              } catch {
+                setMsg({
+                  type: 'error',
+                  text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+                });
+              } finally {
+                setTranslating(false);
               }
             }}
+            disabled={translating || loading}
           >
-            🌐 {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            {translating ? (
+              <>
+                <Loader2 size={14} className="spinner" />
+                {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+              </>
+            ) : (
+              <>
+                <Languages size={14} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+              </>
+            )}
           </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

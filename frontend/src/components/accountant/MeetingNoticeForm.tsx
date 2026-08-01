@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Trash2, Edit, Calendar, Search, FileText, Languages, Zap, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, Save, Trash2, Edit, Calendar, Search, FileText, Languages, Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import {
   fetchNextMeetingNoticeNo,
   fetchMeetingNotices,
@@ -45,7 +45,8 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<MeetingNotice[]>([]);
   const [selectedNoticeForPrint, setSelectedNoticeForPrint] = useState<MeetingNotice | null>(null);
@@ -118,17 +119,35 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
   };
 
   const handleTranslateAllFields = async () => {
-    if (recipientName) {
-      const transRec = await translateToMarathi(recipientName);
-      setRecipientName(transRec);
-    }
-    if (agendaSubjects) {
-      const transAgenda = await translateToMarathi(agendaSubjects);
-      setAgendaSubjects(transAgenda);
-    }
-    if (meetingType) {
-      const transType = await translateToMarathi(meetingType);
-      setMeetingType(transType);
+    setTranslating(true);
+    setMsg({
+      type: 'info',
+      text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
+      if (recipientName) {
+        const transRec = await translateToMarathi(recipientName);
+        setRecipientName(transRec);
+      }
+      if (agendaSubjects) {
+        const transAgenda = await translateToMarathi(agendaSubjects);
+        setAgendaSubjects(transAgenda);
+      }
+      if (meetingType) {
+        const transType = await translateToMarathi(meetingType);
+        setMeetingType(transType);
+      }
+      setMsg({
+        type: 'success',
+        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -256,8 +275,8 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
       </div>
 
       {msg && (
-        <div className={`alert alert-${msg.type}`} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           <span>{msg.text}</span>
         </div>
       )}
@@ -396,8 +415,18 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
             className="btn btn-secondary"
             style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#bfdbfe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={handleTranslateAllFields}
+            disabled={translating || loading}
           >
-            <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            {translating ? (
+              <>
+                <Loader2 size={16} className="spinner" />
+                {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+              </>
+            ) : (
+              <>
+                <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+              </>
+            )}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}

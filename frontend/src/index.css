@@ -816,6 +816,16 @@ body {
   color: #dc2626 !important;
 }
 
+.alert-info {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.alert-info svg {
+  color: #2563eb !important;
+}
+
 /* ─── Page Title ─────────────────────────────────────────────────────────── */
 .page-header {
   display: flex;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages, Check, FolderPlus } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages, Check, FolderPlus, Loader2 } from 'lucide-react';
 import { createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
 import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -65,7 +65,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   ]);
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<ShopRetailBill[]>([]);
 
@@ -153,18 +153,66 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const [translating, setTranslating] = useState(false);
+
   const handleTranslateAllFields = async () => {
-    if (customerName) {
-      const translatedName = await translateToMarathi(customerName);
-      setCustomerName(translatedName);
+    setTranslating(true);
+    setMsg({
+      type: 'info',
+      text: lang === 'mr'
+        ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...'
+        : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
+      if (customerName) {
+        const translatedName = await translateToMarathi(customerName);
+        setCustomerName(translatedName);
+      }
+      const updatedItems = await Promise.all(
+        items.map(async item => ({
+          ...item,
+          particulars: await translateToMarathi(item.particulars),
+        }))
+      );
+      setItems(updatedItems);
+      setMsg({
+        type: 'success',
+        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
+    } finally {
+      setTranslating(false);
     }
-    const updatedItems = await Promise.all(
-      items.map(async item => ({
-        ...item,
-        particulars: await translateToMarathi(item.particulars),
-      }))
-    );
-    setItems(updatedItems);
+  };
+
+  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
+    if (!text) return;
+    setTranslating(true);
+    setMsg({
+      type: 'info',
+      text: lang === 'mr'
+        ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...'
+        : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
+      const translated = await translateToMarathi(text);
+      setter(translated);
+      setMsg({
+        type: 'success',
+        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setMsg({
+        type: 'error',
+        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,8 +333,8 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       </div>
 
       {msg && (
-        <div className={`alert ${msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-          {msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           {msg.text}
         </div>
       )}
@@ -318,11 +366,13 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
               <label className="form-label">{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</label>
               <button
                 type="button"
-                style={{ background: 'none', border: 'none', color: '#c2410c', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}
-                onClick={async () => customerName && setCustomerName(await translateToMarathi(customerName))}
+                style={{ background: 'none', border: 'none', color: '#c2410c', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
+                onClick={() => handleTranslateField(customerName, setCustomerName)}
+                disabled={translating}
                 title="Translate Customer Name to Marathi"
               >
-                <Languages size={12} /> {lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi'}
+                {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
               </button>
             </div>
             <input
@@ -533,8 +583,18 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             className="btn btn-secondary"
             style={{ background: '#ffedd5', color: '#c2410c', borderColor: '#fdba74', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={handleTranslateAllFields}
+            disabled={translating || loading}
           >
-            <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+            {translating ? (
+              <>
+                <Loader2 size={16} className="spinner" />
+                {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+              </>
+            ) : (
+              <>
+                <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा (Translate to Marathi)' : 'Translate to Marathi'}
+              </>
+            )}
           </button>
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
