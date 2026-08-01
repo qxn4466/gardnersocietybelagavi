@@ -50,6 +50,8 @@ function amountToWords(total: number): string {
   return 'Zero Rupees Only';
 }
 
+import { getTxnHeadMarathi } from '../utils/translator';
+
 interface ReceiptModalProps {
   transaction: Transaction | null;
   office?: OfficeMaster | null;
@@ -161,7 +163,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, office, onClos
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'TRANSACTION TYPE'}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginTop: 2 }}>
-                {transaction.transaction_type?.name || (lang === 'mr' ? 'समभाग / ठेव' : 'Shares / Deposit')}
+                {lang === 'mr' ? getTxnHeadMarathi(transaction.transaction_type?.name) : (transaction.transaction_type?.name || 'Shares / Deposit')}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>

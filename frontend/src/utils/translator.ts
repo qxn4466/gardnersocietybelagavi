@@ -214,6 +214,39 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Cashier': 'कॅशियर',
   'Accountant': 'लेखापाल',
   'Manager': 'व्यवस्थापक',
+
+  // Transaction Types / Ledger Heads
+  'Shares': 'समभाग',
+  'Purchases': 'खरेदी',
+  'Commission': 'कमिशन',
+  'Commissions': 'कमिशन',
+  'Loan Account': 'कर्ज खाते',
+  'Loan a/c': 'कर्ज खाते',
+  'Loan': 'कर्ज खाते',
+  'Interest': 'व्याज',
+  'Pigmi Commission': 'पिगमी कमिशन',
+  'Pigmi Comm.': 'पिगमी कमिशन',
+  'Pigmi Comm': 'पिगमी कमिशन',
+  'Bank Current': 'बँक चालू खाते',
+  'Advance': 'आगाऊ',
+  'Lakshmi Pigmi Deposit': 'लक्ष्मी पिगमी ठेव',
+  'Vegetable Commission': 'भाजीपाला कमिशन',
+  'Vegetable Comm.': 'भाजीपाला कमिशन',
+  'Vegetable Comm': 'भाजीपाला कमिशन',
+  'Sundry Account': 'विविध खाते',
+  'Sundary a/c': 'विविध खाते',
+  'Sundry a/c': 'विविध खाते',
+  'Sundry': 'विविध खाते',
+  'Sundrey account': 'विविध खाते',
+  'Sundrey Account': 'विविध खाते',
+  'Cash Sales': 'रोख विक्री',
+  'Pesticide Sales': 'कीटकनाशक विक्री',
+  'Cold Storage Advance': 'शीतगृह आगाऊ',
+  'Cold Storage Adv': 'शीतगृह आगाऊ',
+  'Lakshmi Pigmi Deposit Loan': 'लक्ष्मी पिगमी ठेव कर्ज',
+  'Lakshmi Pigmi Loan': 'लक्ष्मी पिगमी कर्ज',
+  'Lakshmi Pigmi Deposit Interest': 'लक्ष्मी पिगमी ठेव व्याज',
+  'Lakshmi Pigmi Interest': 'लक्ष्मी पिगमी व्याज',
 };
 
 /**
@@ -335,6 +368,53 @@ export const phoneticTransliterate = (text: string): string => {
   });
 
   return transliteratedWords.join(' ');
+};
+
+// ─── Transaction Head Marathi Mapping & Helper ─────────────────────────────────
+export const TXN_HEAD_MAP_MR: Record<string, string> = {
+  'Shares': 'समभाग',
+  'Purchases': 'खरेदी',
+  'Commission': 'कमिशन',
+  'Commissions': 'कमिशन',
+  'Loan Account': 'कर्ज खाते',
+  'Loan a/c': 'कर्ज खाते',
+  'Loan': 'कर्ज खाते',
+  'Interest': 'व्याज',
+  'Pigmi Commission': 'पिगमी कमिशन',
+  'Pigmi Comm.': 'पिगमी कमिशन',
+  'Pigmi Comm': 'पिगमी कमिशन',
+  'Bank Current': 'बँक चालू खाते',
+  'Advance': 'आगाऊ',
+  'Advance a/c': 'आगाऊ खाते',
+  'Lakshmi Pigmi Deposit': 'लक्ष्मी पिगमी ठेव',
+  'Vegetable Commission': 'भाजीपाला कमिशन',
+  'Vegetable Comm.': 'भाजीपाला कमिशन',
+  'Vegetable Comm': 'भाजीपाला कमिशन',
+  'Sundry Account': 'विविध खाते',
+  'Sundary a/c': 'विविध खाते',
+  'Sundry a/c': 'विविध खाते',
+  'Sundry': 'विविध खाते',
+  'Sundrey account': 'विविध खाते',
+  'Sundrey Account': 'विविध खाते',
+  'Cash Sales': 'रोख विक्री',
+  'Pesticide Sales': 'कीटकनाशक विक्री',
+  'Cold Storage Advance': 'शीतगृह आगाऊ',
+  'Cold Storage Adv': 'शीतगृह आगाऊ',
+  'Lakshmi Pigmi Deposit Loan': 'लक्ष्मी पिगमी ठेव कर्ज',
+  'Lakshmi Pigmi Loan': 'लक्ष्मी पिगमी कर्ज',
+  'Lakshmi Pigmi Deposit Interest': 'लक्ष्मी पिगमी ठेव व्याज',
+  'Lakshmi Pigmi Interest': 'लक्ष्मी पिगमी व्याज',
+};
+
+export const getTxnHeadMarathi = (name?: string): string => {
+  if (!name) return '';
+  const trimmed = name.trim();
+  if (TXN_HEAD_MAP_MR[trimmed]) return TXN_HEAD_MAP_MR[trimmed];
+  const foundKey = Object.keys(TXN_HEAD_MAP_MR).find(
+    k => k.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (foundKey) return TXN_HEAD_MAP_MR[foundKey];
+  return name;
 };
 
 /**

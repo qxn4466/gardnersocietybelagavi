@@ -27,25 +27,7 @@ import type { OfficeMaster, TransactionType, Transaction, User, Customer } from 
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
-// ─── Marathi Transaction Head Translations ───────────────────────────────────────
-const TXN_HEAD_MAP_MR: Record<string, string> = {
-  'Shares': 'समभाग (Shares)',
-  'Purchases': 'खरेदी (Purchases)',
-  'Commissions': 'कमिशन (Commissions)',
-  'Loan a/c': 'कर्ज खाते (Loan a/c)',
-  'Interest': 'व्याज (Interest)',
-  'Pigmi Comm.': 'पिगमी कमिशन (Pigmi Comm.)',
-  'Bank Current': 'बँक चालू खाते (Bank Current)',
-  'Advance': 'आगाऊ (Advance)',
-  'Lakshmi Pigmi Deposit': 'लक्ष्मी पिगमी ठेव (Lakshmi Pigmi Deposit)',
-  'Vegetable Comm.': 'भाजीपाला कमिशन (Vegetable Comm.)',
-  'Sundary a/c': 'विविध खाते (Sundary a/c)',
-  'Cash Sales': 'रोख विक्री (Cash Sales)',
-  'Pesticide Sales': 'कीटकनाशक विक्री (Pesticide Sales)',
-  'Cold Storage Adv': 'शीतगृह आगाऊ (Cold Storage Adv)',
-  'Lakshmi Pigmi Loan': 'लक्ष्मी पिगमी कर्ज (Lakshmi Pigmi Loan)',
-  'Lakshmi Pigmi Interest': 'लक्ष्मी पिगमी व्याज (Lakshmi Pigmi Interest)',
-};
+import { getTxnHeadMarathi } from '../utils/translator';
 
 // ─── Indian currency → words ─────────────────────────────────────────────────
 const ONES = [
@@ -880,7 +862,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
                       .map(t => (
                         <option key={t.id} value={t.id}>
-                          {lang === 'mr' ? (TXN_HEAD_MAP_MR[t.name] || t.name) : t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : (t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT'))})
+                          {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : (t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT'))})
                         </option>
                       ))}
                   </select>
@@ -1243,7 +1225,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
                   {txnTypes.map(t => (
                     <option key={t.id} value={t.id}>
-                      {lang === 'mr' ? (TXN_HEAD_MAP_MR[t.name] || t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
+                      {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
                     </option>
                   ))}
                 </select>
@@ -1338,7 +1320,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               fontSize: 12, fontWeight: 700,
                               color: nature === 'DEBIT' ? '#b91c1c' : 'var(--blue-700)'
                             }}>
-                              {txn.transaction_type?.name || '—'} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
+                              {lang === 'mr' ? getTxnHeadMarathi(txn.transaction_type?.name) : (txn.transaction_type?.name || '—')} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
                             </span>
                           </td>
                           <td

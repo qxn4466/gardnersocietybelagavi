@@ -5,6 +5,8 @@ import PrintHeader from './PrintHeader';
 import type { Transaction, OfficeMaster } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
+import { getTxnHeadMarathi } from '../utils/translator';
+
 interface CustomerStatementModalProps {
   isOpen: boolean;
   customerId: string;
@@ -154,7 +156,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                         <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{t.date}</td>
                         <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{t.cash_memo_no}</td>
                         <td style={{ padding: '8px 12px', fontWeight: 600, color: nature === 'DEBIT' ? '#b91c1c' : '#1d4ed8' }}>
-                          {t.transaction_type?.name || '—'} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
+                          {lang === 'mr' ? getTxnHeadMarathi(t.transaction_type?.name) : (t.transaction_type?.name || '—')} ({nature === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT')})
                         </td>
                         <td style={{ padding: '8px 12px', maxWidth: 220, fontSize: 11 }}>{t.particulars || '—'}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>

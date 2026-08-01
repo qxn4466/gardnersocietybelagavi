@@ -21,6 +21,8 @@ import type {
 import { CREDIT_BOOK_COLUMNS, DEBIT_BOOK_COLUMNS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
+import { getTxnHeadMarathi } from '../utils/translator';
+
 interface AuditPackageProps {
   user?: User | null;
   onLogout?: () => void;
@@ -467,7 +469,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                   {ledgerRows.map((r, idx) => (
                     <tr key={idx}>
                       <td>{r.month_year_label}</td>
-                      <td style={{ fontWeight: 700 }}>{r.account}</td>
+                      <td style={{ fontWeight: 700 }}>{lang === 'mr' ? getTxnHeadMarathi(r.account) : r.account}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
                         {Number(r.receipt) > 0 ? `₹${Number(r.receipt).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
                       </td>
