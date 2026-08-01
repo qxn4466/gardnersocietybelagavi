@@ -379,15 +379,25 @@ COPY public.transaction_type_master (id, name, cash_book_column, ledger_account,
 --
 
 COPY public.transactions (id, date, cash_memo_no, customer_name, particulars, transaction_type_id, amount_rs, amount_ps, remarks, created_by, created_at, status, customer_id, mobile_no, entry_nature) FROM stdin;
+101	2026-01-10	BGS-20260110-0101	Mr. Ramesh Kumar Patil	Share Capital Initial Subscription (150 Shares)	1	15000.00	0.00	Jan share allotment	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
+102	2026-01-18	BGS-20260118-0102	Sri. Anand B Joshi	Winter Fertilizer Supply Purchase	2	22500.00	0.00	Fertilizer inventory	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	DEBIT
+103	2026-01-25	BGS-20260125-0103	Smt. Sunita R Kulkarni	Retail Produce & Seed Cash Sales	12	18400.00	0.00	Jan store counter sales	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
+104	2026-02-05	BGS-20260205-0201	Mr. Ramesh Kumar Patil	Seasonal Sugarcane Crop Loan Disbursement #104	4	50000.00	0.00	Sanctioned crop loan	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	DEBIT
+105	2026-02-14	BGS-20260214-0202	Mr. Ramesh Kumar Patil	Sugarcane Loan Monthly Interest Payment	5	2500.00	0.00	Feb interest collection	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
+106	2026-02-22	BGS-20260222-0203	Sri. Anand B Joshi	Bio-Pesticides Wholesale Sales	13	12800.00	0.00	Pesticide counters	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	CREDIT
+107	2026-03-08	BGS-20260308-0301	Smt. Sunita R Kulkarni	Market Yard Produce Auction Commission	3	4500.00	0.00	March auction commission	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
+108	2026-03-15	BGS-20260315-0302	Sri. Anand B Joshi	Supplier Procurement Advance	8	8000.00	0.00	Advance paid for seeds	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	DEBIT
+109	2026-03-27	BGS-20260327-0303	Mr. Ramesh Kumar Patil	Vegetable Auction Commission Collection	10	6200.00	0.00	Veg market comm	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
+110	2026-04-03	BGS-20260403-0401	Smt. Sunita R Kulkarni	Cold Storage Unit Maintenance Advance	14	14000.00	0.00	Cold storage upkeep	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	DEBIT
+111	2026-04-12	BGS-20260412-0402	Mr. Ramesh Kumar Patil	Lakshmi Pigmi Savings Scheme Collection	9	10000.00	0.00	April pigmi collection	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
+112	2026-04-20	BGS-20260420-0403	Sri. Anand B Joshi	Society Operating Bank Current Account Transfer	7	35000.00	0.00	Bank transfer	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	DEBIT
+113	2026-05-06	BGS-20260506-0501	Smt. Sunita R Kulkarni	Pigmi Agent Incentive Commission	6	3100.00	0.00	Agent comm	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
+114	2026-05-18	BGS-20260518-0502	Mr. Ramesh Kumar Patil	Lakshmi Pigmi Deposit Secured Emergency Loan	15	15000.00	0.00	Pigmi loan	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	DEBIT
+115	2026-05-29	BGS-20260529-0503	Sri. Anand B Joshi	Miscellaneous Office & Hall Booking Receipt	11	7500.00	0.00	Hall booking	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	CREDIT
 18	2026-06-01	BGS-20260601-0001	Mr. Ramesh Kumar Patil	Share Capital Allotment: 50 Shares @ Rs.100	1	5000.00	0.00	New member share entry	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
 19	2026-06-01	BGS-20260601-0002	Smt. Sunita R Kulkarni	Pigmi Deposit Installment #1	9	1000.00	0.00	Daily pigmi collection	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
 20	2026-06-03	BGS-20260603-0003	Sri. Anand B Joshi	Organic Fertilizer Purchase: 25 bags — CGST: Rs.312.50, SGST: Rs.312.50	2	12500.00	0.00	Bulk fertilizer stock	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	DEBIT
 21	2026-06-03	BGS-20260603-0004	Mr. Ramesh Kumar Patil	Pesticides Spray Supply: 12 bottles	13	8400.00	0.00	Retail pesticides sale	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
-1	2026-07-22	BGS-20260722-0001	Mr. Ramesh Kumar	Share purchase	1	5000.00	0.00	\N	Accountant	2026-07-22 20:24:48.096871	POSTED	CUST-1001	\N	CREDIT
-2	2026-07-22	BGS-20260722-0002	Mr. Suresh Patil	Pesticide purchase	13	2500.00	50.00	\N	Ramesh	2026-07-22 20:39:46.638748	POSTED	CUST-1002	\N	CREDIT
-4	2026-07-22	BGS-20260722-0004	Mr. Ganesh Kulkarni	Vegetable commission	10	750.00	25.00	\N	Ramesh	2026-07-22 20:39:46.724594	POSTED	CUST-1001	\N	CREDIT
-6	2026-07-22	BGS-20260722-0006	Mr. one june	Pigmi: Rs.95.00 — CGST: Rs.2.50, SGST: Rs.2.50	9	100.00	0.00			2026-07-22 21:25:55.078541	POSTED	CUST-1004	\N	CREDIT
-3	2026-07-22	BGS-20260722-0003	Mrs. Latha Desai	Loan repayment	4	15000.00	0.00	\N	Ramesh	2026-07-22 20:39:46.679097	POSTED	CUST-1003	\N	DEBIT
 22	2026-06-05	BGS-20260605-0005	Smt. Sunita R Kulkarni	Agricultural Crop Loan Disbursement	4	25000.00	0.00	Approved crop loan #402	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	DEBIT
 23	2026-06-05	BGS-20260605-0006	Smt. Sunita R Kulkarni	Loan Interest Received	5	1250.00	0.00	Monthly interest payment	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
 24	2026-06-08	BGS-20260608-0007	Sri. Anand B Joshi	Produce Sales Agency Commission	3	3600.00	0.00	Society commission 5%	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	CREDIT
@@ -408,6 +418,10 @@ COPY public.transactions (id, date, cash_memo_no, customer_name, particulars, tr
 39	2026-06-28	BGS-20260628-0022	Smt. Sunita R Kulkarni	Labor Wages Advance Payment	8	6000.00	0.00	Farm labor advance	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	DEBIT
 40	2026-06-30	BGS-20260630-0023	Sri. Anand B Joshi	Additional Share Capital Purchase	1	10000.00	0.00	Class A share subscription	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	CREDIT
 41	2026-06-30	BGS-20260630-0024	Mr. Ramesh Kumar Patil	Tractor Equipment Purchase Loan Disbursement	4	30000.00	0.00	Farm machinery loan	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	DEBIT
+116	2026-07-04	BGS-20260704-0701	Smt. Sunita R Kulkarni	Kharif Crop Seeds & Pesticides Inventory Procurement	2	18600.00	0.00	July seed procurement	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	DEBIT
+117	2026-07-11	BGS-20260711-0702	Mr. Ramesh Kumar Patil	Kharif Season High-Yield Seed Sales	12	21500.00	0.00	July seed sales	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000001	9845012345	CREDIT
+118	2026-07-19	BGS-20260719-0703	Sri. Anand B Joshi	Fungicides & Insecticides Counter Sales	13	14200.00	0.00	July pesticide sales	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000003	9880054321	CREDIT
+119	2026-07-26	BGS-20260726-0704	Smt. Sunita R Kulkarni	Mid-Year Crop Loan Interest Collection	5	3400.00	0.00	July interest collection	Accountant	2026-07-23 14:06:25.440649	POSTED	1000000002	9448198765	CREDIT
 \.
 
 

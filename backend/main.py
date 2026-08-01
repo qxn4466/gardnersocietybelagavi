@@ -17,6 +17,8 @@ def startup_event():
         Base.metadata.create_all(bind=engine)
         from seed import seed
         seed()
+        from seed_june_test_data import seed_june_data
+        seed_june_data()
     except Exception as e:
         print(f"Startup DB Initialization Notice: {e}")
 

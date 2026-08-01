@@ -523,12 +523,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       const res = await seedJuneTestData();
       setAlert({
         type: 'success',
-        msg: `Successfully added June 2026 test dataset! (${res.inserted} inserted, ${res.skipped} skipped)`,
+        msg: `Successfully added 2026 test dataset! (${res.inserted} inserted, ${res.skipped} skipped)`,
       });
       loadHistory();
       refreshMemo(form.date);
     } catch {
-      setAlert({ type: 'error', msg: 'Failed to seed June test data.' });
+      setAlert({ type: 'error', msg: 'Failed to seed 2026 test data.' });
     } finally {
       setLoading(false);
     }
@@ -578,7 +578,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
       <div className="page-content">
 
-        {/* ── June Test Dataset Toolbar ── */}
+        {/* ── 2026 Test Dataset Toolbar ── */}
         <div className="no-print" style={{
           marginBottom: 16, padding: '12px 18px', background: '#f8fafc',
           borderRadius: 10, border: '1px solid var(--border-subtle)',
@@ -586,10 +586,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         }}>
           <div>
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue-700)' }}>
-              {lang === 'mr' ? '🧪 जून २०२६ चाचणी डेटा संच टूलबार' : '🧪 June 2026 Test Dataset Toolbar'}
+              {lang === 'mr' ? '🧪 २०२६ चाचणी डेटा संच टूलबार (जानेवारी–जुलै)' : '🧪 2026 Test Dataset Toolbar (Jan–July)'}
             </span>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              {lang === 'mr' ? 'सर्व १६ जमा आणि नावे खात्यांच्या १८ चाचणी नोंदी जोडा किंवा साफ करा' : 'Add or clear 18 test transactions covering all 16 Credit & Debit heads'}
+              {lang === 'mr' ? 'जानेवारी ते जुलै २०२६ दरम्यानच्या सर्व जमा आणि नावे खात्यांच्या चाचणी नोंदी जोडा किंवा साफ करा' : 'Add or clear test transactions from Jan to July 2026 covering all Credit & Debit heads'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -600,7 +600,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={loading}
               style={{ background: 'var(--blue-700)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <PlusCircle size={14} /> {lang === 'mr' ? '➕ जून चाचणी नोंदी जोडा' : '➕ Add June Test Records'}
+              <PlusCircle size={14} /> {lang === 'mr' ? '➕ २०२६ चाचणी नोंदी जोडा (जाने-जुलै)' : '➕ Add 2026 Test Records (Jan–July)'}
             </button>
             <button
               type="button"
@@ -609,7 +609,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={loading}
               style={{ borderColor: 'var(--red-600)', color: 'var(--red-600)', background: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <Trash2 size={14} /> {lang === 'mr' ? '🗑️ जून चाचणी नोंदी हटवा' : '🗑️ Delete June Test Records'}
+              <Trash2 size={14} /> {lang === 'mr' ? '🗑️ २०२६ चाचणी नोंदी हटवा' : '🗑️ Delete 2026 Test Records'}
             </button>
           </div>
         </div>

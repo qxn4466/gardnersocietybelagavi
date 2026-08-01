@@ -60,7 +60,7 @@ def seed():
         for acc_name in unique_accounts:
             existing = db.query(AccountMaster).filter_by(account_name=acc_name).first()
             if not existing:
-                db.add(AccountMaster(account_name=acc_name, description=f"Ledger account for {acc_name}"))
+                db.add(AccountMaster(account_name=acc_name))
 
         # Users (Accountant & Cashier)
         from models import User, Customer

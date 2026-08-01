@@ -15,8 +15,8 @@ from models import Transaction
 def clear_june_data():
     db = SessionLocal()
     try:
-        sd = date(2026, 6, 1)
-        ed = date(2026, 6, 30)
+        sd = date(2026, 1, 1)
+        ed = date(2026, 12, 31)
 
         june_txns = db.query(Transaction).filter(
             Transaction.date >= sd,
@@ -28,7 +28,7 @@ def clear_june_data():
             db.delete(t)
 
         db.commit()
-        print(f"🗑️ Successfully deleted {count} June 2026 test transaction records from database.")
+        print(f"🗑️ Successfully deleted {count} 2026 test transaction records from database.")
         return {"deleted": count}
     except Exception as e:
         db.rollback()
