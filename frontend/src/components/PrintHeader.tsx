@@ -21,7 +21,7 @@ const PrintHeader: React.FC<PrintHeaderProps> = ({
 
   const societyName = lang === 'mr'
     ? 'बेळगाव बागायतदार सह. खरेदी विक्री संघ मर्यादित'
-    : (office?.office_name || 'Belagavi Gardeners Co-Op Production Supply & Sale Society Ltd.');
+    : (office?.office_name || 'Belgaum Gardeners Co-Op Production Supply & Sale Society Ltd.');
 
   return (
     <div style={{ textAlign: 'center', marginBottom: 20, borderBottom: '2px solid #0f172a', paddingBottom: 12 }}>
@@ -67,7 +67,7 @@ const PrintHeader: React.FC<PrintHeaderProps> = ({
         color: '#334155',
         marginTop: 8
       }}>
-        <span>📍 <strong>{lang === 'mr' ? 'पत्ता:' : 'Address:'}</strong> {office?.address || (lang === 'mr' ? 'शहापूर, बेळगाव, कर्नाटक - ५९०००३' : 'Shahapur, Belagavi, Karnataka - 590003')}</span>
+        <span>📍 <strong>{lang === 'mr' ? 'पत्ता:' : 'Address:'}</strong> {office?.address || (lang === 'mr' ? 'शहापूर, बेळगाव, कर्नाटक - ५९०००३' : 'Shahapur, Belgaum, Karnataka - 590003')}</span>
         <span>📞 <strong>{lang === 'mr' ? 'फोन:' : 'Phone:'}</strong> {office?.phone1 || '0831-2400000'}{office?.phone2 ? ` / ${office.phone2}` : ''}</span>
         <span>🆔 <strong>{lang === 'mr' ? 'जीएसटी क्र:' : 'GSTN:'}</strong> {office?.gst_no || '29AAAAA0000A1Z5'}</span>
       </div>

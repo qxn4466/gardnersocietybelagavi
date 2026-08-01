@@ -412,7 +412,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Canara Bank Belagavi"
+                  placeholder="e.g. Canara Bank Belgaum"
                   value={bankName}
                   onChange={e => setBankName(e.target.value)}
                 />
@@ -647,7 +647,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
             <div className="printable-receipt" style={{ border: '2px solid #000', padding: 24, fontFamily: 'sans-serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
                 <div style={{ fontSize: 16, fontWeight: 'bold' }}>
-                  BELAGAVI GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELAGAVI
+                  BELGAUM GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6 }}>
                   <div>GST No.: {selectedReceipt.gst_no || '29AAAAT4655K1Z1'}</div>

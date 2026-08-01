@@ -450,7 +450,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. BDCC Bank Belagavi"
+                  placeholder="e.g. BDCC Bank Belgaum"
                   value={bankName}
                   onChange={e => setBankName(e.target.value)}
                 />
@@ -757,7 +757,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             <div className="printable-voucher" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fafafa', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 16 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 'bold', margin: 0 }}>
-                  BELAGAVI GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELAGAVI
+                  BELGAUM GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM
                 </h2>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   CASH PAYMENT VOUCHER

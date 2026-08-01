@@ -568,7 +568,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         title={t('credit_form_title')}
         subtitle={lang === 'mr'
           ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.'
-          : 'Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.'}
+          : 'Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.'}
         level={1}
         showPrint={!!savedMemo}
         user={user}
@@ -627,7 +627,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           <div className="org-title">
             {lang === 'mr'
               ? <>बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>बेळगाव, कर्नाटक</span></>
-              : <>Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>Belagavi, Karnataka</span></>}
+              : <>Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>Belgaum, Karnataka</span></>}
           </div>
           <div className="static-grid">
             <div className="static-field">
@@ -646,7 +646,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             </div>
             <div className="static-field">
               <label><Building2 size={10} style={{ display: 'inline' }} /> {lang === 'mr' ? 'कार्यालयाचा पत्ता' : 'Office Address'}</label>
-              <span>{office?.address ?? (lang === 'mr' ? 'बेळगाव, कर्नाटक - 590001' : 'Belagavi, Karnataka - 590001')}</span>
+              <span>{office?.address ?? (lang === 'mr' ? 'बेळगाव, कर्नाटक - 590001' : 'Belgaum, Karnataka - 590001')}</span>
             </div>
           </div>
         </div>

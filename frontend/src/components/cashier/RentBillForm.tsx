@@ -423,7 +423,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. SBI Belagavi"
+                  placeholder="e.g. SBI Belgaum"
                   value={bankName}
                   onChange={e => setBankName(e.target.value)}
                 />
@@ -648,7 +648,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                   THE BELGAUM GARDENERS CO-OP. PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM.
                 </h3>
                 <div style={{ fontSize: 12 }}>
-                  930/1A Zanda Chowk Market, BELAGAVI - 590 002.
+                  930/1A Zanda Chowk Market, BELGAUM - 590 002.
                 </div>
               </div>
 
@@ -695,7 +695,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                 <div style={{ width: '55%' }}>
                   <strong>Bank Details:</strong><br />
                   Current A/c No: __________________<br />
-                  Branch: Belagavi<br />
+                  Branch: Belgaum<br />
                   IFSC Code: __________________
                 </div>
                 <div style={{ width: '40%', borderLeft: '1px solid #000', paddingLeft: 10 }}>

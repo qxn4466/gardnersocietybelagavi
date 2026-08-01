@@ -647,7 +647,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                   <input
                     type="text"
                     className="form-input"
-                    placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belagavi District, Pin Code'}
+                    placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belgaum District, Pin Code'}
                     value={form.address || ''}
                     onChange={e => handleInputChange('address', e.target.value)}
                     style={{ background: '#ffffff' }}

@@ -359,9 +359,9 @@ const en: Translations = {
   debitbook_subtitle: 'Daily debit book register',
   // General Ledger
   ledger_title: 'General Ledger',
-  ledger_subtitle: 'Monthly account summary',
+  ledger_subtitle: 'Yearly account summary',
   ledger_lbl_account: 'Account',
-  ledger_lbl_month_year: 'Month / Year',
+  ledger_lbl_month_year: 'Year',
   ledger_lbl_payable: 'Payable',
   ledger_lbl_receivable: 'Receivable',
   ledger_lbl_grand_total: 'Grand Total',
@@ -378,7 +378,7 @@ const en: Translations = {
   audit_btn_print_all: 'Print Full Audit Package',
   audit_btn_preset_june: 'June 2026',
   // Login
-  login_title: 'Belagavi Gardeners Society',
+  login_title: 'Belgaum Gardeners Society',
   login_subtitle: 'Accounting Management System',
   login_lbl_username: 'Username',
   login_lbl_password: 'Password',
@@ -569,9 +569,9 @@ const mr: Translations = {
   debitbook_subtitle: 'दैनंदिन नावे वही नोंदणी',
   // General Ledger
   ledger_title: 'सर्वसाधारण खातेवही',
-  ledger_subtitle: 'मासिक खाते सारांश',
+  ledger_subtitle: 'वार्षिक खाते सारांश',
   ledger_lbl_account: 'खाते',
-  ledger_lbl_month_year: 'महिना / वर्ष',
+  ledger_lbl_month_year: 'वर्ष',
   ledger_lbl_payable: 'देणे',
   ledger_lbl_receivable: 'घेणे',
   ledger_lbl_grand_total: 'एकूण बेरीज',

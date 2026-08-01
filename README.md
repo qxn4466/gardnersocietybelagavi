@@ -1,11 +1,11 @@
-# Belagavi Gardeners Co-op Society — 3-Level Accounting System
+# Belgaum Gardeners Co-op Society — 3-Level Accounting System
 
 ## Overview
-A full-stack accounting application for **Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.**
+A full-stack accounting application for **Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.**
 
 - **Level 1**: Credit Account Form — data entry by the clerk
 - **Level 2**: Cash Book — auto-generated daily view (16 columns)
-- **Level 3**: General Ledger — auto-generated monthly summary
+- **Level 3**: General Ledger — auto-generated yearly summary
 
 ---
 

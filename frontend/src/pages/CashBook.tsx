@@ -136,7 +136,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
         title={t('cashbook_title')}
         subtitle={lang === 'mr'
           ? 'जमा व्यवहार · सप्ल. अँड सेल सोसायटी लि. बेळगाव'
-          : 'Receipts & Credit Transactions · Supp and Sale Society Ltd. Belagavi'}
+          : 'Receipts & Credit Transactions · Supp and Sale Society Ltd. Belgaum'}
         level={2}
         actions={<PrintButton label={lang === 'mr' ? 'जमा वही मुद्रित करा' : 'Print Credit Book Sheet'} />}
         user={user}

@@ -48,15 +48,12 @@ interface GeneralLedgerProps {
 const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { t, lang } = useTranslation();
   const now = new Date();
-  const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
   const [year, setYear] = useState<string>(String(now.getFullYear()));
   const [account, setAccount] = useState<string>('');
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [accounts, setAccounts] = useState<AccountMaster[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const monthNames = lang === 'mr' ? monthsMr : months;
 
   useEffect(() => {
     fetchAccounts().then(setAccounts).catch(() => {});
@@ -67,7 +64,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
     setError(null);
     try {
       const data = await fetchLedger(
-        month ? parseInt(month) : undefined,
+        undefined,
         year ? parseInt(year) : undefined,
         account || undefined
       );
@@ -98,7 +95,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         title={t('ledger_title')}
         subtitle={lang === 'mr'
           ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन'
-          : 'The Belagavi Gardeners Co-Op Production'}
+          : 'The Belgaum Gardeners Co-Op Production'}
         level={3}
         actions={<PrintButton label={lang === 'mr' ? 'खातेवही मुद्रित करा' : 'Print Ledger'} />}
         user={user}
@@ -129,20 +126,6 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
 
         {/* Filter Bar */}
         <div className="filter-bar no-print">
-          <div className="filter-group">
-            <span className="filter-label">{t('lbl_month')}</span>
-            <select
-              id="ledger-month"
-              className="filter-select"
-              value={month}
-              onChange={e => setMonth(e.target.value)}
-            >
-              <option value="">{lang === 'mr' ? 'सर्व महिने' : 'All Months'}</option>
-              {monthNames.slice(1).map((m, i) => (
-                <option key={i+1} value={String(i+1)}>{m}</option>
-              ))}
-            </select>
-          </div>
           <div className="filter-group">
             <span className="filter-label">{t('lbl_year')}</span>
             <select
@@ -184,11 +167,11 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
           documentTitle={lang === 'mr' ? 'सर्वसाधारण खातेवही' : 'G E N E R A L   L E D G E R'}
           subTitle={lang === 'mr'
             ? (account
-                ? `खाते फिल्टर: ${TXN_HEAD_MAP_MR[account] || account} | महिना: ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`
-                : `मासिक शिल्लक पत्रक — ${month ? monthsMr[parseInt(month)] : 'सर्व'} ${year}`)
+                ? `खाते फिल्टर: ${TXN_HEAD_MAP_MR[account] || account} | वर्ष: ${year || 'सर्व'}`
+                : `वार्षिक शिल्लक पत्रक — ${year ? `वर्ष ${year}` : 'सर्व वर्षे'}`)
             : (account
-                ? `A/C Account Filter: ${account} | Month: ${month ? months[parseInt(month)] : 'All'} ${year}`
-                : `Monthly Balance Sheet — ${month ? months[parseInt(month)] : 'All'} ${year}`)}
+                ? `A/C Account Filter: ${account} | Year: ${year || 'All'}`
+                : `Yearly Balance Sheet — ${year ? `Year ${year}` : 'All Years'}`)}
         />
 
         {error && (
@@ -206,7 +189,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
               <div className="empty-state">
                 <div className="empty-state-icon"><BookMarked /></div>
                 <div className="empty-state-title">{lang === 'mr' ? 'खातेवही नोंदी आढळल्या नाहीत' : 'No ledger entries found'}</div>
-                <div className="empty-state-sub">{lang === 'mr' ? 'महिना/वर्ष फिल्टर बदला किंवा स्तर १ मध्ये व्यवहार प्रविष्ट करा' : 'Adjust the month/year filter or enter transactions via Level 1'}</div>
+                <div className="empty-state-sub">{lang === 'mr' ? 'वर्ष फिल्टर बदला किंवा स्तर १ मध्ये व्यवहार प्रविष्ट करा' : 'Adjust the year filter or enter transactions via Level 1'}</div>
               </div>
             ) : (
               <table className="data-table">

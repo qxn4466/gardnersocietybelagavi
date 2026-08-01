@@ -19,8 +19,8 @@ def get_ledger(
     db: Session = Depends(get_db)
 ):
     """
-    Return monthly general ledger rows.
-    Groups by (year, month, ledger_account, entry_nature).
+    Return yearly general ledger rows.
+    Groups by (year, ledger_account, entry_nature).
     
     Classification Rules:
     - RECEIPT (Credit Inflows): Shares, Sales, Commission, Interest, Sundry (Credit)
@@ -31,7 +31,6 @@ def get_ledger(
     q = (
         db.query(
             extract("year", Transaction.date).label("year"),
-            extract("month", Transaction.date).label("month"),
             TransactionTypeMaster.ledger_account.label("account"),
             Transaction.entry_nature.label("nature"),
             func.sum(Transaction.amount_rs + Transaction.amount_ps / 100).label("total"),
@@ -50,12 +49,10 @@ def get_ledger(
 
     q = q.group_by(
         extract("year", Transaction.date),
-        extract("month", Transaction.date),
         TransactionTypeMaster.ledger_account,
         Transaction.entry_nature,
     ).order_by(
         extract("year", Transaction.date),
-        extract("month", Transaction.date),
         TransactionTypeMaster.ledger_account,
         Transaction.entry_nature,
     )
@@ -72,8 +69,9 @@ def get_ledger(
 
     rows: List[LedgerRow] = []
     for r in results:
-        yr, mo, acc, nature, total = int(r.year), int(r.month), r.account, r.nature, Decimal(str(r.total or 0))
-        label = f"{month_name[mo]} {yr}"
+        yr, acc, nature, total = int(r.year), r.account, r.nature, Decimal(str(r.total or 0))
+        mo = month if month else 0
+        label = f"Year {yr}"
 
         account_display_name = acc
         if acc == "Sundary a/c":

@@ -356,7 +356,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           <div style={{ fontWeight: 700, color: '#1e40af' }}>
             {lang === 'mr' ? 'द बेळगाव गार्डनर्स को-ऑप. प्रॉडक्शन सप्लाय अँड सेल सोसायटी लि., बेळगाव' : 'The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum.'}
           </div>
-          <div style={{ color: 'var(--text-secondary)' }}>930/1A Zanda Chowk Market, Belagavi – 590002</div>
+          <div style={{ color: 'var(--text-secondary)' }}>930/1A Zanda Chowk Market, Belgaum – 590002</div>
         </div>
         <div style={{ textAlign: 'right', fontSize: 11, color: '#1e3a8a', lineHeight: '1.5' }}>
           <div><strong>H.O. Phone:</strong> 2460534</div>
@@ -775,10 +775,10 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             <div className="printable-tax-invoice" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
-                  BELAGAVI GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
+                  BELGAUM GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
                 <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <span>📍 Address: Belagavi, Karnataka - 590001</span>
+                  <span>📍 Address: Belgaum, Karnataka - 590001</span>
                   <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
                   <span>🆔 GSTN: 29AAATB1234C1Z5</span>
                 </div>

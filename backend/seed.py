@@ -31,8 +31,8 @@ OFFICE = {
     "gst_no": "29AAATB1234C1Z5",
     "phone1": "0831-2401234",
     "phone2": "0831-2401235",
-    "office_name": "Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.",
-    "address": "Belagavi, Karnataka - 590001",
+    "office_name": "Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
+    "address": "Belgaum, Karnataka - 590001",
 }
 
 
@@ -43,29 +43,24 @@ def seed():
         if not db.query(OfficeMaster).first():
             db.add(OfficeMaster(**OFFICE))
             print("✓ Office master seeded")
-        else:
-            print("- Office master already exists, skipping")
-
+        
         # Transaction Types
-        existing_map = {t.name: t for t in db.query(TransactionTypeMaster).all()}
         for tt in TRANSACTION_TYPES:
-            if tt["name"] not in existing_map:
+            existing = db.query(TransactionTypeMaster).filter_by(name=tt["name"]).first()
+            if not existing:
                 db.add(TransactionTypeMaster(**tt))
-                print(f"  ✓ Added: {tt['name']} ({tt['entry_type']})")
             else:
-                item = existing_map[tt["name"]]
-                item.entry_type = tt["entry_type"]
-                item.cash_book_column = tt["cash_book_column"]
-                item.ledger_account = tt["ledger_account"]
-                item.display_order = tt["display_order"]
-                print(f"  ✓ Updated: {tt['name']} ({tt['entry_type']})")
-
+                existing.cash_book_column = tt["cash_book_column"]
+                existing.ledger_account = tt["ledger_account"]
+                existing.display_order = tt["display_order"]
+                existing.entry_type = tt["entry_type"]
+        
         # Account Master (mirrors transaction type ledger_account values)
-        existing_accs = {a.account_name for a in db.query(AccountMaster).all()}
         unique_accounts = {tt["ledger_account"] for tt in TRANSACTION_TYPES}
-        for acc in sorted(unique_accounts):
-            if acc not in existing_accs:
-                db.add(AccountMaster(account_name=acc))
+        for acc_name in unique_accounts:
+            existing = db.query(AccountMaster).filter_by(account_name=acc_name).first()
+            if not existing:
+                db.add(AccountMaster(account_name=acc_name, description=f"Ledger account for {acc_name}"))
 
         # Users (Accountant & Cashier)
         from models import User, Customer
@@ -80,7 +75,7 @@ def seed():
                 print(f"  ✓ Added user: {u['username']} ({u['role']})")
 
         # Initial Sample Customers
-        if not db.query(Customer).first():
+        if db.query(Customer).count() == 0:
             default_customers = [
                 {
                     "customer_id": "1000000001",
@@ -90,7 +85,7 @@ def seed():
                     "last_name": "Patil",
                     "full_name": "Mr. Ramesh Kumar Patil",
                     "mobile_no": "9845012345",
-                    "address": "Plot 42, Shahapur, Belagavi, Karnataka - 590003",
+                    "address": "Plot 42, Shahapur, Belgaum, Karnataka - 590003",
                     "aadhaar_no": "458912349012",
                     "pan_no": "ABCDE1234F",
                     "opening_balance": 5000.00,
@@ -104,7 +99,7 @@ def seed():
                     "last_name": "Kulkarni",
                     "full_name": "Smt. Sunita R Kulkarni",
                     "mobile_no": "9448198765",
-                    "address": "12/B Tilakwadi 3rd Line, Belagavi, Karnataka - 590006",
+                    "address": "12/B Tilakwadi 3rd Line, Belgaum, Karnataka - 590006",
                     "aadhaar_no": "890123456789",
                     "pan_no": "XYZPK9876Q",
                     "opening_balance": 10000.00,
@@ -118,7 +113,7 @@ def seed():
                     "last_name": "Joshi",
                     "full_name": "Sri. Anand B Joshi",
                     "mobile_no": "9880054321",
-                    "address": "Main Street, Vadgaon, Belagavi, Karnataka - 590005",
+                    "address": "Main Street, Vadgaon, Belgaum, Karnataka - 590005",
                     "aadhaar_no": "234567890123",
                     "pan_no": "JOSHI5432M",
                     "opening_balance": 2500.00,

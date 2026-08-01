@@ -6,7 +6,7 @@ from database import engine, Base
 from routers import masters, transactions, cashbook, ledger, auth, customers, translations, cashier, shopkeeper, meeting_notice
 
 app = FastAPI(
-    title="Belagavi Gardeners Society — Accounting System",
+    title="Belgaum Gardeners Society — Accounting System",
     description="3-Level Accounting: Credit Form → Cash Book → General Ledger",
     version="1.0.0",
 )
@@ -31,6 +31,7 @@ allowed_origins = [
     "http://localhost:5174", "http://127.0.0.1:5174",
     "http://localhost:5175", "http://127.0.0.1:5175",
     "https://gardnersocietybelagavi.vercel.app",
+    "https://gardnersocietybelgaum.vercel.app",
 ] + [o.strip() for o in raw_origins if o.strip()]
 
 app.add_middleware(
@@ -60,4 +61,4 @@ app.include_router(meeting_notice.router, prefix="/api")
 @app.get("/health")
 @app.get("/healthcheck")
 def root():
-    return {"status": "ok", "message": "Belagavi Gardeners Society API is running."}
+    return {"status": "ok", "message": "Belgaum Gardeners Society API is running."}

@@ -335,9 +335,9 @@ COPY public.account_master (id, account_name) FROM stdin;
 --
 
 COPY public.customers (id, customer_id, salutation, first_name, middle_name, last_name, full_name, mobile_no, address, aadhaar_no, aadhaar_doc_path, pan_no, pan_doc_path, opening_balance, status, created_at) FROM stdin;
-1	1000000001	Mr.	Ramesh	Kumar	Patil	Mr. Ramesh Kumar Patil	9845012345	Plot 42, Shahapur, Belagavi, Karnataka - 590003	4589 1234 9012	\N	ABCDE1234F	\N	5000.00	ACTIVE	2026-07-23 09:47:48.022481
-2	1000000002	Smt.	Sunita	R	Kulkarni	Smt. Sunita R Kulkarni	9448198765	12/B Tilakwadi 3rd Line, Belagavi, Karnataka - 590006	8901 2345 6789	\N	XYZPK9876Q	\N	10000.00	ACTIVE	2026-07-23 09:47:48.022481
-3	1000000003	Sri.	Anand	B	Joshi	Sri. Anand B Joshi	9880054321	Main Street, Vadgaon, Belagavi, Karnataka - 590005	2345 6789 0123	\N	JOSHI5432M	\N	2500.00	ACTIVE	2026-07-23 09:47:48.022481
+1	1000000001	Mr.	Ramesh	Kumar	Patil	Mr. Ramesh Kumar Patil	9845012345	Plot 42, Shahapur, Belgaum, Karnataka - 590003	4589 1234 9012	\N	ABCDE1234F	\N	5000.00	ACTIVE	2026-07-23 09:47:48.022481
+2	1000000002	Smt.	Sunita	R	Kulkarni	Smt. Sunita R Kulkarni	9448198765	12/B Tilakwadi 3rd Line, Belgaum, Karnataka - 590006	8901 2345 6789	\N	XYZPK9876Q	\N	10000.00	ACTIVE	2026-07-23 09:47:48.022481
+3	1000000003	Sri.	Anand	B	Joshi	Sri. Anand B Joshi	9880054321	Main Street, Vadgaon, Belgaum, Karnataka - 590005	2345 6789 0123	\N	JOSHI5432M	\N	2500.00	ACTIVE	2026-07-23 09:47:48.022481
 \.
 
 
@@ -346,7 +346,7 @@ COPY public.customers (id, customer_id, salutation, first_name, middle_name, las
 --
 
 COPY public.office_master (id, gst_no, phone1, phone2, office_name, address) FROM stdin;
-1	29AAATB1234C1Z5	0831-2401234	0831-2401235	Belagavi Gardeners Co-op Production Supply and Sale Society Ltd.	Belagavi, Karnataka - 590001
+1	29AAATB1234C1Z5	0831-2401234	0831-2401235	Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.	Belgaum, Karnataka - 590001
 \.
 
 

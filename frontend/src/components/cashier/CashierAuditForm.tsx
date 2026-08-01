@@ -252,10 +252,10 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
         {/* Audit Cover */}
         <div style={{ textAlign: 'center', borderBottom: '3px double #000', paddingBottom: 14, marginBottom: 20 }}>
           <h2 style={{ fontSize: 20, fontWeight: 'bold', margin: 0 }}>
-            {office?.office_name || 'BELAGAVI GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELAGAVI'}
+            {office?.office_name || 'BELGAUM GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM'}
           </h2>
           <div style={{ fontSize: 13, marginTop: 4 }}>
-            {office?.address || '930/1A Zanda Chowk Market, Belagavi - 590002'} | GST: {office?.gst_no || '29AAAAT4655K1Z1'}
+            {office?.address || '930/1A Zanda Chowk Market, Belgaum - 590002'} | GST: {office?.gst_no || '29AAAAT4655K1Z1'}
           </div>
           <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 10, textDecoration: 'underline' }}>
             CASHIER FINANCIAL AUDIT BINDER & VERIFICATION REPORT

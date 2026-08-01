@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
 
   const societyName = lang === 'mr'
     ? <>बेळगाव गार्डनर्स<br />को-ऑप सोसायटी लि.</>
-    : <>Belagavi Gardeners<br />Co-op Society Ltd.</>;
+    : <>Belgaum Gardeners<br />Co-op Society Ltd.</>;
 
   return (
     <>
@@ -304,7 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
                 <div className="nav-label-group">
                   <span>{t('nav_general_ledger')}</span>
                   <span className="nav-level-badge">
-                    {lang === 'mr' ? 'स्तर ३ · मासिक दृश्य' : 'LEVEL 3 · MONTHLY VIEW'}
+                    {lang === 'mr' ? 'स्तर ३ · वार्षिक दृश्य' : 'LEVEL 3 · YEARLY VIEW'}
                   </span>
                 </div>
               </NavLink>
@@ -342,7 +342,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
 
         <div className="sidebar-footer">
           <Leaf size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-          {lang === 'mr' ? 'बेळगाव, कर्नाटक' : 'Belagavi, Karnataka'}
+          {lang === 'mr' ? 'बेळगाव, कर्नाटक' : 'Belgaum, Karnataka'}
         </div>
       </aside>
     </>

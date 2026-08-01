@@ -69,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <Leaf size={28} color="white" />
           </div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
-            {lang === 'mr' ? 'बेळगाव बागायतदार सह. खरेदी विक्री संघ मर्यादित' : 'Belagavi Gardeners Co-Op'}
+            {lang === 'mr' ? 'बेळगाव बागायतदार सह. खरेदी विक्री संघ मर्यादित' : 'Belgaum Gardeners Co-Op'}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
             {lang === 'mr' ? '३-स्तरीय लेखा प्रणाली · सुरक्षित लॉगिन' : '3-Level Accounting System · Secure Login'}

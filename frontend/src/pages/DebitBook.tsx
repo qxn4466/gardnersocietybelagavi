@@ -135,7 +135,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
         title={t('debitbook_title')}
         subtitle={lang === 'mr'
           ? 'नावे व्यवहार · सप्ल. अँड सेल सोसायटी लि. बेळगाव'
-          : 'Payments & Debit Transactions · Supp and Sale Society Ltd. Belagavi'}
+          : 'Payments & Debit Transactions · Supp and Sale Society Ltd. Belgaum'}
         level={2}
         actions={<PrintButton label={lang === 'mr' ? 'नावे वही मुद्रित करा' : 'Print Debit Book Sheet'} />}
         user={user}

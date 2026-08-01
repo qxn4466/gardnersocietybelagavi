@@ -26,8 +26,7 @@ export const MARATHI_DICTIONARY: Record<string, string> = {
   'Mane': 'माने',
   'More': 'मोरे',
   'Belgaum': 'बेळगाव',
-  'Belagavi': 'बेळगावी',
-  'Belagavi Gardeners': 'बेळगावी गार्डनर्स',
+  'Belgaum Gardeners': 'बेळगाव गार्डनर्स',
 
   // Products & Dropdowns (Insecticides, Fungicides, Herbicides, Rodenticides, Bio-Pesticides, PGRs)
   'Insecticides': 'कीटकनाशके',

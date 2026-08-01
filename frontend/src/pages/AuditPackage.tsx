@@ -448,14 +448,14 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता ४: सर्वसाधारण खातेवही शिल्लक पत्रक' : 'SCHEDULE IV: GENERAL LEDGER ACCOUNT BALANCES SHEET'}</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'स्तर ३ मासिक खातेवही सारांश' : 'Level 3 Monthly Ledger Summaries'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'स्तर ३ वार्षिक खातेवही सारांश' : 'Level 3 Yearly Ledger Summaries'}</div>
                 </div>
               </div>
 
               <table className="data-table" style={{ width: '100%', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th>{lang === 'mr' ? 'महिना आणि वर्ष' : 'Month & Year'}</th>
+                    <th>{lang === 'mr' ? 'वर्ष' : 'Year'}</th>
                     <th>{lang === 'mr' ? 'खातेवही नाव' : 'Ledger Account Name'}</th>
                     <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'जमा (₹)' : 'Receipt (₹)'}</th>
                     <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'नावे (₹)' : 'Debit (₹)'}</th>
