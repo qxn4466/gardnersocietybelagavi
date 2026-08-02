@@ -872,6 +872,17 @@ body {
 
   .no-print {
     display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .printable-audit-binder {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
   /* When receipt modal is open, hide the main application layout */

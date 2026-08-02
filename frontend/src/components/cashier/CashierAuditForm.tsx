@@ -208,8 +208,8 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+      {/* KPI Cards (Screen Only) */}
+      <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#991b1b' }}>1. Payment Vouchers</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626', marginTop: 4 }}>
@@ -271,7 +271,7 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
 
         {/* Section 1: Payment Vouchers Schedule */}
         {includePayments && (
-          <div style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: 14, fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: 4, marginBottom: 8 }}>
               Schedule 1: Cash Payment Vouchers
             </h4>
@@ -306,7 +306,7 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
 
         {/* Section 2: Receipt Vouchers Schedule */}
         {includeReceipts && (
-          <div style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: 14, fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: 4, marginBottom: 8 }}>
               Schedule 2: Cash Receipt Vouchers (Cash Memos)
             </h4>
@@ -343,7 +343,7 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
 
         {/* Section 3: Rent Bills Schedule */}
         {includeRent && (
-          <div style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: 14, fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: 4, marginBottom: 8 }}>
               Schedule 3: Rent Bills (Tax Invoices)
             </h4>
@@ -380,7 +380,7 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
 
         {/* Section 4 & 5: Scroll & Cheques */}
         {includeScroll && (
-          <div style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: 14, fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: 4, marginBottom: 8 }}>
               Schedule 4: Cash Scroll Book Entries
             </h4>
@@ -416,7 +416,7 @@ const CashierAuditForm: React.FC<CashierAuditFormProps> = ({ user }) => {
         )}
 
         {includeCheques && (
-          <div style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: 14, fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: 4, marginBottom: 8 }}>
               Schedule 5: Cheque Issue Book Entries
             </h4>

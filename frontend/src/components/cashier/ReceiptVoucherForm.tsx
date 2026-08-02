@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, Banknote, CreditCard, Zap, Calendar, Search, Languages, Receipt, Loader2 } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages, FileText, Receipt, Loader2 } from 'lucide-react';
 import { fetchNextReceiptBillNo, createReceiptVoucher, updateReceiptVoucher, fetchReceiptVouchers, deleteReceiptVoucher, fetchOffice, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import InlineDocViewer from '../InlineDocViewer';
 import type { CashReceiptVoucher, User, OfficeMaster } from '../../types';
 import { RECEIPT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -535,15 +536,11 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
             />
             {uploading && <span className="spinner" />}
             {receiptDocPath && (
-              <a
-                href={getFileUrl(receiptDocPath)}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary btn-sm"
-                style={{ color: 'var(--blue-600)' }}
-              >
-                <Eye size={13} /> {lang === 'mr' ? 'अपलोड केलेली फाइल पाहा' : 'View Uploaded Document'}
-              </a>
+              <InlineDocViewer
+                docPath={receiptDocPath}
+                title={lang === 'mr' ? 'अपलोड केलेली पावती' : 'Uploaded Receipt Document'}
+                buttonText={lang === 'mr' ? 'अपलोड केलेली फाइल पाहा' : 'View Uploaded Document'}
+              />
             )}
           </div>
         </div>
@@ -650,9 +647,11 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
                       <td>{lang === 'mr' ? (ITEM_TRANSLATIONS[row.particulars || ''] || row.particulars) : row.particulars}</td>
                       <td>
                         {row.receipt_doc_path ? (
-                          <a href={getFileUrl(row.receipt_doc_path)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" title="Download Receipt">
-                            <Download size={12} /> Doc
-                          </a>
+                          <InlineDocViewer
+                            docPath={row.receipt_doc_path}
+                            buttonText="Doc"
+                            title={`Bill ${row.bill_no} - Receipt`}
+                          />
                         ) : (
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
                         )}

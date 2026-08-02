@@ -34,10 +34,38 @@ class Base(DeclarativeBase):
     pass
 
 
-# Ensure tables are created
+# Ensure tables are created and missing columns auto-migrated
 try:
     import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        for table_name, table in Base.metadata.tables.items():
+            try:
+                if "sqlite" in engine.url.drivername:
+                    res = conn.execute(text(f"PRAGMA table_info('{table_name}')")).fetchall()
+                    existing_cols = {row[1] for row in res}
+                else:
+                    res = conn.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{table_name}'")).fetchall()
+                    existing_cols = {row[0] for row in res}
+
+                for col in table.columns:
+                    if col.name not in existing_cols:
+                        col_type = "VARCHAR(500)"
+                        if "INT" in str(col.type).upper():
+                            col_type = "INTEGER"
+                        elif "NUMERIC" in str(col.type).upper() or "DECIMAL" in str(col.type).upper():
+                            col_type = "NUMERIC"
+                        elif "DATE" in str(col.type).upper():
+                            col_type = "DATE"
+                        elif "TEXT" in str(col.type).upper():
+                            col_type = "TEXT"
+
+                        alter_sql = f"ALTER TABLE {table_name} ADD COLUMN {col.name} {col_type}"
+                        print(f"[DB Auto-Migrate] Adding missing column: {alter_sql}")
+                        conn.execute(text(alter_sql))
+                        conn.commit()
+            except Exception as ex:
+                print(f"[DB Auto-Migrate Notice] {table_name}: {ex}")
 except Exception as e:
     print(f"[DB Warning] Table creation notice: {e}")
 

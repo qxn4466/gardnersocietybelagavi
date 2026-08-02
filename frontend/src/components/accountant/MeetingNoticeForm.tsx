@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Save, Trash2, Edit, Calendar, Search, FileText, Languages, Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import InlineDocViewer from '../InlineDocViewer';
 import {
   fetchNextMeetingNoticeNo,
   fetchMeetingNotices,
@@ -492,9 +493,11 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
                     </td>
                     <td>
                       {row.doc_path ? (
-                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
-                          📎 Doc
-                        </a>
+                        <InlineDocViewer
+                          docPath={row.doc_path}
+                          buttonText="📎 View Doc"
+                          title={`Notice ${row.notice_no} Attachment`}
+                        />
                       ) : (
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
                       )}

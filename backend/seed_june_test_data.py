@@ -593,16 +593,14 @@ def seed_june_data():
     db = SessionLocal()
     try:
         types_map = {t.name: t.id for t in db.query(TransactionTypeMaster).all()}
+
+        # Cleanly delete pre-existing test transactions matching JUNE_TEST_TRANSACTIONS cash memo numbers
+        memo_list = [item["cash_memo_no"] for item in JUNE_TEST_TRANSACTIONS]
+        db.query(Transaction).filter(Transaction.cash_memo_no.in_(memo_list)).delete(synchronize_session=False)
+        db.commit()
+
         inserted_count = 0
-        skipped_count = 0
-
         for item in JUNE_TEST_TRANSACTIONS:
-            memo = item["cash_memo_no"]
-            existing = db.query(Transaction).filter(Transaction.cash_memo_no == memo).first()
-            if existing:
-                skipped_count += 1
-                continue
-
             t_type_id = types_map.get(item["type_name"])
             if not t_type_id:
                 print(f"⚠️ Warning: Transaction type '{item['type_name']}' not found in DB.")
@@ -627,8 +625,8 @@ def seed_june_data():
             inserted_count += 1
 
         db.commit()
-        print(f"✅ June Test Data Seeding Complete! Inserted: {inserted_count}, Skipped (already exist): {skipped_count}")
-        return {"inserted": inserted_count, "skipped": skipped_count}
+        print(f"✅ June Test Data Seeding Complete! Inserted: {inserted_count}, Skipped: 0")
+        return {"inserted": inserted_count, "skipped": 0}
     except Exception as e:
         db.rollback()
         print(f"❌ June Test Data Seeding Failed: {e}")

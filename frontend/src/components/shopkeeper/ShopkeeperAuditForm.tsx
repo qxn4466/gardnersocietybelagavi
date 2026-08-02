@@ -82,7 +82,7 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
 
   return (
     <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #4f46e5', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.08)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+      <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ background: '#e0e7ff', padding: 10, borderRadius: 8, color: '#3730a3' }}>
             <ShieldCheck size={22} />
@@ -126,13 +126,13 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
       </div>
 
       {msg && (
-        <div className={`alert alert-${msg.type}`} style={{ marginBottom: 16 }}>
+        <div className={`alert alert-${msg.type} no-print`} style={{ marginBottom: 16 }}>
           {msg.text}
         </div>
       )}
 
       {/* Date Range Selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
+      <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Calendar size={16} color="#4f46e5" />
           <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी निवडा:' : 'Audit Period:'}</label>
@@ -147,8 +147,8 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
 
       {summary && (
         <>
-          {/* Summary KPI Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+          {/* Summary KPI Cards (Screen Only) */}
+          <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
             <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 8, border: '1px solid #86efac' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>
