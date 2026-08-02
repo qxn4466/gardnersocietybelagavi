@@ -15,10 +15,10 @@ def get_office(db: Session = Depends(get_db)):
     if not office:
         office = OfficeMaster(
             office_name="Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
-            address="Belgaum, Karnataka - 590001",
-            phone1="0831-2400000",
-            phone2="0831-2411111",
-            gst_no="29AAAAA0000A1Z5",
+            address="930/1A Zanda Chowk Market, Belgaum 590002",
+            phone1="0831-2400123",
+            phone2="0831-2400124",
+            gst_no="29AAAAB1234C1Z5",
         )
         try:
             db.add(office)
@@ -29,10 +29,10 @@ def get_office(db: Session = Depends(get_db)):
             return OfficeMasterOut(
                 id=1,
                 office_name="Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
-                address="Belgaum, Karnataka - 590001",
-                phone1="0831-2400000",
-                phone2="0831-2411111",
-                gst_no="29AAAAA0000A1Z5",
+                address="930/1A Zanda Chowk Market, Belgaum 590002",
+                phone1="0831-2400123",
+                phone2="0831-2400124",
+                gst_no="29AAAAB1234C1Z5",
             )
     return office
 

@@ -845,9 +845,9 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   BELGAUM GARDENERS CO-OP PRODUCTION SUPPLY AND SALE SOCIETY LTD.
                 </h3>
                 <div style={{ fontSize: 11, fontWeight: 'bold', margin: '4px 0', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <span>📍 Address: Belgaum, Karnataka - 590001</span>
-                  <span>📞 Phone: 0831-2401234 / 0831-2401235</span>
-                  <span>🆔 GSTN: 29AAATB1234C1Z5</span>
+                  <span>📍 Address: 930/1A Zanda Chowk Market, Belgaum 590002</span>
+                  <span>📞 Phone: 0831-2400123 / 0831-2400124</span>
+                  <span>🆔 GSTN: 29AAAAB1234C1Z5</span>
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4, textDecoration: 'underline' }}>
                   SEEDS, PESTICIDES, SPRAYPUMP AND OTHER SELLING RATE BOOK

@@ -550,7 +550,7 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
                   THE BELGAUM GARDENERS CO-OPERATIVE PRODUCTION SUPPLY AND SALE SOCIETY LTD., BELGAUM
                 </div>
                 <div style={{ fontSize: 11, margin: '2px 0' }}>
-                  📍 Address: Belgaum, Karnataka - 590001 | 📞 Phone: 0831-2401234 / 0831-2401235 | 🆔 GSTN: 29AAATB1234C1Z5
+                  📍 Address: 930/1A Zanda Chowk Market, Belgaum 590002 | 📞 Phone: 0831-2400123 / 0831-2400124 | 🆔 GSTN: 29AAAAB1234C1Z5
                 </div>
                 <h3 style={{ fontSize: 18, fontWeight: 'bold', marginTop: 10, marginBottom: 0, textDecoration: 'underline', letterSpacing: '0.05em' }}>
                   {lang === 'mr' ? 'मिटिंग नोटीस' : 'MEETING NOTICE'}

@@ -28,11 +28,11 @@ TRANSACTION_TYPES = [
 ]
 
 OFFICE = {
-    "gst_no": "29AAATB1234C1Z5",
-    "phone1": "0831-2401234",
-    "phone2": "0831-2401235",
+    "gst_no": "29AAAAB1234C1Z5",
+    "phone1": "0831-2400123",
+    "phone2": "0831-2400124",
     "office_name": "Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
-    "address": "Belgaum, Karnataka - 590001",
+    "address": "930/1A Zanda Chowk Market, Belgaum 590002",
 }
 
 

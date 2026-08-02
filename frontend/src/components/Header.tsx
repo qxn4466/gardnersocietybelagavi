@@ -31,7 +31,7 @@ const LEVEL_LABELS_MR: Record<number, string> = {
 const LANGS: Lang[] = ['en', 'mr'];
 
 const Header: React.FC<HeaderProps> = ({
-  title, subtitle, level, showPrint = false, actions, user, onLogout, onToggleMobileMenu
+  title, subtitle, level, showPrint = true, actions, user, onLogout, onToggleMobileMenu
 }) => {
   const { lang, setLang } = useLanguage();
   const now = new Date();

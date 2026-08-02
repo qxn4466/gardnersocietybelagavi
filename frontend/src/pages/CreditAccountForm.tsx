@@ -556,7 +556,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.'
           : 'Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.'}
         level={1}
-        showPrint={!!savedMemo}
+        showPrint={true}
         user={user}
         onLogout={onLogout}
         onToggleMobileMenu={onToggleMobileMenu}
@@ -612,8 +612,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         <div className="static-banner">
           <div className="org-title">
             {lang === 'mr'
-              ? <>बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>बेळगाव, कर्नाटक</span></>
-              : <>Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>Belgaum, Karnataka</span></>}
+              ? <>बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२</span></>
+              : <>Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.<br /><span style={{ fontSize: 13, fontWeight: 500 }}>930/1A Zanda Chowk Market, Belgaum 590002</span></>}
           </div>
           <div className="static-grid">
             <div className="static-field">

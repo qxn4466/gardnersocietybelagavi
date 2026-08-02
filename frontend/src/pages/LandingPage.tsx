@@ -300,10 +300,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {lang === 'mr' ? 'कार्यालयीन पत्ता (Address)' : 'Registered Address'}
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 8, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 8, lineHeight: 1.5 }}>
               {lang === 'mr'
-                ? 'एपीएमसी मुख्य मार्केट यार्ड, किल्ले रस्ता, बेळगाव - ५९००१६, कर्नाटक राज्य, भारत'
-                : 'APMC Main Market Yard, Fort Road, Belgaum - 590016, Karnataka State, India'}
+                ? '९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२, कर्नाटक राज्य, भारत'
+                : '930/1A Zanda Chowk Market, Belgaum 590002, Karnataka State, India'}
             </div>
           </div>
 
@@ -358,12 +358,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             
             {/* Service 1 */}
             <div style={{ padding: 24, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>🌱</div>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>🧪</div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
-                {lang === 'mr' ? 'खते व औषधे विक्री' : 'Fertilizers & Pesticides Supply'}
+                {lang === 'mr' ? 'कीटकनाशके व रासायनिक खते पुरवठा' : 'Pesticides & Fertilizers Supply'}
               </h3>
               <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                {lang === 'mr' ? 'उत्कृष्ट गुणवत्तेची खते, कीटकनाशके आणि प्रमाणित बियाणे रास्त दरात सर्व सभासदांना पुरवले जातात.' : 'Direct distribution of high-grade fertilizers, pesticides & certified seeds at government controlled prices.'}
+                {lang === 'mr' ? 'उत्कृष्ट गुणवत्तेची कीटकनाशके, रासायनिक खते आणि अव्वल दर्जाची प्रमाणित बियाणे थेट रास्त दरात उपलब्ध.' : 'Direct distribution of high-grade pesticides, fertilizers, bio-fungicides & certified hybrid seeds at fair prices.'}
               </p>
             </div>
 
@@ -403,7 +403,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             {lang === 'mr' ? 'सोसायटीचे गूगल मॅप लोकेशन व मार्ग' : 'Visit Our Office in Belgaum'}
           </h2>
           <p style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>
-            {lang === 'mr' ? 'मुख्य मार्केट यार्ड, बेळगाव येथे भेट देण्यासाठी खालील गूगल मॅप वापरा' : 'Use the Google Map below to navigate to our headquarters at Market Yard, Belgaum.'}
+            {lang === 'mr' ? '९३०/१-अ झेंडा चौक मार्केट, बेळगाव येथे भेट देण्यासाठी खालील गूगल मॅप वापरा' : 'Use the Google Map below to navigate to our office at Zanda Chowk Market, Belgaum 590002.'}
           </p>
         </div>
 
@@ -418,7 +418,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           <div style={{ width: '100%', minHeight: 400, position: 'relative' }}>
             <iframe
               title="Belgaum Gardeners Society Google Location"
-              src="https://maps.google.com/maps?q=Belgaum,Karnataka&t=&z=14&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=Zanda+Chowk+Market+Belgaum+590002&t=&z=16&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="100%"
               style={{ border: 0, minHeight: 400, display: 'block' }}
@@ -440,10 +440,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
                 {lang === 'mr' ? 'पत्ता' : 'Full Address'}
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginTop: 4, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginTop: 4, lineHeight: 1.5 }}>
                 {lang === 'mr'
-                  ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि., एपीएमसी मार्केट यार्ड, बेळगाव - ५९००१६, कर्नाटक'
-                  : 'Belgaum Gardeners Co-operative Production Supply & Sale Society Ltd., APMC Market Yard, Belgaum - 590016, Karnataka, India'}
+                  ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि., ९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२, कर्नाटक'
+                  : 'Belgaum Gardeners Co-operative Production Supply & Sale Society Ltd., 930/1A Zanda Chowk Market, Belgaum 590002, Karnataka, India'}
               </div>
             </div>
 
@@ -467,7 +467,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             </div>
 
             <a
-              href="https://maps.google.com/?q=Belgaum,Karnataka"
+              href="https://maps.google.com/?q=Zanda+Chowk+Market+Belgaum+590002"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -477,7 +477,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               }}
             >
               <ExternalLink size={16} />
-              <span>{lang === 'mr' ? 'गूगल मॅपवर दिशा शोधा (Open Directions)' : 'Open in Google Maps'}</span>
+              <span>{lang === 'mr' ? 'झेंडा चौक मार्केट गूगल मॅप उघडा' : 'Open Zanda Chowk Market in Google Maps'}</span>
             </a>
 
           </div>
