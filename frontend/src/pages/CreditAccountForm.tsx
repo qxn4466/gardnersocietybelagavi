@@ -152,9 +152,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     try {
       let updatedCount = 0;
 
-      // 1. Translate Customer Name & Remarks
+      // 1. Translate Customer Name, Accountant Name & Remarks
       const formUpdates: Partial<FormState> = {};
-      for (const field of ['customer_name', 'remarks'] as const) {
+      for (const field of ['customer_name', 'created_by', 'remarks'] as const) {
         const val = form[field] ? String(form[field]).trim() : '';
         if (val) {
           const tr = await translateToMarathi(val);
@@ -188,30 +188,6 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       }
     } catch {
       setAlert({ type: 'error', msg: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.' });
-    } finally {
-      setTranslatingForm(false);
-    }
-  };
-
-  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
-    if (!text || !text.trim()) return;
-    setTranslatingForm(true);
-    setAlert({
-      type: 'info',
-      msg: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
-    });
-    try {
-      const translated = await translateToMarathi(text);
-      setter(translated);
-      setAlert({
-        type: 'success',
-        msg: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
-      });
-    } catch {
-      setAlert({
-        type: 'error',
-        msg: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
-      });
     } finally {
       setTranslatingForm(false);
     }
@@ -795,19 +771,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
                 {/* Customer Name */}
                 <div className="form-group full-width">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
-                    <button
-                      type="button"
-                      style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translatingForm ? 0.6 : 1 }}
-                      onClick={() => handleTranslateField(form.customer_name, (val) => setForm(prev => ({ ...prev, customer_name: val })))}
-                      disabled={translatingForm}
-                      title="Translate Customer Name to Marathi"
-                    >
-                      {translatingForm ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                      {translatingForm ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-                    </button>
-                  </div>
+                  <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select id="salutation" className="form-select"
                       style={{ width: 110, flexShrink: 0 }}

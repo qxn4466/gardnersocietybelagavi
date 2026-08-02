@@ -427,30 +427,6 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     }
   };
 
-  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
-    if (!text || !text.trim()) return;
-    setTranslating(true);
-    setAlert({
-      type: 'info',
-      msg: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
-    });
-    try {
-      const translated = await translateToMarathi(text);
-      setter(translated);
-      setAlert({
-        type: 'success',
-        msg: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
-      });
-    } catch {
-      setAlert({
-        type: 'error',
-        msg: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
-      });
-    } finally {
-      setTranslating(false);
-    }
-  };
-
   return (
     <div className="page-container">
       <Header
@@ -684,21 +660,9 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
               {/* ── Section 3: Residential Address ── */}
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <MapPin size={18} color="var(--blue-700)" />
-                    <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
-                  </div>
-                  <button
-                    type="button"
-                    style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
-                    onClick={() => handleTranslateField(form.address || '', (val) => handleInputChange('address', val))}
-                    disabled={translating}
-                    title="Translate Address to Marathi"
-                  >
-                    {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                    {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-                  </button>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MapPin size={18} color="var(--blue-700)" />
+                  <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
                 </div>
 
                 <div className="form-group">

@@ -239,32 +239,6 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     }
   };
 
-  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
-    if (!text) return;
-    setTranslating(true);
-    setMsg({
-      type: 'info',
-      text: lang === 'mr'
-        ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...'
-        : '⏳ Translating text to Marathi, please wait...'
-    });
-    try {
-      const translated = await translateToMarathi(text);
-      setter(translated);
-      setMsg({
-        type: 'success',
-        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
-      });
-    } catch {
-      setMsg({
-        type: 'error',
-        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
-      });
-    } finally {
-      setTranslating(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -456,19 +430,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
 
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', color: '#15803d', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
-                onClick={() => handleTranslateField(name, setName)}
-                disabled={translating}
-                title="Translate Name to Marathi"
-              >
-                {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-              </button>
-            </div>
+            <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
             <input
               type="text"
               className="form-input"

@@ -129,6 +129,10 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         const transRec = await translateToMarathi(recipientName);
         setRecipientName(transRec);
       }
+      if (meetingTime) {
+        const transTime = await translateToMarathi(meetingTime);
+        setMeetingTime(transTime);
+      }
       if (agendaSubjects) {
         const transAgenda = await translateToMarathi(agendaSubjects);
         setAgendaSubjects(transAgenda);
@@ -137,30 +141,6 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
         const transType = await translateToMarathi(meetingType);
         setMeetingType(transType);
       }
-      setMsg({
-        type: 'success',
-        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
-      });
-    } catch {
-      setMsg({
-        type: 'error',
-        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
-      });
-    } finally {
-      setTranslating(false);
-    }
-  };
-
-  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
-    if (!text || !text.trim()) return;
-    setTranslating(true);
-    setMsg({
-      type: 'info',
-      text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
-    });
-    try {
-      const translated = await translateToMarathi(text);
-      setter(translated);
       setMsg({
         type: 'success',
         text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
@@ -366,21 +346,9 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
-                {lang === 'mr' ? 'रा. रा. (प्रति):' : 'To (Recipient Name):'}
-              </label>
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
-                onClick={() => handleTranslateField(recipientName, setRecipientName)}
-                disabled={translating}
-                title="Translate Recipient Name to Marathi"
-              >
-                {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-              </button>
-            </div>
+            <label className="form-label" style={{ fontWeight: 600 }}>
+              {lang === 'mr' ? 'रा. रा. (प्रति):' : 'To (Recipient Name):'}
+            </label>
             <input
               type="text"
               className="form-input"
@@ -393,21 +361,9 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
           </div>
 
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
-                {lang === 'mr' ? 'सभा प्रकार:' : 'Meeting Type:'}
-              </label>
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
-                onClick={() => handleTranslateField(meetingType, setMeetingType)}
-                disabled={translating}
-                title="Translate Meeting Type to Marathi"
-              >
-                {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-              </button>
-            </div>
+            <label className="form-label" style={{ fontWeight: 600 }}>
+              {lang === 'mr' ? 'सभा प्रकार:' : 'Meeting Type:'}
+            </label>
             <input
               type="text"
               className="form-input"
@@ -420,21 +376,10 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
         {/* Agenda / Subjects Field */}
         <div className="form-group" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
-              {lang === 'mr' ? 'विषय / सभेचे कामकाज:' : 'Subject & Agenda Topics:'}
-            </label>
-            <button
-              type="button"
-              style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
-              onClick={() => handleTranslateField(agendaSubjects, setAgendaSubjects)}
-              disabled={translating}
-              title="Translate Agenda Topics to Marathi"
-            >
-              {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-              {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
-            </button>
-          </div>
+          <label className="form-label" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{lang === 'mr' ? 'विषय / सभेचे कामकाज:' : 'Subject & Agenda Topics:'}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lang === 'mr' ? 'प्रत्येक ओळीवर एक विषय लिहा' : 'One topic per line'}</span>
+          </label>
           <textarea
             className="form-input"
             rows={4}
