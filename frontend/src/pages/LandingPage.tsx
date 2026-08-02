@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Leaf, Phone, MapPin, Hash, ShieldCheck, LogIn, Clock, Mail,
-  ExternalLink, Building2, CheckCircle2, ChevronRight, Award,
-  Globe, Users, Sparkles, Navigation, ArrowRight, X, Menu
+  Leaf, Phone, MapPin, Hash, LogIn, Clock,
+  ExternalLink, Building2, CheckCircle2, Award,
+  Globe, Navigation, ArrowRight, X, Menu
 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock size={15} color="#fbbf24" />
-              <span><strong>{lang === 'mr' ? 'कामाचे तास:' : 'Office Working Hours:'}</strong> Mon – Sat: 9:00 AM – 6:00 PM</span>
+              <span><strong>{lang === 'mr' ? 'कामाचे तास:' : 'Office Working Hours:'}</strong> {lang === 'mr' ? 'सोम - शनि: ९:०० ते ६:०० (मंगळवार सुट्टी)' : 'Mon – Sat: 9:00 AM – 6:00 PM (Tuesday Holiday)'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Hash size={15} color="#60a5fa" />
@@ -172,8 +172,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
         )}
       </header>
 
-      {/* ── 2. HERO SECTION WITH HERO VISUAL PHOTO ── */}
-      <section style={{
+      {/* ── 2. HERO SECTION WITH UNCLIPPED STOREFRONT PHOTO ── */}
+      <section id="about" style={{
         background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f172a 100%)',
         color: '#ffffff', padding: '64px 24px 80px', position: 'relative', overflow: 'hidden'
       }}>
@@ -220,7 +220,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255, 255, 255, 0.08)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <CheckCircle2 size={18} color="#34d399" />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{lang === 'mr' ? 'पारदर्शक ३-स्तरीय प्रणाली' : 'Transparent 3-Tier Accounting'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{lang === 'mr' ? 'मंगळवार सुट्टी (Tuesday Holiday)' : 'Tuesday Holiday'}</span>
               </div>
             </div>
 
@@ -254,31 +254,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             </div>
           </div>
 
-          {/* Right Showcase Photo Card */}
+          {/* Right Showcase Photo Card - Full Unclipped Sign Photo */}
           <div style={{ position: 'relative' }}>
             <div style={{
-              borderRadius: 24, overflow: 'hidden',
+              borderRadius: 20, overflow: 'hidden',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-              border: '4px solid rgba(255, 255, 255, 0.2)',
-              background: '#047857'
+              border: '4px solid rgba(255, 255, 255, 0.25)',
+              background: '#ffffff'
             }}>
               <img
                 src="/belgaum_hq.png"
-                alt="Belgaum Gardeners Society Pesticide Shop Front"
-                style={{ width: '100%', height: 420, objectFit: 'cover', display: 'block' }}
+                alt="Belgaum Gardeners Society Pesticide Shop Front Signboard"
+                style={{ width: '100%', height: 'auto', display: 'block', background: '#ffffff' }}
               />
               <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15, 23, 42, 0.94) 100%)',
-                padding: '24px 28px', color: '#ffffff'
+                background: '#0f172a',
+                padding: '16px 20px', color: '#ffffff', borderTop: '2px solid #059669'
               }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
-                  {lang === 'mr' ? 'कीटकनाशक व खते दुकान (झेंडा चौक मार्केट)' : 'PESTICIDE & FERTILIZER SHOP FRONT'}
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                  {lang === 'mr' ? 'कीटकनाशक व खते दुकान (झेंडा चौक मार्केट, बेळगाव)' : 'PESTICIDE & FERTILIZER SHOP FRONT · ZANDA CHOWK MARKET'}
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', lineHeight: 1.3 }}>
                   {lang === 'mr' ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.' : 'Belgaum Gardeners Co-operative Production Supply & Sale Society Ltd.'}
                 </div>
-                <div style={{ fontSize: 13, color: '#34d399', fontWeight: 700, marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: '#34d399', fontWeight: 700, marginTop: 4 }}>
                   Quality Products • Trusted Service • Prosperous Farmers
                 </div>
               </div>
@@ -483,7 +482,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#059669', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={16} />
-                <span>{lang === 'mr' ? 'सोमवार ते शनिवार: सकाळी ९:०० ते संध्याकाळी ६:००' : 'Mon – Sat: 9:00 AM – 6:00 PM'}</span>
+                <span>{lang === 'mr' ? 'सोमवार ते शनिवार: सकाळी ९:०० ते संध्याकाळी ६:०० (मंगळवार सुट्टी)' : 'Mon – Sat: 9:00 AM – 6:00 PM (Tuesday Holiday)'}</span>
               </div>
             </div>
 
@@ -530,7 +529,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🕒 Office Working Hours</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>Mon – Sat: 9:00 AM – 6:00 PM</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>Mon – Sat: 9:00 AM – 6:00 PM (Tuesday Holiday)</div>
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🆔 GSTIN Number</div>
