@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Lock, User as UserIcon, Shield, LogIn, Leaf, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, User as UserIcon, Shield, LogIn, Leaf, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { loginUser } from '../api/client';
 import type { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
+  onBackToLanding?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
   const { lang } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -46,13 +47,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   return (
     <div style={{
-      height: '100vh',
+      minHeight: '100vh',
       width: '100vw',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       background: 'radial-gradient(ellipse at 50% 30%, #eff6ff 0%, #f8fafc 80%)',
+      padding: 24,
+      position: 'relative'
     }}>
+      {onBackToLanding && (
+        <button
+          onClick={onBackToLanding}
+          style={{
+            position: 'absolute', top: 24, left: 24,
+            padding: '10px 18px', borderRadius: 10, border: '1px solid #cbd5e1',
+            background: '#ffffff', color: '#1e293b', fontSize: 13, fontWeight: 700,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+          }}
+        >
+          <ArrowLeft size={16} />
+          <span>{lang === 'mr' ? 'मुख्य वेबसाईटवर जा (Back to Website)' : '← Back to Website'}</span>
+        </button>
+      )}
       <div className="card" style={{ width: '100%', maxWidth: 440, padding: 0, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)' }}>
         <div style={{
           padding: '32px 32px 24px',

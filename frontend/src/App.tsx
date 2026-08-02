@@ -10,6 +10,7 @@ import AuditPackage from './pages/AuditPackage';
 import MeetingNoticePage from './pages/MeetingNoticePage';
 import CashierDashboard from './pages/CashierDashboard';
 import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import type { User } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -21,6 +22,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [showLoginScreen, setShowLoginScreen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLoginSuccess = (loggedInUser: User) => {
@@ -31,6 +33,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
+    setShowLoginScreen(false);
   };
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
@@ -39,7 +42,11 @@ const App: React.FC = () => {
   if (!user) {
     return (
       <LanguageProvider>
-        <Login onLoginSuccess={handleLoginSuccess} />
+        {showLoginScreen ? (
+          <Login onLoginSuccess={handleLoginSuccess} onBackToLanding={() => setShowLoginScreen(false)} />
+        ) : (
+          <LandingPage onOpenLogin={() => setShowLoginScreen(true)} />
+        )}
       </LanguageProvider>
     );
   }
