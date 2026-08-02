@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({
   const levelLabels = lang === 'mr' ? LEVEL_LABELS_MR : LEVEL_LABELS;
 
   return (
-    <header className="app-header">
+    <header className="app-header no-print">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {onToggleMobileMenu && (
           <button

@@ -870,12 +870,16 @@ body {
     margin: 12mm 10mm 15mm 10mm;
   }
 
-  .no-print {
+  .no-print, .app-header, .sidebar, .filter-bar {
     display: none !important;
     height: 0 !important;
+    max-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    position: absolute !important;
     overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .printable-audit-binder {
@@ -890,17 +894,11 @@ body {
     display: none !important;
   }
 
-  /* Standard page print fallback when modal is not open */
-  body:not(.receipt-open) .sidebar,
-  body:not(.receipt-open) .app-header,
-  body:not(.receipt-open) .filter-bar,
-  body:not(.receipt-open) .btn {
-    display: none !important;
-  }
-
   html, body, .app-layout, .main-content, .page-container, .page-content, .card, .table-wrapper, #audit-print-binder {
     margin: 0 !important;
     padding: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
@@ -941,6 +939,7 @@ body {
     color: #000000 !important;
     font-weight: 800 !important;
     border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
   }
 
   .data-table tbody {
@@ -986,10 +985,17 @@ body {
   .audit-page-section {
     page-break-after: always !important;
     break-after: page !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
+  }
+
+  .audit-page-section:first-child,
+  #audit-print-binder > div:first-child,
+  .printable-audit-binder > div:first-child {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 
   .audit-page-section:last-child {

@@ -243,9 +243,9 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
               SCHEDULE 1: COVER SHEET & EXECUTIVE AUDIT SUMMARY
              ══════════════════════════════════════════════════════════════════ */}
           {includeCover && (
-            <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
+            <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 20 }}>
               <div style={{
-                border: '3px double #0f172a', borderRadius: 12, padding: 30, background: '#ffffff',
+                border: '3px double #0f172a', borderRadius: 12, padding: '16px 20px', background: '#ffffff',
                 textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
               }}>
                 <PrintHeader
@@ -254,63 +254,63 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 />
 
                 {/* Audit Key Metric Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 24, textAlign: 'left' }}>
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 14, textAlign: 'left' }}>
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण जमा पावत्या' : 'Total Credit Receipts'}</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', marginTop: 4 }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#15803d', marginTop: 2 }}>
                       ₹{creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 11, color: '#166534', marginTop: 4 }}>{creditRows.length} {lang === 'mr' ? 'जमा व्यवहार' : 'Credit Transactions'}</div>
+                    <div style={{ fontSize: 10, color: '#166534', marginTop: 2 }}>{creditRows.length} {lang === 'mr' ? 'जमा व्यवहार' : 'Credit Transactions'}</div>
                   </div>
 
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 14 }}>
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण नावे खर्च' : 'Total Debit Payments'}</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: '#b91c1c', marginTop: 4 }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>
                       ₹{debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 11, color: '#991b1b', marginTop: 4 }}>{debitRows.length} {lang === 'mr' ? 'नावे व्यवहार' : 'Debit Transactions'}</div>
+                    <div style={{ fontSize: 10, color: '#991b1b', marginTop: 2 }}>{debitRows.length} {lang === 'mr' ? 'नावे व्यवहार' : 'Debit Transactions'}</div>
                   </div>
 
-                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 14 }}>
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: '#1e40af', textTransform: 'uppercase' }}>{lang === 'mr' ? 'सदस्य खाती आणि KYC' : 'Member Accounts & KYC'}</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: '#1d4ed8', marginTop: 4 }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#1d4ed8', marginTop: 2 }}>
                       {customers.length} {lang === 'mr' ? 'सदस्य' : 'Members'}
                     </div>
-                    <div style={{ fontSize: 11, color: '#1e40af', marginTop: 4 }}>{lang === 'mr' ? '१०-अंकी आयडी आणि KYC पडताळणीकृत' : '10-Digit ID & KYC Verified'}</div>
+                    <div style={{ fontSize: 10, color: '#1e40af', marginTop: 2 }}>{lang === 'mr' ? '१०-अंकी आयडी आणि KYC पडताळणीकृत' : '10-Digit ID & KYC Verified'}</div>
                   </div>
                 </div>
 
                 {/* Verification Badge */}
                 <div style={{
-                  marginTop: 24, padding: '12px 18px', background: '#f8fafc', border: '1px solid #cbd5e1',
+                  marginTop: 14, padding: '10px 14px', background: '#f8fafc', border: '1px solid #cbd5e1',
                   borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left'
                 }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <CheckCircle2 size={16} color="#16a34a" /> {lang === 'mr' ? 'स्तर १ → स्तर २ → स्तर ३ ताळमेळ स्थिती' : 'Level 1 → Level 2 → Level 3 Reconciliation Status'}
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={15} color="#16a34a" /> {lang === 'mr' ? 'स्तर १ → स्तर २ → स्तर ३ ताळमेळ स्थिती' : 'Level 1 → Level 2 → Level 3 Reconciliation Status'}
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
                       {lang === 'mr' ? 'सर्व जमा पावत्या, नावे देणे आणि सर्वसाधारण खातेवही खाती पूर्णपणे जुळलेली आहेत.' : 'All Credit Receipts, Debit Payments, and General Ledger accounts fully reconciled.'}
                     </div>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '4px 10px', borderRadius: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 8px', borderRadius: 6 }}>
                     {lang === 'mr' ? 'ताळमेळ पूर्ण आणि पडताळणीकृत ✅' : 'RECONCILED & VERIFIED ✅'}
                   </span>
                 </div>
 
                 {/* Signatures Footer */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 30, marginTop: 40, paddingTop: 30, borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginTop: 24, paddingTop: 16, borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
                   <div>
-                    <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तयार केले (लेखापाल अधिकारी)' : 'Prepared By (Accounts Officer)'}</div>
+                    <div style={{ height: 28 }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तयार केले (लेखापाल अधिकारी)' : 'Prepared By (Accounts Officer)'}</div>
                   </div>
                   <div>
-                    <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तपासले (अंतर्गत लेखापरीक्षक)' : 'Verified By (Internal Auditor)'}</div>
+                    <div style={{ height: 28 }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'तपासले (अंतर्गत लेखापरीक्षक)' : 'Verified By (Internal Auditor)'}</div>
                   </div>
                   <div>
-                    <div style={{ height: 40 }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'मंजूर केले (वैधानिक लेखापरीक्षक)' : 'Approved By (Statutory Auditor)'}</div>
+                    <div style={{ height: 28 }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, borderTop: '1px solid #94a3b8', paddingTop: 4 }}>{lang === 'mr' ? 'मंजूर केले (वैधानिक लेखापरीक्षक)' : 'Approved By (Statutory Auditor)'}</div>
                   </div>
                 </div>
 
