@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   UserPlus, Search, CheckCircle, XCircle, Hash, Phone, MapPin,
   Upload, Eye, ShieldCheck, RefreshCw, ArrowRight, X, Image as ImageIcon,
-  Camera, FileText, User as UserIcon, Wallet, CreditCard, Sparkles
+  Camera, FileText, User as UserIcon, Wallet, CreditCard, Sparkles, Languages, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -17,6 +17,7 @@ import {
 } from '../api/client';
 import type { Customer, CustomerCreate, User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
+import { translateToMarathi } from '../utils/translator';
 
 interface SavingsAccountsProps {
   user?: User | null;
@@ -62,7 +63,7 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
   const [uploadingAadhaarFront, setUploadingAadhaarFront] = useState(false);
   const [uploadingAadhaarBack, setUploadingAadhaarBack] = useState(false);
   const [uploadingPan, setUploadingPan] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
   const [docFileNames, setDocFileNames] = useState<{
     aadhaar_front?: string;
     aadhaar_back?: string;
@@ -395,28 +396,56 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
   const translateAllMemberFields = async () => {
     setTranslating(true);
+    setAlert({
+      type: 'info',
+      msg: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+    });
     try {
       const fields: ('first_name' | 'middle_name' | 'last_name' | 'address')[] = ['first_name', 'middle_name', 'last_name', 'address'];
       const updates: Partial<CustomerCreate> = {};
 
       for (const field of fields) {
         const val = form[field] ? String(form[field]).trim() : '';
-        if (val && /[a-zA-Z]/.test(val)) {
-          const res = await translateText(val);
-          if (res && res.translated_text && res.translated_text !== val) {
-            updates[field] = res.translated_text;
+        if (val) {
+          const tr = await translateToMarathi(val);
+          if (tr && tr !== val) {
+            updates[field] = tr;
           }
         }
       }
 
       if (Object.keys(updates).length > 0) {
         setForm(prev => ({ ...prev, ...updates }));
-        setAlert({ type: 'success', msg: 'मराठीत यशस्वीरित्या रूपांतरित झाले! (Translated to Marathi successfully)' });
+        setAlert({ type: 'success', msg: lang === 'mr' ? 'मराठीत यशस्वीरित्या रूपांतरित झाले!' : 'Translated to Marathi successfully!' });
       } else {
-        setAlert({ type: 'success', msg: 'मराठीत रूपांतरित करण्यासाठी नवीन इंग्रजी मजकूर नाही (No untranslated text found)' });
+        setAlert({ type: 'success', msg: lang === 'mr' ? 'मराठीत रूपांतरित झाले आहे.' : 'Form translated to Marathi.' });
       }
     } catch {
-      setAlert({ type: 'error', msg: 'भाषांतर करताना अडचण आली (Translation failed)' });
+      setAlert({ type: 'error', msg: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.' });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateField = async (text: string, setter: (val: string) => void) => {
+    if (!text || !text.trim()) return;
+    setTranslating(true);
+    setAlert({
+      type: 'info',
+      msg: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
+    });
+    try {
+      const translated = await translateToMarathi(text);
+      setter(translated);
+      setAlert({
+        type: 'success',
+        msg: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
+      });
+    } catch {
+      setAlert({
+        type: 'error',
+        msg: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
+      });
     } finally {
       setTranslating(false);
     }
@@ -440,15 +469,23 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
         {/* ── Alert Banner ── */}
         {alert && (
           <div
-            className={`alert alert-${alert.type}`}
+            className={`alert ${alert.type === 'info' ? 'alert-info' : `alert-${alert.type}`}`}
             style={
-              alert.type === 'success'
+              alert.type === 'info'
+                ? { background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontWeight: 700 }
+                : alert.type === 'success'
                 ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontWeight: 700 }
                 : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontWeight: 700 }
             }
           >
-            {alert.type === 'success' ? <CheckCircle size={18} color="#16a34a" /> : <XCircle size={18} color="#dc2626" />}
-            <span style={{ color: alert.type === 'success' ? '#15803d' : '#b91c1c' }}>{alert.msg}</span>
+            {alert.type === 'info' ? (
+              <Loader2 size={18} className="spinner" color="#2563eb" />
+            ) : alert.type === 'success' ? (
+              <CheckCircle size={18} color="#16a34a" />
+            ) : (
+              <XCircle size={18} color="#dc2626" />
+            )}
+            <span style={{ color: alert.type === 'info' ? '#1d4ed8' : alert.type === 'success' ? '#15803d' : '#b91c1c' }}>{alert.msg}</span>
           </div>
         )}
 
@@ -562,7 +599,16 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
                     disabled={translating}
                     style={{ background: translating ? '#cbd5e1' : '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: translating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
                   >
-                    <Sparkles size={14} /> {translating ? (lang === 'mr' ? 'भाषांतर करत आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
+                    {translating ? (
+                      <>
+                        <Loader2 size={14} className="spinner" />
+                        {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+                      </>
+                    ) : (
+                      <>
+                        <Languages size={14} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -638,9 +684,21 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
 
               {/* ── Section 3: Residential Address ── */}
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <MapPin size={18} color="var(--blue-700)" />
-                  <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <MapPin size={18} color="var(--blue-700)" />
+                    <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: '#1d4ed8', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, opacity: translating ? 0.6 : 1 }}
+                    onClick={() => handleTranslateField(form.address || '', (val) => handleInputChange('address', val))}
+                    disabled={translating}
+                    title="Translate Address to Marathi"
+                  >
+                    {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                    {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत करा' : 'Translate to Marathi')}
+                  </button>
                 </div>
 
                 <div className="form-group">
