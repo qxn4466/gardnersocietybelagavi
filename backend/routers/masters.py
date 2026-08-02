@@ -16,7 +16,7 @@ def get_office(db: Session = Depends(get_db)):
         office = OfficeMaster(
             office_name="Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
             address="930/1A Zanda Chowk Market, Belgaum 590002",
-            phone1="0831-2400123",
+            phone1="0831-2460534",
             phone2="0831-2400124",
             gst_no="29AAAAB1234C1Z5",
         )
@@ -30,7 +30,7 @@ def get_office(db: Session = Depends(get_db)):
                 id=1,
                 office_name="Belgaum Gardeners Co-op Production Supply and Sale Society Ltd.",
                 address="930/1A Zanda Chowk Market, Belgaum 590002",
-                phone1="0831-2400123",
+                phone1="0831-2460534",
                 phone2="0831-2400124",
                 gst_no="29AAAAB1234C1Z5",
             )

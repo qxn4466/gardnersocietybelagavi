@@ -25,6 +25,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
   return (
     <div className="landing-page-root" style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
+      {/* ── 0. TOP INFORMATION BAR ── */}
+      <div style={{
+        background: '#047857', color: '#ffffff', fontSize: 13, fontWeight: 700,
+        padding: '8px 24px', borderBottom: '1px solid rgba(255,255,255,0.15)'
+      }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <MapPin size={15} color="#34d399" />
+            <span>{lang === 'mr' ? '९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२' : '930/1A Zanda Chowk Market, Belgaum 590002'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock size={15} color="#fbbf24" />
+              <span><strong>{lang === 'mr' ? 'कामाचे तास:' : 'Office Working Hours:'}</strong> Mon – Sat: 9:00 AM – 6:00 PM</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Hash size={15} color="#60a5fa" />
+              <span><strong>GSTIN Number:</strong> 29AAAAB1234C1Z5</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Phone size={15} color="#34d399" />
+              <span><strong>Phone:</strong> 0831 2460534</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── 1. TOP HEADER & NAVBAR ── */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 100,
@@ -145,7 +172,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
         )}
       </header>
 
-      {/* ── 2. HERO SECTION WITH HERO visual PHOTO ── */}
+      {/* ── 2. HERO SECTION WITH HERO VISUAL PHOTO ── */}
       <section style={{
         background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f172a 100%)',
         color: '#ffffff', padding: '64px 24px 80px', position: 'relative', overflow: 'hidden'
@@ -173,8 +200,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
 
             <p style={{ fontSize: 17, lineHeight: 1.6, color: '#d1fae5', marginBottom: 28, opacity: 0.95 }}>
               {lang === 'mr'
-                ? 'बेळगाव जिल्ह्यातील सर्व शेतकरी, बागायतदार व व्यापाऱ्यांसाठी भाजीपाला, फळे, बियाणे, खते आणि शीतगृह साठवणुकीची विश्वासू मध्यवर्ती सहकारी संस्था.'
-                : 'Belgaum’s premier agricultural cooperative serving farmers, horticulturists & traders with seeds, fertilizers, vegetable markets, cold storage & financial deposit management.'}
+                ? 'बेळगाव जिल्ह्यातील सर्व शेतकरी, बागायतदार व व्यापाऱ्यांसाठी कीटकनाशके, फळे, बियाणे, खते आणि साठवणुकीची विश्वासू मध्यवर्ती सहकारी संस्था.'
+                : 'Belgaum’s premier agricultural cooperative serving farmers, horticulturists & traders with seeds, fertilizers, pesticide shop, cold storage & financial deposit management.'}
             </p>
 
             {/* Quick Badge List */}
@@ -189,7 +216,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255, 255, 255, 0.08)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <CheckCircle2 size={18} color="#34d399" />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{lang === 'mr' ? 'शीतगृह साठवणूक व विक्री' : 'Cold Storage & Produce Trade'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{lang === 'mr' ? 'कीटकनाशके व खते दुकान' : 'Pesticides & Fertilizers Shop'}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255, 255, 255, 0.08)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <CheckCircle2 size={18} color="#34d399" />
@@ -237,19 +264,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             }}>
               <img
                 src="/belgaum_hq.png"
-                alt="Belgaum Gardeners Society Headquarters"
+                alt="Belgaum Gardeners Society Pesticide Shop Front"
                 style={{ width: '100%', height: 420, objectFit: 'cover', display: 'block' }}
               />
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,
-                background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15, 23, 42, 0.92) 100%)',
+                background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15, 23, 42, 0.94) 100%)',
                 padding: '24px 28px', color: '#ffffff'
               }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
-                  {lang === 'mr' ? 'मुख्य प्रशासकीय इमारत व बाजार संकुल' : 'HEADQUARTERS & MARKET COMPLEX'}
+                  {lang === 'mr' ? 'कीटकनाशक व खते दुकान (झेंडा चौक मार्केट)' : 'PESTICIDE & FERTILIZER SHOP FRONT'}
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>
-                  {lang === 'mr' ? 'बेळगाव बागायतदार सह. खरेदी विक्री संघ मर्यादित, बेळगाव' : 'Belgaum Gardeners Co-Op Society Ltd., Belgaum'}
+                  {lang === 'mr' ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.' : 'Belgaum Gardeners Co-operative Production Supply & Sale Society Ltd.'}
+                </div>
+                <div style={{ fontSize: 13, color: '#34d399', fontWeight: 700, marginTop: 4 }}>
+                  Quality Products • Trusted Service • Prosperous Farmers
                 </div>
               </div>
             </div>
@@ -315,8 +345,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {lang === 'mr' ? 'फोन क्रमांक (Phone Numbers)' : 'Official Phone Numbers'}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 8 }}>
-              +91 (0831) 2400123 / 2400124
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', marginTop: 8 }}>
+              0831 2460534
             </div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#059669', marginTop: 4 }}>
               +91 98450 12345 (हेल्पलाइन / WhatsApp)
@@ -332,7 +362,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               {lang === 'mr' ? 'जीएसटी व नोंदणी क्रमांक (GSTN)' : 'GSTN & Registration No.'}
             </div>
             <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', marginTop: 8, letterSpacing: '0.04em' }}>
-              GSTIN: 29AAAAB1234C1Z5
+              GSTIN Number: 29AAAAB1234C1Z5
             </div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginTop: 4 }}>
               Reg No: BGS/COP/1974/KA
@@ -486,31 +516,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
       </section>
 
       {/* ── 6. FOOTER ── */}
-      <footer style={{ background: '#0f172a', color: '#94a3b8', padding: '40px 24px 24px', borderTop: '1px solid #1e293b' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              <Leaf size={20} />
+      <footer style={{ background: '#0f172a', color: '#94a3b8', padding: '48px 24px 24px', borderTop: '1px solid #1e293b' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          
+          {/* Footer Info Banner */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)', borderRadius: 16, border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '20px 28px', marginBottom: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20
+          }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Office Address</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>930/1A Zanda Chowk Market, Belgaum 590002, Karnataka</div>
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc' }}>
-                {lang === 'mr' ? 'बेळगाव गार्डनर्स को-ऑप सोसायटी लि. बेळगाव' : 'Belgaum Gardeners Co-Op Society Ltd.'}
-              </div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>
-                © 2026 Belgaum Gardeners Cooperative. All rights reserved.
-              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🕒 Office Working Hours</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>Mon – Sat: 9:00 AM – 6:00 PM</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🆔 GSTIN Number</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>29AAAAB1234C1Z5</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#f472b6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📞 Phone Contact</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: '#ffffff', marginTop: 4 }}>0831 2460534</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={onOpenLogin} style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              {lang === 'mr' ? 'पोर्टल लॉगिन' : 'Staff Portal Login'}
-            </button>
-            <span>•</span>
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 13, cursor: 'pointer' }}>
-              {lang === 'mr' ? 'वरती जा ↑' : 'Back to top ↑'}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <Leaf size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc' }}>
+                  {lang === 'mr' ? 'बेळगाव गार्डनर्स को-ऑप सोसायटी लि. बेळगाव' : 'Belgaum Gardeners Co-Op Society Ltd.'}
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  © 2026 Belgaum Gardeners Cooperative. All rights reserved.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button onClick={onOpenLogin} style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                {lang === 'mr' ? 'पोर्टल लॉगिन' : 'Staff Portal Login'}
+              </button>
+              <span>•</span>
+              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 13, cursor: 'pointer' }}>
+                {lang === 'mr' ? 'वरती जा ↑' : 'Back to top ↑'}
+              </button>
+            </div>
           </div>
+
         </div>
       </footer>
 

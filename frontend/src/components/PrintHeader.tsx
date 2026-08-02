@@ -68,7 +68,7 @@ const PrintHeader: React.FC<PrintHeaderProps> = ({
         marginTop: 8
       }}>
         <span>📍 <strong>{lang === 'mr' ? 'पत्ता:' : 'Address:'}</strong> {office?.address || (lang === 'mr' ? '९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२' : '930/1A Zanda Chowk Market, Belgaum 590002')}</span>
-        <span>📞 <strong>{lang === 'mr' ? 'फोन:' : 'Phone:'}</strong> {office?.phone1 || '0831-2400123'}{office?.phone2 ? ` / ${office.phone2}` : ''}</span>
+        <span>📞 <strong>{lang === 'mr' ? 'फोन:' : 'Phone:'}</strong> {office?.phone1 || '0831 2460534'}{office?.phone2 ? ` / ${office.phone2}` : ''}</span>
         <span>🆔 <strong>{lang === 'mr' ? 'जीएसटी क्र:' : 'GSTN:'}</strong> {office?.gst_no || '29AAAAB1234C1Z5'}</span>
       </div>
     </div>
