@@ -1207,8 +1207,10 @@ body {
   div[style*="grid-template-columns: 120px 1fr 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+}
 
-  .btn {
-    min-height: 42px !important;
-  }
+/* ─── Vibrant Landing Card Hover Effects ───────────────────────────────── */
+.vibrant-landing-card:hover {
+  transform: translateY(-6px) scale(1.015) !important;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.2) !important;
 }

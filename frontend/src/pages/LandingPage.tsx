@@ -304,32 +304,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
           
           {/* Card 1: Society Name */}
-          <div style={{ background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', borderTop: '4px solid #059669' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#059669' }}>
+          <div className="vibrant-landing-card" style={{
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 60%, #d1fae5 100%)',
+            borderRadius: 20, padding: 26, border: '1.5px solid #a7f3d0', borderTop: '5px solid #059669',
+            boxShadow: '0 12px 30px -6px rgba(5, 150, 105, 0.15)', transition: 'all 0.25s ease'
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16, color: '#ffffff', boxShadow: '0 6px 16px rgba(5, 150, 105, 0.35)'
+            }}>
               <Building2 size={24} />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {lang === 'mr' ? 'संस्थेचे नाव (Society Name)' : 'Name of Society'}
             </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginTop: 8, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, color: '#064e3b', marginTop: 8, lineHeight: 1.4 }}>
               {lang === 'mr'
                 ? 'बेळगाव गार्डनर्स को-ऑप उत्पादन पुरवठा आणि विक्री सोसायटी लि.'
                 : 'Belgaum Gardeners Co-operative Production Supply and Sale Society Ltd.'}
             </div>
-            <div style={{ fontSize: 13, color: '#059669', fontWeight: 700, marginTop: 8 }}>
+            <div style={{ fontSize: 13, color: '#059669', fontWeight: 800, marginTop: 10, display: 'inline-block', background: 'rgba(255,255,255,0.7)', padding: '4px 10px', borderRadius: 8, border: '1px solid #a7f3d0' }}>
               {lang === 'mr' ? 'बेळगाव, कर्नाटक (Belgaum, Karnataka)' : 'Belgaum, Karnataka'}
             </div>
           </div>
 
           {/* Card 2: Registered Address */}
-          <div style={{ background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', borderTop: '4px solid #2563eb' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#2563eb' }}>
+          <div className="vibrant-landing-card" style={{
+            background: 'linear-gradient(135deg, #eff6ff 0%, #e0e7ff 60%, #dbeafe 100%)',
+            borderRadius: 20, padding: 26, border: '1.5px solid #bfdbfe', borderTop: '5px solid #2563eb',
+            boxShadow: '0 12px 30px -6px rgba(37, 99, 235, 0.15)', transition: 'all 0.25s ease'
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16, color: '#ffffff', boxShadow: '0 6px 16px rgba(37, 99, 235, 0.35)'
+            }}>
               <MapPin size={24} />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {lang === 'mr' ? 'कार्यालयीन पत्ता (Address)' : 'Registered Address'}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 8, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#1e1b4b', marginTop: 8, lineHeight: 1.5 }}>
               {lang === 'mr'
                 ? '९३०/१-अ, झेंडा चौक मार्केट, बेळगाव ५९०००२, कर्नाटक राज्य, भारत'
                 : '930/1A Zanda Chowk Market, Belgaum 590002, Karnataka State, India'}
@@ -337,33 +355,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           </div>
 
           {/* Card 3: Phone Numbers */}
-          <div style={{ background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', borderTop: '4px solid #d97706' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#d97706' }}>
+          <div className="vibrant-landing-card" style={{
+            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)',
+            borderRadius: 20, padding: 26, border: '1.5px solid #fde68a', borderTop: '5px solid #d97706',
+            boxShadow: '0 12px 30px -6px rgba(217, 119, 6, 0.15)', transition: 'all 0.25s ease'
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16, color: '#ffffff', boxShadow: '0 6px 16px rgba(217, 119, 6, 0.35)'
+            }}>
               <Phone size={24} />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {lang === 'mr' ? 'फोन क्रमांक (Phone Numbers)' : 'Official Phone Numbers'}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', marginTop: 8 }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#78350f', marginTop: 8 }}>
               0831 2460534
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#059669', marginTop: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#047857', marginTop: 6, display: 'inline-block', background: 'rgba(255,255,255,0.7)', padding: '4px 10px', borderRadius: 8, border: '1px solid #a7f3d0' }}>
               +91 98450 12345 (हेल्पलाइन / WhatsApp)
             </div>
           </div>
 
           {/* Card 4: GSTN & Registration */}
-          <div style={{ background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', borderTop: '4px solid #9333ea' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#faf5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#9333ea' }}>
+          <div className="vibrant-landing-card" style={{
+            background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 60%, #e9d5ff 100%)',
+            borderRadius: 20, padding: 26, border: '1.5px solid #e9d5ff', borderTop: '5px solid #9333ea',
+            boxShadow: '0 12px 30px -6px rgba(147, 51, 234, 0.15)', transition: 'all 0.25s ease'
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16, color: '#ffffff', boxShadow: '0 6px 16px rgba(147, 51, 234, 0.35)'
+            }}>
               <Hash size={24} />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {lang === 'mr' ? 'जीएसटी व नोंदणी क्रमांक (GSTN)' : 'GSTN & Registration No.'}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', marginTop: 8, letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#581c87', marginTop: 8, letterSpacing: '0.04em' }}>
               GSTIN Number: 29AAAAB1234C1Z5
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginTop: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#7e22ce', marginTop: 6 }}>
               Reg No: BGS/COP/1974/KA
             </div>
           </div>
@@ -386,34 +422,64 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28 }}>
             
             {/* Service 1 */}
-            <div style={{ padding: 24, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>🧪</div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
+            <div className="vibrant-landing-card" style={{
+              padding: 28, borderRadius: 20,
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #e6f4ea 60%, #dcfce7 100%)',
+              border: '1.5px solid #86efac', borderTop: '5px solid #16a34a',
+              boxShadow: '0 12px 30px -6px rgba(22, 163, 74, 0.15)', transition: 'all 0.25s ease'
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, marginBottom: 16, boxShadow: '0 6px 16px rgba(22, 163, 74, 0.3)'
+              }}>🧪</div>
+              <h3 style={{ fontSize: 19, fontWeight: 900, color: '#14532d', marginBottom: 8 }}>
                 {lang === 'mr' ? 'कीटकनाशके व रासायनिक खते पुरवठा' : 'Pesticides & Fertilizers Supply'}
               </h3>
-              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+              <p style={{ fontSize: 14, color: '#166534', lineHeight: 1.6, fontWeight: 500 }}>
                 {lang === 'mr' ? 'उत्कृष्ट गुणवत्तेची कीटकनाशके, रासायनिक खते आणि अव्वल दर्जाची प्रमाणित बियाणे थेट रास्त दरात उपलब्ध.' : 'Direct distribution of high-grade pesticides, fertilizers, bio-fungicides & certified hybrid seeds at fair prices.'}
               </p>
             </div>
 
             {/* Service 2 */}
-            <div style={{ padding: 24, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>❄️</div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
+            <div className="vibrant-landing-card" style={{
+              padding: 28, borderRadius: 20,
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 60%, #bae6fd 100%)',
+              border: '1.5px solid #7dd3fc', borderTop: '5px solid #0284c7',
+              boxShadow: '0 12px 30px -6px rgba(2, 132, 199, 0.15)', transition: 'all 0.25s ease'
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, marginBottom: 16, boxShadow: '0 6px 16px rgba(2, 132, 199, 0.3)'
+              }}>❄️</div>
+              <h3 style={{ fontSize: 19, fontWeight: 900, color: '#0c4a6e', marginBottom: 8 }}>
                 {lang === 'mr' ? 'शीतगृह साठवणूक (Cold Storage)' : 'Cold Storage Facilities'}
               </h3>
-              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+              <p style={{ fontSize: 14, color: '#0369a1', lineHeight: 1.6, fontWeight: 500 }}>
                 {lang === 'mr' ? 'भाजीपाला, फळे आणि बटाटे दीर्घकाळ ताज्या स्थितीत साठवण्यासाठी आधुनिक शीतगृह साठवणूक सुविधा.' : 'Modern temperature controlled cold storage for perishable vegetables, fruits and commercial crops.'}
               </p>
             </div>
 
             {/* Service 3 */}
-            <div style={{ padding: 24, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>💰</div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
+            <div className="vibrant-landing-card" style={{
+              padding: 28, borderRadius: 20,
+              background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)',
+              border: '1.5px solid #fcd34d', borderTop: '5px solid #ca8a04',
+              boxShadow: '0 12px 30px -6px rgba(202, 138, 4, 0.15)', transition: 'all 0.25s ease'
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, marginBottom: 16, boxShadow: '0 6px 16px rgba(202, 138, 4, 0.3)'
+              }}>💰</div>
+              <h3 style={{ fontSize: 19, fontWeight: 900, color: '#713f12', marginBottom: 8 }}>
                 {lang === 'mr' ? 'बचत, लक्ष्मी पिग्मी व कर्ज खाती' : 'Savings, Pigmi Deposits & Loans'}
               </h3>
-              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+              <p style={{ fontSize: 14, color: '#854d0e', lineHeight: 1.6, fontWeight: 500 }}>
                 {lang === 'mr' ? 'सदस्यांसाठी १०-अंकी ओळख, लक्ष्मी पिग्मी ठेव, कर्ज आणि लाभांश व्याज व्यवस्थापन.' : '10-Digit KYC customer ID, Lakshmi Pigmi daily deposits, agricultural loans, and dividend interest management.'}
               </p>
             </div>
