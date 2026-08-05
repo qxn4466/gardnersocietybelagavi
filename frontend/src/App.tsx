@@ -51,13 +51,7 @@ const App: React.FC = () => {
     );
   }
 
-  const userRole = user.role?.toUpperCase() || '';
-  const username = user.username?.toLowerCase() || '';
-
-  const isCashier = userRole === 'CASHIER' || username === 'cashier';
-  const isShopkeeper = userRole === 'SHOPKEEPER' || username === 'shopkeeper';
-
-  const defaultRedirect = isShopkeeper ? "/shopkeeper" : isCashier ? "/cashier" : "/";
+  const defaultRedirect = "/";
 
   return (
     <LanguageProvider>
@@ -69,13 +63,7 @@ const App: React.FC = () => {
               <Route
                 path="/"
                 element={
-                  isShopkeeper ? (
-                    <Navigate to="/shopkeeper" replace />
-                  ) : isCashier ? (
-                    <Navigate to="/cashier" replace />
-                  ) : (
-                    <CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />
-                  )
+                  <CreditAccountForm user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />
                 }
               />
               <Route
