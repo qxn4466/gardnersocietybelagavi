@@ -115,22 +115,12 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
 
   const handleAddNew = () => {
     const targetVal = searchTerm.trim();
-    if (!targetVal) {
-      const promptVal = window.prompt(
-        lang === 'mr'
-          ? 'नवीन बाब प्रविष्ट करा (Enter new custom item):'
-          : 'Enter new custom item / product:'
-      );
-      if (promptVal && promptVal.trim()) {
-        const newTrimmed = promptVal.trim();
-        if (onAddNewOption) onAddNewOption(newTrimmed);
-        onChange(newTrimmed);
-        setSearchTerm(getLabel(newTrimmed));
-      }
-    } else {
+    if (targetVal) {
       if (onAddNewOption) onAddNewOption(targetVal);
       onChange(targetVal);
       setSearchTerm(getLabel(targetVal));
+    } else {
+      if (inputRef.current) inputRef.current.focus();
     }
     setIsOpen(false);
   };

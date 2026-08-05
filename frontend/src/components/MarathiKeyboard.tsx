@@ -45,7 +45,7 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
   const lastFocusedInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    const handleFocusIn = (e: FocusEvent) => {
+    const handleActiveField = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         if (keyboardContainerRef.current && !keyboardContainerRef.current.contains(target)) {
@@ -54,8 +54,14 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
       }
     };
 
-    document.addEventListener('focusin', handleFocusIn);
-    return () => document.removeEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusin', handleActiveField, true);
+    document.addEventListener('click', handleActiveField, true);
+    document.addEventListener('pointerdown', handleActiveField, true);
+    return () => {
+      document.removeEventListener('focusin', handleActiveField, true);
+      document.removeEventListener('click', handleActiveField, true);
+      document.removeEventListener('pointerdown', handleActiveField, true);
+    };
   }, []);
 
   const getActiveInput = (): HTMLInputElement | HTMLTextAreaElement | null => {
@@ -72,6 +78,32 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
     return null;
   };
 
+  const setInputValueNative = (input: HTMLInputElement | HTMLTextAreaElement, newValue: string, newPos: number) => {
+    // Reset React's internal value tracker if present so controlled components react to state change
+    const tracker = (input as any)._valueTracker;
+    if (tracker) {
+      tracker.setValue(input.value + '_diff');
+    }
+
+    const proto = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    if (nativeSetter) {
+      nativeSetter.call(input, newValue);
+    } else {
+      input.value = newValue;
+    }
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+    input.focus();
+    try {
+      input.setSelectionRange(newPos, newPos);
+    } catch {
+      // Ignore for unsupported input types (e.g. number, date)
+    }
+  };
+
   // Focus and insert text into target input
   const insertCharacter = (char: string) => {
     if (onInsertChar) {
@@ -85,25 +117,7 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
       const value = input.value;
       const newValue = value.substring(0, start) + char + value.substring(end);
 
-      const proto = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-      const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      if (nativeSetter) {
-        nativeSetter.call(input, newValue);
-      } else {
-        input.value = newValue;
-      }
-
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-
-      // Refocus and place cursor after inserted character
-      input.focus();
-      const newCursorPos = start + char.length;
-      try {
-        input.setSelectionRange(newCursorPos, newCursorPos);
-      } catch {
-        // Ignore setSelectionRange errors on unsupported input types (e.g. number/date)
-      }
+      setInputValueNative(input, newValue, start + char.length);
     }
   };
 
@@ -128,20 +142,7 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
         newPos = start;
       }
 
-      const proto = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-      const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      if (nativeSetter) nativeSetter.call(input, newValue);
-      else input.value = newValue;
-
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-
-      input.focus();
-      try {
-        input.setSelectionRange(newPos, newPos);
-      } catch {
-        // Ignore selection error for number/date inputs
-      }
+      setInputValueNative(input, newValue, newPos);
     }
   };
 
@@ -149,14 +150,7 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
     if (onClear) onClear();
     const input = getActiveInput();
     if (input) {
-      const proto = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-      const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      if (nativeSetter) nativeSetter.call(input, '');
-      else input.value = '';
-
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      input.focus();
+      setInputValueNative(input, '', 0);
     }
   };
 
