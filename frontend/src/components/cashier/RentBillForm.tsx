@@ -8,6 +8,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi } from '../../utils/translator';
 
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
+import SearchableCombobox from '../SearchableCombobox';
 
 interface RentBillFormProps {
   user?: User | null;
@@ -472,23 +473,19 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
         {/* Dropdown for Rent Bill Particulars */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'भाडे प्रकार / तपशील (Rent Category Particulars)' : 'Rent Category Particulars'}</label>
-              <button type="button" onClick={addCustomParticular} style={{ background: 'none', border: 'none', color: '#d97706', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                ➕ {lang === 'mr' ? '+ नवीन बाब जोडा' : '+ Custom Item'}
-              </button>
-            </div>
-            <select
-              className="form-input"
+            <label className="form-label" style={{ marginBottom: 4 }}>{lang === 'mr' ? 'भाडे प्रकार / तपशील (Rent Category Particulars)' : 'Rent Category Particulars'}</label>
+            <SearchableCombobox
               value={particularsSelect}
-              onChange={e => setParticularsSelect(e.target.value)}
-            >
-              {particularsOptions.map(opt => (
-                <option key={opt} value={opt}>
-                  {lang === 'mr' ? (ITEM_TRANSLATIONS[opt] || opt) : opt}
-                </option>
-              ))}
-            </select>
+              onChange={val => setParticularsSelect(val)}
+              options={particularsOptions}
+              onAddNewOption={newOpt => {
+                if (!particularsOptions.includes(newOpt)) {
+                  setParticularsOptions([...particularsOptions, newOpt]);
+                }
+              }}
+              lang={lang}
+              itemTranslations={ITEM_TRANSLATIONS}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'कालावधी / गाळा क्र. (Month / Stall Ref)' : 'Month / Stall Ref'}</label>

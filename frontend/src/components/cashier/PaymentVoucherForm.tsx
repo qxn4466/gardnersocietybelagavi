@@ -8,6 +8,7 @@ import { PAYMENT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import { translateToMarathi } from '../../utils/translator';
+import SearchableCombobox from '../SearchableCombobox';
 
 
 interface PaymentVoucherFormProps {
@@ -530,18 +531,19 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                 {items.map((row, idx) => (
                   <tr key={row.id}>
                     <td>{idx + 1}</td>
-                    <td>
-                      <select
-                        className="form-input"
+                    <td style={{ minWidth: 220 }}>
+                      <SearchableCombobox
                         value={row.particular}
-                        onChange={e => updateRow(idx, 'particular', e.target.value)}
-                      >
-                        {particularsOptions.map(opt => (
-                          <option key={opt} value={opt}>
-                            {lang === 'mr' ? (ITEM_TRANSLATIONS[opt] || opt) : opt}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={val => updateRow(idx, 'particular', val)}
+                        options={particularsOptions}
+                        onAddNewOption={newOpt => {
+                          if (!particularsOptions.includes(newOpt)) {
+                            setParticularsOptions([...particularsOptions, newOpt]);
+                          }
+                        }}
+                        lang={lang}
+                        itemTranslations={ITEM_TRANSLATIONS}
+                      />
                     </td>
                     <td>
                       <input

@@ -6,6 +6,7 @@ import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+import SearchableCombobox from '../SearchableCombobox';
 
 interface ShopRetailBillFormProps {
   user?: User | null;
@@ -401,67 +402,17 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                 {items.map((row, idx) => (
                   <tr key={row.id} style={{ background: '#fff' }}>
                     <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
-                    <td style={{ padding: '6px 4px' }}>
-                      {row.isCustomText ? (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <input
-                            type="text"
-                            className="form-input"
-                            style={{ fontSize: 13, padding: '6px 8px', fontWeight: 600, color: '#c2410c' }}
-                            placeholder="Enter item name..."
-                            value={row.particulars}
-                            onChange={e => updateRow(idx, 'particulars', e.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-primary"
-                            style={{ padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }}
-                            title="Save custom item to product list"
-                            onClick={() => {
-                              if (row.particulars.trim()) {
-                                const updatedList = addStoredProduct(row.particulars.trim());
-                                setProductList(updatedList);
-                              }
-                              updateRow(idx, 'isCustomText', false);
-                            }}
-                          >
-                            <Check size={13} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                          <select
-                            className="form-input"
-                            style={{ fontSize: 13, padding: '6px 8px', flex: 1 }}
-                            value={row.particulars}
-                            onChange={e => {
-                              if (e.target.value === '__ADD_NEW__') {
-                                handleAddNewProduct(idx);
-                              } else {
-                                updateRow(idx, 'particulars', e.target.value);
-                              }
-                            }}
-                          >
-                            {productList.map(p => (
-                              <option key={p} value={p}>
-                                {lang === 'mr' ? getMarathiItem(p) : p}
-                              </option>
-                            ))}
-                            <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#ea580c' }}>
-                              {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add Custom Product...'}
-                            </option>
-                          </select>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            style={{ padding: '4px 6px', fontSize: 11 }}
-                            title="Type custom product name"
-                            onClick={() => updateRow(idx, 'isCustomText', true)}
-                          >
-                            <Edit size={12} />
-                          </button>
-                        </div>
-                      )}
+                    <td style={{ padding: '6px 4px', minWidth: 220 }}>
+                      <SearchableCombobox
+                        value={row.particulars}
+                        onChange={val => updateRow(idx, 'particulars', val)}
+                        options={productList}
+                        onAddNewOption={newProd => {
+                          const updatedList = addStoredProduct(newProd);
+                          setProductList(updatedList);
+                        }}
+                        lang={lang}
+                      />
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input

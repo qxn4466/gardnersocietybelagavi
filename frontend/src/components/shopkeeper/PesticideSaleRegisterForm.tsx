@@ -6,6 +6,7 @@ import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
 import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+import SearchableCombobox from '../SearchableCombobox';
 
 interface PesticideSaleRegisterFormProps {
   user?: User | null;
@@ -241,26 +242,16 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'कीटकनाशक उत्पादन नाव' : 'Pesticide Product Name'}</label>
-            <select
-              className="form-input"
+            <SearchableCombobox
               value={productName}
-              onChange={e => {
-                if (e.target.value === '__ADD_NEW__') {
-                  handleAddNewProduct();
-                } else {
-                  setProductName(e.target.value);
-                }
+              onChange={val => setProductName(val)}
+              options={productList}
+              onAddNewOption={newProd => {
+                const updatedList = addStoredProduct(newProd);
+                setProductList(updatedList);
               }}
-            >
-              {productList.map(p => (
-                <option key={p} value={p}>
-                  {lang === 'mr' ? getMarathiItem(p) : p}
-                </option>
-              ))}
-              <option value="__ADD_NEW__" style={{ fontWeight: 'bold', color: '#7c3aed' }}>
-                {lang === 'mr' ? '➕ + नवीन उत्पादन जोडा (Add New Product)' : '➕ + Add New Product...'}
-              </option>
-            </select>
+              lang={lang}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Qty</label>

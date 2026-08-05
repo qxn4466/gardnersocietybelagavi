@@ -8,6 +8,7 @@ import {
 import Header from '../components/Header';
 import ReceiptModal from '../components/ReceiptModal';
 import CustomerStatementModal from '../components/CustomerStatementModal';
+import SearchableCombobox from '../components/SearchableCombobox';
 import {
   fetchOffice,
   fetchTransactionTypes,
@@ -850,17 +851,15 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       </span>
                     )}
                   </label>
-                  <select
-                    id="txn-type"
-                    className="form-select"
-                    value={form.transaction_type_id}
-                    onChange={e => {
-                      const selectedId = e.target.value;
-                      const selectedType = txnTypes.find(t => String(t.id) === selectedId);
+                  <SearchableCombobox
+                    value={form.transaction_type_id ? (txnTypes.find(t => String(t.id) === form.transaction_type_id)?.name || form.transaction_type_id) : ''}
+                    onChange={val => {
+                      const matchedType = txnTypes.find(t => t.name === val || String(t.id) === val);
+                      const selectedId = matchedType ? String(matchedType.id) : val;
                       let defaultNature = form.entry_nature || 'CREDIT';
-                      if (selectedType) {
-                        if (selectedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
-                        else if (selectedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
+                      if (matchedType) {
+                        if (matchedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
+                        else if (matchedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
                       }
                       setForm(prev => ({
                         ...prev,
@@ -868,17 +867,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         entry_nature: defaultNature,
                       }));
                     }}
-                    required
-                  >
-                    <option value="">— {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते निवडा` : `Select ${form.entry_nature} Head`} —</option>
-                    {txnTypes
+                    options={txnTypes
                       .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
-                      .map(t => (
-                        <option key={t.id} value={t.id}>
-                          {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'BOTH' ? (lang === 'mr' ? 'जमा/नावे दोन्ही' : 'Configurable Credit/Debit') : (t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (lang === 'mr' ? 'जमा' : 'CREDIT'))})
-                        </option>
-                      ))}
-                  </select>
+                      .map(t => t.name)}
+                    lang={lang}
+                    placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
+                  />
 
                   {/* Configurable Credit / Debit selector for Sundry Account / Both types */}
                   {(() => {

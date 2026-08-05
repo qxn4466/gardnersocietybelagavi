@@ -7,6 +7,7 @@ import { RECEIPT_PARTICULARS_OPTIONS } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import { translateToMarathi } from '../../utils/translator';
+import SearchableCombobox from '../SearchableCombobox';
 
 interface ReceiptVoucherFormProps {
   user?: User | null;
@@ -450,23 +451,19 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         {/* Dropdown for Receipt Particulars */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars Dropdown'}</label>
-              <button type="button" onClick={addCustomParticular} style={{ background: 'none', border: 'none', color: '#d97706', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                ➕ {lang === 'mr' ? '+ नवीन बाब जोडा' : '+ Custom Item'}
-              </button>
-            </div>
-            <select
-              className="form-input"
+            <label className="form-label" style={{ marginBottom: 4 }}>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars Dropdown'}</label>
+            <SearchableCombobox
               value={particularsSelect}
-              onChange={e => setParticularsSelect(e.target.value)}
-            >
-              {particularsOptions.map(opt => (
-                <option key={opt} value={opt}>
-                  {lang === 'mr' ? (ITEM_TRANSLATIONS[opt] || opt) : opt}
-                </option>
-              ))}
-            </select>
+              onChange={val => setParticularsSelect(val)}
+              options={particularsOptions}
+              onAddNewOption={newOpt => {
+                if (!particularsOptions.includes(newOpt)) {
+                  setParticularsOptions([...particularsOptions, newOpt]);
+                }
+              }}
+              lang={lang}
+              itemTranslations={ITEM_TRANSLATIONS}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'अतिरिक्त शेरा / संदर्भ (Additional Remarks)' : 'Additional Remarks / Ref'}</label>
