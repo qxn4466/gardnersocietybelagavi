@@ -231,20 +231,18 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
         </div>
 
         {/* Marathi Keyboard Toggle Button */}
-        {lang === 'mr' && (
-          <button
-            type="button"
-            className={`btn btn-sm ${showKeyboard ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '6px 8px', height: 36 }}
-            title="मराठी टायपिंग कीबोर्ड उघडा (Open Marathi Touch Keypad)"
-            onClick={() => {
-              setShowKeyboard(!showKeyboard);
-              if (inputRef.current) inputRef.current.focus();
-            }}
-          >
-            <Keyboard size={14} color={showKeyboard ? '#ffffff' : '#2563eb'} />
-          </button>
-        )}
+        <button
+          type="button"
+          className={`btn btn-sm ${showKeyboard ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '6px 8px', height: 36 }}
+          title="मराठी टायपिंग कीबोर्ड उघडा (Open Marathi Touch Keypad)"
+          onClick={() => {
+            setShowKeyboard(!showKeyboard);
+            if (inputRef.current) inputRef.current.focus();
+          }}
+        >
+          <Keyboard size={14} color={showKeyboard ? '#ffffff' : '#2563eb'} />
+        </button>
       </div>
 
       {/* Floating Marathi Touch Keypad Component */}

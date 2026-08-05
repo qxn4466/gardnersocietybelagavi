@@ -12,6 +12,8 @@ import CashierDashboard from './pages/CashierDashboard';
 import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import { Keyboard } from 'lucide-react';
+import MarathiKeyboard from './components/MarathiKeyboard';
 import type { User } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './index.css';
@@ -53,10 +55,12 @@ const App: React.FC = () => {
 
   const defaultRedirect = "/";
 
+  const [showGlobalKeyboard, setShowGlobalKeyboard] = useState(false);
+
   return (
     <LanguageProvider>
       <BrowserRouter>
-        <div className="app-layout">
+        <div className="app-layout" style={{ position: 'relative' }}>
           <Sidebar user={user} isOpen={sidebarOpen} onClose={closeSidebar} />
           <main className="main-content">
             <Routes>
@@ -105,6 +109,41 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
             </Routes>
           </main>
+
+          {/* Persistent Floating Marathi Keypad Launcher Widget */}
+          <button
+            type="button"
+            onClick={() => setShowGlobalKeyboard(!showGlobalKeyboard)}
+            className="no-print"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              zIndex: 99999,
+              background: showGlobalKeyboard ? '#1e40af' : '#2563eb',
+              color: '#ffffff',
+              border: '2px solid #ffffff',
+              borderRadius: 30,
+              padding: '10px 18px',
+              fontSize: 13,
+              fontWeight: 800,
+              boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease',
+            }}
+            title="मराठी टायपिंग कीबोर्ड उघडा / बंद करा (Toggle Marathi Touch Keypad)"
+          >
+            <Keyboard size={18} color="#ffffff" />
+            <span>⌨️ मराठी कीबोर्ड</span>
+          </button>
+
+          <MarathiKeyboard
+            isOpen={showGlobalKeyboard}
+            onClose={() => setShowGlobalKeyboard(false)}
+          />
         </div>
       </BrowserRouter>
     </LanguageProvider>
