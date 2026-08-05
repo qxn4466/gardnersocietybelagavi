@@ -1,6 +1,7 @@
-import React from 'react';
-import { Calendar, User as UserIcon, LogOut, Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, User as UserIcon, LogOut, Menu, Keyboard } from 'lucide-react';
 import PrintButton from './PrintButton';
+import MarathiKeyboard from './MarathiKeyboard';
 import type { User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LANG_LABELS, type Lang } from '../i18n/translations';
@@ -34,6 +35,7 @@ const Header: React.FC<HeaderProps> = ({
   title, subtitle, level, showPrint = true, actions, user, onLogout, onToggleMobileMenu
 }) => {
   const { lang, setLang } = useLanguage();
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const now = new Date();
   const dateStr = now.toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', {
     weekday: 'short',
@@ -84,21 +86,49 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-right">
-        {/* ── Language Switcher ── */}
-        <div className="lang-switcher no-print" role="group" aria-label="Language selector">
-          {LANGS.map((l) => (
-            <button
-              key={l}
-              id={`lang-btn-${l}`}
-              onClick={() => setLang(l)}
-              className={`lang-btn${lang === l ? ' lang-btn--active' : ''}`}
-              title={l === 'en' ? 'Switch to English' : 'मराठीत स्विच करा'}
-              aria-pressed={lang === l}
-            >
-              {LANG_LABELS[l]}
-            </button>
-          ))}
+        {/* ── Language Switcher & Marathi Keypad Toggle ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="lang-switcher no-print" role="group" aria-label="Language selector">
+            {LANGS.map((l) => (
+              <button
+                key={l}
+                id={`lang-btn-${l}`}
+                onClick={() => setLang(l)}
+                className={`lang-btn${lang === l ? ' lang-btn--active' : ''}`}
+                title={l === 'en' ? 'Switch to English' : 'मराठीत स्विच करा'}
+                aria-pressed={lang === l}
+              >
+                {LANG_LABELS[l]}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={`btn btn-sm ${showKeyboard ? 'btn-primary' : 'btn-secondary'}`}
+            style={{
+              padding: '5px 10px',
+              fontSize: 12,
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: showKeyboard ? '#1d4ed8' : '#f1f5f9',
+              color: showKeyboard ? '#ffffff' : '#1e293b',
+              border: '1px solid #cbd5e1',
+            }}
+            title="मराठी कीबोर्ड उघडा / बंद करा (Toggle Marathi Touch Keypad)"
+            onClick={() => setShowKeyboard(!showKeyboard)}
+          >
+            <Keyboard size={15} color={showKeyboard ? '#ffffff' : '#2563eb'} />
+            <span>⌨️ {lang === 'mr' ? 'मराठी कीबोर्ड' : 'Marathi Keypad'}</span>
+          </button>
         </div>
+
+        <MarathiKeyboard
+          isOpen={showKeyboard}
+          onClose={() => setShowKeyboard(false)}
+        />
 
         <div className="header-date">
           <Calendar size={14} />
