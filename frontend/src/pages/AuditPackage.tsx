@@ -164,16 +164,16 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
   const debitTotal = debitRows.reduce((s, r) => s + Number(r.total), 0);
 
   // Calculations: Dashboard 2 (Cashier)
-  const paymentVouchersTotal = paymentVouchers.reduce((s, r) => s + Number(r.amount), 0);
-  const receiptVouchersTotal = receiptVouchers.reduce((s, r) => s + Number(r.amount), 0);
-  const rentBillsTotal = rentBills.reduce((s, r) => s + Number(r.total_amount), 0);
+  const paymentVouchersTotal = paymentVouchers.reduce((s, r) => s + (Number(r.amount_rs) || 0), 0);
+  const receiptVouchersTotal = receiptVouchers.reduce((s, r) => s + (Number(r.total_amount) || 0), 0);
+  const rentBillsTotal = rentBills.reduce((s, r) => s + (Number(r.total_amount) || 0), 0);
   const cashierTotalTxns = paymentVouchers.length + receiptVouchers.length + rentBills.length;
   const cashierTotalVolume = paymentVouchersTotal + receiptVouchersTotal + rentBillsTotal;
 
   // Calculations: Dashboard 3 (Shopkeeper)
-  const shopTaxInvoicesTotal = shopTaxInvoices.reduce((s, r) => s + Number(r.total_amount), 0);
-  const shopRetailBillsTotal = shopRetailBills.reduce((s, r) => s + Number(r.total_amount), 0);
-  const pesticideSalesTotal = pesticideSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  const shopTaxInvoicesTotal = shopTaxInvoices.reduce((s, r) => s + (Number(r.total_amount || r.amount) || 0), 0);
+  const shopRetailBillsTotal = shopRetailBills.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const pesticideSalesTotal = pesticideSales.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const shopkeeperTotalTxns = shopTaxInvoices.length + shopRetailBills.length + pesticideSales.length;
   const shopkeeperTotalVolume = shopTaxInvoicesTotal + shopRetailBillsTotal + pesticideSalesTotal;
 
