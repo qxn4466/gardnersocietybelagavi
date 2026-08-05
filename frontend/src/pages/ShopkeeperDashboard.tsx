@@ -5,10 +5,9 @@ import SellingRateBookForm from '../components/shopkeeper/SellingRateBookForm';
 import ShopTaxInvoiceForm from '../components/shopkeeper/ShopTaxInvoiceForm';
 import ShopRetailBillForm from '../components/shopkeeper/ShopRetailBillForm';
 import PesticideSaleRegisterForm from '../components/shopkeeper/PesticideSaleRegisterForm';
-import ShopkeeperAuditForm from '../components/shopkeeper/ShopkeeperAuditForm';
 import type { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { Tag, Receipt, ShoppingCart, FlaskConical, BarChart3 } from 'lucide-react';
+import { Tag, Receipt, ShoppingCart, FlaskConical } from 'lucide-react';
 
 interface ShopkeeperDashboardProps {
   user?: User | null;
@@ -16,7 +15,7 @@ interface ShopkeeperDashboardProps {
   onToggleMobileMenu?: () => void;
 }
 
-type TabType = 'selling-rate' | 'tax-invoice' | 'retail-bill' | 'pesticide-register' | 'audit-book';
+type TabType = 'selling-rate' | 'tax-invoice' | 'retail-bill' | 'pesticide-register';
 
 const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { lang } = useTranslation();
@@ -24,13 +23,13 @@ const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogou
 
   const tabParam = searchParams.get('tab') as TabType;
   const [activeTab, setActiveTab] = useState<TabType>(
-    tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register', 'audit-book'].includes(tabParam)
+    tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register'].includes(tabParam)
       ? tabParam
       : 'selling-rate'
   );
 
   useEffect(() => {
-    if (tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register', 'audit-book'].includes(tabParam)) {
+    if (tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -51,7 +50,7 @@ const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogou
       />
 
 
-      {/* 5 Tab Navigation Buttons */}
+      {/* 4 Tab Navigation Buttons */}
       <div className="tab-navigation" style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid var(--border-subtle)', paddingBottom: 8, overflowX: 'auto' }}>
         <button
           className={`tab-button ${activeTab === 'selling-rate' ? 'active' : ''}`}
@@ -104,19 +103,6 @@ const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogou
         >
           <FlaskConical size={16} /> 4. {lang === 'mr' ? 'कीटकनाशके नोंदवही' : 'Pesticide Sale Register'}
         </button>
-
-        <button
-          className={`tab-button ${activeTab === 'audit-book' ? 'active' : ''}`}
-          onClick={() => handleTabChange('audit-book')}
-          style={{
-            padding: '10px 16px', borderRadius: '6px 6px 0 0', fontWeight: 600, fontSize: 13,
-            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', border: 'none',
-            background: activeTab === 'audit-book' ? 'var(--blue-600)' : 'transparent',
-            color: activeTab === 'audit-book' ? '#fff' : 'var(--text-secondary)',
-          }}
-        >
-          <BarChart3 size={16} /> 5. {lang === 'mr' ? 'दुकान लेखापरीक्षा पुस्तक' : 'Audit Book'}
-        </button>
       </div>
 
       {/* Tab Content Display */}
@@ -125,7 +111,6 @@ const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogou
         {activeTab === 'tax-invoice' && <ShopTaxInvoiceForm user={user} />}
         {activeTab === 'retail-bill' && <ShopRetailBillForm user={user} />}
         {activeTab === 'pesticide-register' && <PesticideSaleRegisterForm user={user} />}
-        {activeTab === 'audit-book' && <ShopkeeperAuditForm user={user} />}
       </div>
     </div>
   );

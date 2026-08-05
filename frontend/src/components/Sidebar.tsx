@@ -177,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           }}>
             <span>{lang === 'mr' ? 'कॅशियर डॅशबोर्ड' : 'Cashier Dashboard'}</span>
             <span style={{ fontSize: 9, padding: '1px 6px', background: 'rgba(56, 189, 248, 0.15)', borderRadius: 4, color: '#38bdf8' }}>
-              {lang === 'mr' ? '६ फॉर्म्स' : '6 Forms'}
+              {lang === 'mr' ? '५ फॉर्म्स' : '5 Forms'}
             </span>
           </div>
 
@@ -251,20 +251,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
             </div>
           </NavLink>
 
-          <NavLink
-            to="/cashier?tab=audit-form"
-            onClick={onClose}
-            className={() => `sidebar-nav-item${location.pathname === '/cashier' && currentTab === 'audit-form' ? ' active' : ''}`}
-          >
-            <ShieldCheck size={18} className="nav-icon" />
-            <div className="nav-label-group">
-              <span>{lang === 'mr' ? '६. कॅशियर लेखापरीक्षा फॉर्म' : '6. Cashier Audit Form'}</span>
-              <span className="nav-level-badge">
-                {lang === 'mr' ? 'स्तर ३ · लेखापरीक्षक अहवाल' : 'Level 3 · Audit Package'}
-              </span>
-            </div>
-          </NavLink>
-
           {/* SECTION 3: SHOPKEEPER DASHBOARD & FORMS */}
           <div style={{
             fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#34d399',
@@ -273,7 +259,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           }}>
             <span>{lang === 'mr' ? 'दुकानदार डॅशबोर्ड' : 'Shopkeeper Dashboard'}</span>
             <span style={{ fontSize: 9, padding: '1px 6px', background: 'rgba(52, 211, 153, 0.15)', borderRadius: 4, color: '#34d399' }}>
-              {lang === 'mr' ? '५ फॉर्म्स' : '5 Forms'}
+              {lang === 'mr' ? '४ फॉर्म्स' : '4 Forms'}
             </span>
           </div>
 
@@ -329,20 +315,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               <span>{lang === 'mr' ? '४. कीटकनाशके विक्री नोंद' : '4. Pesticide Sale Register'}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? 'बोरीक ॲसिड व उत्पादने' : 'Boric Acid & Products'}
-              </span>
-            </div>
-          </NavLink>
-
-          <NavLink
-            to="/shopkeeper?tab=audit-book"
-            onClick={onClose}
-            className={() => `sidebar-nav-item${location.pathname === '/shopkeeper' && currentTab === 'audit-book' ? ' active' : ''}`}
-          >
-            <BarChart3 size={18} className="nav-icon" />
-            <div className="nav-label-group">
-              <span>{lang === 'mr' ? '५. दुकान लेखापरीक्षा पुस्तक' : '5. Shopkeeper Audit Book'}</span>
-              <span className="nav-level-badge">
-                {lang === 'mr' ? 'दुकान विक्री अहवाल' : 'Shop Sales Audit'}
               </span>
             </div>
           </NavLink>

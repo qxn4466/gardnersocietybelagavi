@@ -174,32 +174,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
           {/* Quick Demo Login Helpers */}
           <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px dashed var(--border-muted)' }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
-              {lang === 'mr' ? 'प्रात्यक्षिक जलद लॉगिन (भरण्यासाठी क्लिक करा)' : 'Demo Quick Logins (Click to Fill)'}
+              {lang === 'mr' ? 'प्रात्यक्षिक जलद लॉगिन (भरण्यासाठी क्लिक करा)' : 'Demo Quick Login (Click to Fill)'}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            <div>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleFillDemo('accountant', 'pass123')}
-                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
+                style={{ fontSize: 12, width: '100%', justifyContent: 'center', padding: '8px 12px', gap: 6 }}
               >
-                <Shield size={12} color="var(--blue-400)" /> {lang === 'mr' ? 'लेखापाल' : 'Accountant'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleFillDemo('cashier', 'pass123')}
-                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
-              >
-                <Shield size={12} color="var(--amber-400)" /> {lang === 'mr' ? 'कॅशियर' : 'Cashier'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleFillDemo('shopkeeper', 'pass123')}
-                style={{ fontSize: 11, justifyContent: 'flex-start', padding: '6px 8px' }}
-              >
-                <Shield size={12} color="var(--emerald-500)" /> {lang === 'mr' ? 'दुकानदार' : 'Shop Keeper'}
+                <Shield size={14} color="var(--blue-400)" /> {lang === 'mr' ? 'लेखापाल (Accountant User)' : 'Accountant User (accountant / pass123)'}
               </button>
             </div>
           </div>

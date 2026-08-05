@@ -6,10 +6,9 @@ import ReceiptVoucherForm from '../components/cashier/ReceiptVoucherForm';
 import RentBillForm from '../components/cashier/RentBillForm';
 import CashScrollBookForm from '../components/cashier/CashScrollBookForm';
 import ChequeIssueBookForm from '../components/cashier/ChequeIssueBookForm';
-import CashierAuditForm from '../components/cashier/CashierAuditForm';
 import type { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { FileText, Receipt, Landmark, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
+import { FileText, Receipt, Landmark, BookOpen, CreditCard } from 'lucide-react';
 
 interface CashierDashboardProps {
   user?: User | null;
@@ -17,18 +16,22 @@ interface CashierDashboardProps {
   onToggleMobileMenu?: () => void;
 }
 
-export type CashierTab = 'payment-voucher' | 'receipt-voucher' | 'rent-bill' | 'cash-scroll' | 'cheque-issue' | 'audit-form';
+export type CashierTab = 'payment-voucher' | 'receipt-voucher' | 'rent-bill' | 'cash-scroll' | 'cheque-issue';
 
 const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as CashierTab | null;
-  const [activeTab, setActiveTab] = useState<CashierTab>(tabParam || 'payment-voucher');
+  const [activeTab, setActiveTab] = useState<CashierTab>(
+    tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam)
+      ? tabParam
+      : 'payment-voucher'
+  );
 
   // Sync activeTab whenever URL query parameter ?tab= changes!
   useEffect(() => {
-    if (tabParam) {
+    if (tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -69,12 +72,6 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
       icon: <CreditCard size={16} />,
       badge: lang === 'mr' ? 'धनादेश' : 'Cheque'
     },
-    {
-      id: 'audit-form',
-      label: lang === 'mr' ? '६. कॅशियर लेखापरीक्षा फॉर्म' : '6. Cashier Audit Form',
-      icon: <ShieldCheck size={16} />,
-      badge: lang === 'mr' ? 'ऑडिट' : 'Audit'
-    },
   ];
 
   return (
@@ -82,8 +79,8 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
       <Header
         title={lang === 'mr' ? 'कॅशियर डॅशबोर्ड व फॉर्म्स' : 'Cashier Dashboard & Forms'}
         subtitle={lang === 'mr'
-          ? 'कॅशियरसाठी सर्व ६ आवश्यक फॉर्म व अहवाल प्रणाली (रोख पेमेंट, पावती, भाडे बिल, स्क्रोल, चेक, ऑडिट)'
-          : 'Cashier operational suite for 6 essential forms & audit binder'}
+          ? 'कॅशियरसाठी आवश्यक ५ फॉर्म्स प्रणाली (रोख पेमेंट, पावती, भाडे बिल, स्क्रोल, चेक)'
+          : 'Cashier operational suite for 5 essential forms'}
         level={2}
         user={user}
         onLogout={onLogout}
@@ -131,7 +128,6 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
       {activeTab === 'rent-bill' && <RentBillForm user={user} />}
       {activeTab === 'cash-scroll' && <CashScrollBookForm user={user} />}
       {activeTab === 'cheque-issue' && <ChequeIssueBookForm user={user} />}
-      {activeTab === 'audit-form' && <CashierAuditForm user={user} />}
     </div>
   );
 };
