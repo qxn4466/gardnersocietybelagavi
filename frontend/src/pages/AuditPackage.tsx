@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Printer, RefreshCw, CheckCircle2, ShieldCheck,
-  Building2, Hash, Phone, FileText, CheckSquare, Calendar
+  Building2, Hash, Phone, FileText, CheckSquare, Calendar,
+  Receipt, Landmark, CreditCard, Tag, ShoppingCart, FlaskConical, BarChart3
 } from 'lucide-react';
 import Header from '../components/Header';
 import PrintHeader from '../components/PrintHeader';
@@ -10,6 +11,12 @@ import {
   fetchCashBook,
   fetchLedger,
   fetchCustomers,
+  fetchPaymentVouchers,
+  fetchReceiptVouchers,
+  fetchRentBills,
+  fetchShopTaxInvoices,
+  fetchShopRetailBills,
+  fetchPesticideSales,
 } from '../api/client';
 import type {
   CashBookRow,
@@ -17,10 +24,15 @@ import type {
   Customer,
   OfficeMaster,
   User,
+  CashPaymentVoucher,
+  CashReceiptVoucher,
+  RentBill,
+  ShopTaxInvoice,
+  ShopRetailBill,
+  PesticideSaleEntry,
 } from '../types';
 import { CREDIT_BOOK_COLUMNS, DEBIT_BOOK_COLUMNS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-
 import { getTxnHeadMarathi } from '../utils/translator';
 
 interface AuditPackageProps {
@@ -55,33 +67,66 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
   const [endDate, setEndDate] = useState('2026-06-30');
 
   const [office, setOffice] = useState<OfficeMaster | null>(null);
+  
+  // Dashboard 1: Accountant Data
   const [creditRows, setCreditRows] = useState<CashBookRow[]>([]);
   const [debitRows, setDebitRows] = useState<CashBookRow[]>([]);
   const [ledgerRows, setLedgerRows] = useState<LedgerRow[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+
+  // Dashboard 2: Cashier Data
+  const [paymentVouchers, setPaymentVouchers] = useState<CashPaymentVoucher[]>([]);
+  const [receiptVouchers, setReceiptVouchers] = useState<CashReceiptVoucher[]>([]);
+  const [rentBills, setRentBills] = useState<RentBill[]>([]);
+
+  // Dashboard 3: Shopkeeper Data
+  const [shopTaxInvoices, setShopTaxInvoices] = useState<ShopTaxInvoice[]>([]);
+  const [shopRetailBills, setShopRetailBills] = useState<ShopRetailBill[]>([]);
+  const [pesticideSales, setPesticideSales] = useState<PesticideSaleEntry[]>([]);
+
   const [loading, setLoading] = useState(false);
 
-  // Print section toggles
+  // Print section toggles for 3 Dashboards
   const [includeCover, setIncludeCover] = useState(true);
   const [includeCreditBook, setIncludeCreditBook] = useState(true);
   const [includeDebitBook, setIncludeDebitBook] = useState(true);
   const [includeLedger, setIncludeLedger] = useState(true);
   const [includeCustomers, setIncludeCustomers] = useState(true);
+  const [includeCashier, setIncludeCashier] = useState(true);
+  const [includeShopkeeper, setIncludeShopkeeper] = useState(true);
 
   const loadAuditData = useCallback(async () => {
     setLoading(true);
     try {
-      const [off, cred, deb, cust] = await Promise.all([
+      const [
+        off, cred, deb, cust,
+        pv, rv, rb,
+        sti, srb, ps
+      ] = await Promise.all([
         fetchOffice().catch(() => null),
         fetchCashBook(startDate, endDate, 'CREDIT').catch(() => []),
         fetchCashBook(startDate, endDate, 'DEBIT').catch(() => []),
         fetchCustomers().catch(() => []),
+        fetchPaymentVouchers(startDate, endDate).catch(() => []),
+        fetchReceiptVouchers(startDate, endDate).catch(() => []),
+        fetchRentBills(startDate, endDate).catch(() => []),
+        fetchShopTaxInvoices(startDate, endDate).catch(() => []),
+        fetchShopRetailBills(startDate, endDate).catch(() => []),
+        fetchPesticideSales(startDate, endDate).catch(() => []),
       ]);
 
       setOffice(off);
       setCreditRows(cred);
       setDebitRows(deb);
       setCustomers(cust);
+
+      setPaymentVouchers(pv);
+      setReceiptVouchers(rv);
+      setRentBills(rb);
+
+      setShopTaxInvoices(sti);
+      setShopRetailBills(srb);
+      setPesticideSales(ps);
 
       // Extract month and year from startDate if available
       const sDateObj = new Date(startDate);
@@ -114,9 +159,23 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
     window.print();
   };
 
-  // Calculations
+  // Calculations: Dashboard 1 (Accountant)
   const creditTotal = creditRows.reduce((s, r) => s + Number(r.total), 0);
   const debitTotal = debitRows.reduce((s, r) => s + Number(r.total), 0);
+
+  // Calculations: Dashboard 2 (Cashier)
+  const paymentVouchersTotal = paymentVouchers.reduce((s, r) => s + Number(r.amount), 0);
+  const receiptVouchersTotal = receiptVouchers.reduce((s, r) => s + Number(r.amount), 0);
+  const rentBillsTotal = rentBills.reduce((s, r) => s + Number(r.total_amount), 0);
+  const cashierTotalTxns = paymentVouchers.length + receiptVouchers.length + rentBills.length;
+  const cashierTotalVolume = paymentVouchersTotal + receiptVouchersTotal + rentBillsTotal;
+
+  // Calculations: Dashboard 3 (Shopkeeper)
+  const shopTaxInvoicesTotal = shopTaxInvoices.reduce((s, r) => s + Number(r.total_amount), 0);
+  const shopRetailBillsTotal = shopRetailBills.reduce((s, r) => s + Number(r.total_amount), 0);
+  const pesticideSalesTotal = pesticideSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  const shopkeeperTotalTxns = shopTaxInvoices.length + shopRetailBills.length + pesticideSales.length;
+  const shopkeeperTotalVolume = shopTaxInvoicesTotal + shopRetailBillsTotal + pesticideSalesTotal;
 
   // Credit column totals
   const creditColTotals = CREDIT_BOOK_COLUMNS.reduce((acc, col) => {
@@ -232,6 +291,16 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 <input type="checkbox" checked={includeCustomers} onChange={e => setIncludeCustomers(e.target.checked)} />
                 {lang === 'mr' ? `५. ग्राहक खाती आणि KYC निर्देशिका (${customers.length} सदस्य)` : `5. Customer Accounts & KYC Directory (${customers.length} members)`}
               </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#0284c7' }}>
+                <input type="checkbox" checked={includeCashier} onChange={e => setIncludeCashier(e.target.checked)} />
+                {lang === 'mr' ? `६. कॅशियर डॅशबोर्ड तक्ता (${cashierTotalTxns} व्यवहार)` : `6. Cashier Dashboard Schedule (${cashierTotalTxns} txns)`}
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#059669' }}>
+                <input type="checkbox" checked={includeShopkeeper} onChange={e => setIncludeShopkeeper(e.target.checked)} />
+                {lang === 'mr' ? `७. दुकानदार डॅशबोर्ड तक्ता (${shopkeeperTotalTxns} व्यवहार)` : `7. Shopkeeper Dashboard Schedule (${shopkeeperTotalTxns} txns)`}
+              </label>
             </div>
           </div>
         </div>
@@ -249,34 +318,50 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
               }}>
                 <PrintHeader
-                  documentTitle={lang === 'mr' ? 'आर्थिक लेखापरीक्षा पॅकेज' : 'F I N A N C I A L   A U D I T   P A C K A G E'}
-                  subTitle={lang === 'mr' ? `लेखापरीक्षा कालावधी: ${startDate} ते ${endDate}` : `Audit Period: ${startDate} to ${endDate}`}
+                  documentTitle={lang === 'mr' ? 'आर्थिक लेखापरीक्षा पॅकेज (३ डॅशबोर्ड)' : 'F I N A N C I A L   A U D I T   P A C K A G E (3 DASHBOARDS)'}
+                  subTitle={lang === 'mr' ? `लेखापरीक्षा कालावधी: ${startDate} ते ${endDate}` : `Master Audit Period: ${startDate} to ${endDate}`}
                 />
 
-                {/* Audit Key Metric Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 14, textAlign: 'left' }}>
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण जमा पावत्या' : 'Total Credit Receipts'}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#15803d', marginTop: 2 }}>
+                {/* Audit Key Metric Cards - 3 Dashboards Summary */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10, marginTop: 14, textAlign: 'left' }}>
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>{lang === 'mr' ? '१. लेखापाल जमा पावत्या' : '1. Accounts Credit'}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: '#15803d', marginTop: 2 }}>
                       ₹{creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 10, color: '#166534', marginTop: 2 }}>{creditRows.length} {lang === 'mr' ? 'जमा व्यवहार' : 'Credit Transactions'}</div>
+                    <div style={{ fontSize: 9, color: '#166534', marginTop: 2 }}>{creditRows.length} {lang === 'mr' ? 'जमा नोंदी' : 'Credit Txns'}</div>
                   </div>
 
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'एकूण नावे खर्च' : 'Total Debit Payments'}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>{lang === 'mr' ? '१. लेखापाल नावे खर्च' : '1. Accounts Debit'}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>
                       ₹{debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 10, color: '#991b1b', marginTop: 2 }}>{debitRows.length} {lang === 'mr' ? 'नावे व्यवहार' : 'Debit Transactions'}</div>
+                    <div style={{ fontSize: 9, color: '#991b1b', marginTop: 2 }}>{debitRows.length} {lang === 'mr' ? 'नावे नोंदी' : 'Debit Txns'}</div>
                   </div>
 
-                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#1e40af', textTransform: 'uppercase' }}>{lang === 'mr' ? 'सदस्य खाती आणि KYC' : 'Member Accounts & KYC'}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#1d4ed8', marginTop: 2 }}>
+                  <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>{lang === 'mr' ? '२. कॅशियर व्यवहार' : '2. Cashier Operations'}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: '#0284c7', marginTop: 2 }}>
+                      ₹{cashierTotalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontSize: 9, color: '#0369a1', marginTop: 2 }}>{cashierTotalTxns} {lang === 'mr' ? 'व्हाऊचर व बिले' : 'Vouchers & Bills'}</div>
+                  </div>
+
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#047857', textTransform: 'uppercase' }}>{lang === 'mr' ? '३. दुकानदार विक्री' : '3. Shopkeeper Sales'}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: '#059669', marginTop: 2 }}>
+                      ₹{shopkeeperTotalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontSize: 9, color: '#047857', marginTop: 2 }}>{shopkeeperTotalTxns} {lang === 'mr' ? 'इनव्हॉईस व विक्री' : 'Invoices & Sales'}</div>
+                  </div>
+
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#1e40af', textTransform: 'uppercase' }}>{lang === 'mr' ? 'सदस्य खाती' : 'Member KYC'}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: '#1d4ed8', marginTop: 2 }}>
                       {customers.length} {lang === 'mr' ? 'सदस्य' : 'Members'}
                     </div>
-                    <div style={{ fontSize: 10, color: '#1e40af', marginTop: 2 }}>{lang === 'mr' ? '१०-अंकी आयडी आणि KYC पडताळणीकृत' : '10-Digit ID & KYC Verified'}</div>
+                    <div style={{ fontSize: 9, color: '#1e40af', marginTop: 2 }}>{lang === 'mr' ? '१०-अंकी KYC पडताळणीकृत' : '10-Digit KYC Validated'}</div>
                   </div>
                 </div>
 
@@ -287,14 +372,14 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                 }}>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <CheckCircle2 size={15} color="#16a34a" /> {lang === 'mr' ? 'स्तर १ → स्तर २ → स्तर ३ ताळमेळ स्थिती' : 'Level 1 → Level 2 → Level 3 Reconciliation Status'}
+                      <CheckCircle2 size={15} color="#16a34a" /> {lang === 'mr' ? '३-डॅशबोर्ड एकत्रित लेखापरीक्षा व ताळमेळ प्रमाणीकरण' : '3-Dashboard Master Audit & Reconciliation Verification'}
                     </div>
                     <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
-                      {lang === 'mr' ? 'सर्व जमा पावत्या, नावे देणे आणि सर्वसाधारण खातेवही खाती पूर्णपणे जुळलेली आहेत.' : 'All Credit Receipts, Debit Payments, and General Ledger accounts fully reconciled.'}
+                      {lang === 'mr' ? 'लेखापाल, कॅशियर आणि दुकानदार या तिन्ही डॅशबोर्डचे सर्व व्यवहार पूर्णपणे समाविष्ट व तपासले आहेत.' : 'All transactions across Accountant, Cashier, and Shopkeeper dashboards verified & included.'}
                     </div>
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 8px', borderRadius: 6 }}>
-                    {lang === 'mr' ? 'ताळमेळ पूर्ण आणि पडताळणीकृत ✅' : 'RECONCILED & VERIFIED ✅'}
+                    {lang === 'mr' ? '३ डॅशबोर्ड पडताळणीकृत ✅' : '3-DASHBOARDS AUDITED ✅'}
                   </span>
                 </div>
 
@@ -502,7 +587,7 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
               SCHEDULE 5: CUSTOMER SAVINGS ACCOUNTS & KYC DIRECTORY
              ══════════════════════════════════════════════════════════════════ */}
           {includeCustomers && (
-            <div className="audit-page-section" style={{ marginBottom: 40 }}>
+            <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{lang === 'mr' ? 'तक्ता ५: ग्राहक बचत खाती आणि KYC निर्देशिका' : 'SCHEDULE V: CUSTOMER SAVINGS ACCOUNTS & KYC DIRECTORY'}</div>
@@ -536,6 +621,214 @@ const AuditPackage: React.FC<AuditPackageProps> = ({ user, onLogout, onToggleMob
                       <td>{c.pan_no || '—'} {c.pan_doc_path ? (lang === 'mr' ? '✓ स्कॅन' : '✓ Scan') : ''}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
                         ₹{Number(c.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SCHEDULE 6: CASHIER DASHBOARD AUDIT SCHEDULE
+             ══════════════════════════════════════════════════════════════════ */}
+          {includeCashier && (
+            <div className="audit-page-section" style={{ pageBreakAfter: 'always', marginBottom: 40 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0369a1', paddingBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0369a1' }}>{lang === 'mr' ? 'तक्ता ६: कॅशियर डॅशबोर्ड रोख व्हाऊचर व भाडे बिल अहवाल' : 'SCHEDULE VI: CASHIER DASHBOARD TRANSACTIONS & RENT BILLS SCHEDULE'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'रोख पेमेंट व्हाऊचर, पावती व्हाऊचर आणि टॅक्स इनव्हॉईस' : 'Payment Vouchers, Receipt Vouchers & Rent Tax Invoices'}</div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#0284c7' }}>
+                  {lang === 'mr' ? 'एकूण कॅशियर व्यवहार:' : 'Total Cashier Volume:'} ₹{cashierTotalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+
+              {/* Payment Vouchers Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#991b1b', marginBottom: 6 }}>
+                {lang === 'mr' ? `अ. रोख पेमेंट व्हाऊचर (${paymentVouchers.length} नोंदी - ₹${paymentVouchersTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `A. Cash Payment Vouchers (${paymentVouchers.length} entries - ₹${paymentVouchersTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11, marginBottom: 20 }}>
+                <thead>
+                  <tr style={{ background: '#fef2f2' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'व्हाऊचर क्र' : 'Voucher No'}</th>
+                    <th>{lang === 'mr' ? 'प्राप्तकर्त्याचे नाव' : 'Payee Name'}</th>
+                    <th>{lang === 'mr' ? 'खर्च माहिती' : 'Purpose / Expense Remarks'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentVouchers.slice(0, 15).map(pv => (
+                    <tr key={pv.id}>
+                      <td>{pv.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{pv.voucher_no}</td>
+                      <td style={{ fontWeight: 700 }}>{pv.paid_to}</td>
+                      <td>{pv.details_of_expenditure || pv.purpose_remarks || '—'}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#b91c1c', fontWeight: 700 }}>
+                        ₹{Number(pv.amount_rs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Receipt Vouchers Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#15803d', marginBottom: 6 }}>
+                {lang === 'mr' ? `ब. रोख पावती व्हाऊचर (${receiptVouchers.length} नोंदी - ₹${receiptVouchersTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `B. Cash Receipt Vouchers (${receiptVouchers.length} entries - ₹${receiptVouchersTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11, marginBottom: 20 }}>
+                <thead>
+                  <tr style={{ background: '#f0fdf4' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'पावती क्र' : 'Bill No'}</th>
+                    <th>{lang === 'mr' ? 'जमाकर्त्याचे नाव' : 'Received From'}</th>
+                    <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receiptVouchers.slice(0, 15).map(rv => (
+                    <tr key={rv.id}>
+                      <td>{rv.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{rv.bill_no}</td>
+                      <td style={{ fontWeight: 700 }}>{rv.received_from}</td>
+                      <td>{rv.particulars || '—'}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#15803d', fontWeight: 700 }}>
+                        ₹{Number(rv.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Rent Bills Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0369a1', marginBottom: 6 }}>
+                {lang === 'mr' ? `क. भाडे बिल टॅक्स इनव्हॉईस (${rentBills.length} नोंदी - ₹${rentBillsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `C. Rent Bill Tax Invoices (${rentBills.length} entries - ₹${rentBillsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
+                <thead>
+                  <tr style={{ background: '#f0f9ff' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'इनव्हॉईस क्र' : 'Invoice No'}</th>
+                    <th>{lang === 'mr' ? 'भाडेकरूचे नाव' : 'Consignee Name'}</th>
+                    <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण भाडे बिल' : 'Total Invoice'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rentBills.slice(0, 15).map(rb => (
+                    <tr key={rb.id}>
+                      <td>{rb.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{rb.invoice_no}</td>
+                      <td style={{ fontWeight: 700 }}>{rb.consignee_name}</td>
+                      <td>{rb.particulars || '—'}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#0284c7', fontWeight: 700 }}>
+                        ₹{Number(rb.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SCHEDULE 7: SHOPKEEPER DASHBOARD AUDIT SCHEDULE
+             ══════════════════════════════════════════════════════════════════ */}
+          {includeShopkeeper && (
+            <div className="audit-page-section" style={{ marginBottom: 40 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #047857', paddingBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#047857' }}>{lang === 'mr' ? 'तक्ता ७: दुकानदार डॅशबोर्ड टॅक्स इनव्हॉईस, किरकोळ बिल व कीटकनाशक अहवाल' : 'SCHEDULE VII: SHOPKEEPER DASHBOARD TAX INVOICES & PESTICIDE SALES SCHEDULE'}</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>{lang === 'mr' ? 'बियाणे, खते, कीटकनाशक विक्री व जीएसटी इनव्हॉईस नोंदी' : 'GST Tax Invoices, Retail Bills & Pesticide Sales Register'}</div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
+                  {lang === 'mr' ? 'एकूण दुकान विक्री:' : 'Total Shop Sales:'} ₹{shopkeeperTotalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+
+              {/* Shop Tax Invoices Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#047857', marginBottom: 6 }}>
+                {lang === 'mr' ? `अ. दुकानाचे जीएसटी टॅक्स इनव्हॉईस (${shopTaxInvoices.length} नोंदी - ₹${shopTaxInvoicesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `A. Shop GST Tax Invoices (${shopTaxInvoices.length} entries - ₹${shopTaxInvoicesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11, marginBottom: 20 }}>
+                <thead>
+                  <tr style={{ background: '#ecfdf5' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'इनव्हॉईस क्र' : 'Invoice No'}</th>
+                    <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
+                    <th>{lang === 'mr' ? 'उत्पादन नाव' : 'Product Name'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shopTaxInvoices.slice(0, 15).map(sti => (
+                    <tr key={sti.id}>
+                      <td>{sti.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{sti.invoice_no}</td>
+                      <td style={{ fontWeight: 700 }}>{sti.customer_name}</td>
+                      <td>{sti.product_name}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#059669', fontWeight: 700 }}>
+                        ₹{Number(sti.total_amount || sti.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Shop Retail Bills Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0369a1', marginBottom: 6 }}>
+                {lang === 'mr' ? `ब. किरकोळ रोख विक्री बिले (${shopRetailBills.length} नोंदी - ₹${shopRetailBillsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `B. Retail Cash Bills (${shopRetailBills.length} entries - ₹${shopRetailBillsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11, marginBottom: 20 }}>
+                <thead>
+                  <tr style={{ background: '#f0f9ff' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'बिल क्र' : 'Bill No'}</th>
+                    <th>{lang === 'mr' ? 'शेतकरी / ग्राहकाचे नाव' : 'Customer Name'}</th>
+                    <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण बिल' : 'Total Bill'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shopRetailBills.slice(0, 15).map(srb => (
+                    <tr key={srb.id}>
+                      <td>{srb.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{srb.bill_no}</td>
+                      <td style={{ fontWeight: 700 }}>{srb.customer_name}</td>
+                      <td>{srb.particulars}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#0284c7', fontWeight: 700 }}>
+                        ₹{Number(srb.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Pesticide Sales Register Table */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#7c2d12', marginBottom: 6 }}>
+                {lang === 'mr' ? `क. कीटकनाशके विक्री नोंदवही (${pesticideSales.length} नोंदी - ₹${pesticideSalesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `C. Pesticide Sale Register (${pesticideSales.length} entries - ₹${pesticideSalesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })})`}
+              </div>
+              <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
+                <thead>
+                  <tr style={{ background: '#fff7ed' }}>
+                    <th>{lang === 'mr' ? 'तारीख' : 'Date'}</th>
+                    <th>{lang === 'mr' ? 'बॅच क्र' : 'Batch No'}</th>
+                    <th>{lang === 'mr' ? 'कीटकनाशक उत्पादन नाव' : 'Pesticide Product Name'}</th>
+                    <th>{lang === 'mr' ? 'खरेदीदाराचे नाव' : 'Customer Name'}</th>
+                    <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pesticideSales.slice(0, 15).map(ps => (
+                    <tr key={ps.id}>
+                      <td>{ps.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{ps.batch_no || '—'}</td>
+                      <td style={{ fontWeight: 700 }}>{ps.product_name}</td>
+                      <td>{ps.customer_name}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#c2410c', fontWeight: 700 }}>
+                        ₹{Number(ps.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}

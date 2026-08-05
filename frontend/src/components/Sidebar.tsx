@@ -142,20 +142,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           </NavLink>
 
           <NavLink
-            to="/audit-package"
-            onClick={onClose}
-            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
-          >
-            <ClipboardCheck size={18} className="nav-icon" />
-            <div className="nav-label-group">
-              <span>{t('nav_audit_package')}</span>
-              <span className="nav-level-badge">
-                {lang === 'mr' ? 'लेखापरीक्षक बाइंडर' : 'AUDITOR BINDER & SCHEDULES'}
-              </span>
-            </div>
-          </NavLink>
-
-          <NavLink
             to="/meeting-notice"
             onClick={onClose}
             className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
@@ -315,6 +301,32 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               <span>{lang === 'mr' ? '४. कीटकनाशके विक्री नोंद' : '4. Pesticide Sale Register'}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? 'बोरीक ॲसिड व उत्पादने' : 'Boric Acid & Products'}
+              </span>
+            </div>
+          </NavLink>
+
+          {/* SECTION 4: MASTER AUDIT BINDER (AT THE VERY END) */}
+          <div style={{
+            fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#f59e0b',
+            padding: '18px 12px 6px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(245, 158, 11, 0.2)',
+            marginTop: 4, marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <span>{lang === 'mr' ? 'एकत्रित लेखापरीक्षा' : 'Master Audit Package'}</span>
+            <span style={{ fontSize: 9, padding: '1px 6px', background: 'rgba(245, 158, 11, 0.15)', borderRadius: 4, color: '#f59e0b' }}>
+              {lang === 'mr' ? '३ डॅशबोर्ड अहवाल' : '3 Dashboards Audit'}
+            </span>
+          </div>
+
+          <NavLink
+            to="/audit-package"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+          >
+            <ClipboardCheck size={18} className="nav-icon" />
+            <div className="nav-label-group">
+              <span>{t('nav_audit_package')}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? '३ डॅशबोर्ड लेखापरीक्षक बाइंडर' : '3-DASHBOARD AUDITOR BINDER'}
               </span>
             </div>
           </NavLink>
