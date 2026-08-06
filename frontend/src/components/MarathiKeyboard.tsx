@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { Keyboard, X, Delete, Sparkles, Hash, Type } from 'lucide-react';
 
 interface MarathiKeyboardProps {
@@ -62,7 +63,7 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
   targetInputRef,
 }) => {
   const [activeTab, setActiveTab] = useState<'consonants' | 'vowels' | 'conjuncts' | 'numbers'>('consonants');
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 20, y: 100 });
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const keyboardContainerRef = useRef<HTMLDivElement>(null);
@@ -208,10 +209,12 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
 
   // Drag handlers
   const handleMouseDownHeader = (e: React.MouseEvent) => {
+    const currentX = position ? position.x : (window.innerWidth - 500);
+    const currentY = position ? position.y : (window.innerHeight - 360);
     setIsDragging(true);
     setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
+      x: e.clientX - currentX,
+      y: e.clientY - currentY,
     });
   };
 
@@ -219,8 +222,8 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         setPosition({
-          x: Math.max(10, Math.min(window.innerWidth - 480, e.clientX - dragOffset.x)),
-          y: Math.max(10, Math.min(window.innerHeight - 340, e.clientY - dragOffset.y)),
+          x: Math.max(10, Math.min(window.innerWidth - 490, e.clientX - dragOffset.x)),
+          y: Math.max(10, Math.min(window.innerHeight - 360, e.clientY - dragOffset.y)),
         });
       }
     };
@@ -242,20 +245,22 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
     e.preventDefault();
   };
 
-  return (
+  const keyboardContent = (
     <div
       ref={keyboardContainerRef}
       className="marathi-keyboard-container no-print"
       style={{
         position: 'fixed',
-        bottom: 20,
-        right: 20,
+        left: position ? position.x : undefined,
+        top: position ? position.y : undefined,
+        bottom: position ? undefined : 24,
+        right: position ? undefined : 24,
         width: 480,
         maxWidth: '94vw',
         background: '#ffffff',
         borderRadius: 16,
-        boxShadow: '0 16px 40px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(37, 99, 235, 0.2)',
-        zIndex: 999999,
+        boxShadow: '0 20px 50px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(37, 99, 235, 0.25)',
+        zIndex: 9999999,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -683,6 +688,8 @@ export const MarathiKeyboard: React.FC<MarathiKeyboardProps> = ({
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(keyboardContent, document.body);
 };
 
 export default MarathiKeyboard;
