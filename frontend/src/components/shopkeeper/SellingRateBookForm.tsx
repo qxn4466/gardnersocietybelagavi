@@ -492,21 +492,21 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
 
           <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', minWidth: 980, fontSize: 13, borderCollapse: 'collapse' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#dcfce7', borderBottom: '2px solid #86efac' }}>
-                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
-                  <th style={{ minWidth: 220, padding: '8px 6px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars / Item Name'}</th>
-                  <th style={{ width: 75, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
-                  <th style={{ width: 100, padding: '8px 6px' }}>{lang === 'mr' ? 'मूळ रक्कम (Base Amt)' : 'Base Amt (₹)'}</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST (₹)'}</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST (₹)'}</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'हमाली' : 'HMall (₹)'}</th>
-                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent (₹)'}</th>
-                  <th style={{ width: 110, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
-                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
-                  <th style={{ width: 105, padding: '8px 6px' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
-                  <th style={{ width: 90, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Row Actions'}</th>
+                  <th style={{ width: 28, padding: '6px 4px' }}>#</th>
+                  <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars / Item Name'}</th>
+                  <th style={{ width: 60, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base (₹)'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
+                  <th style={{ width: 80, padding: '6px 4px' }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
+                  <th style={{ width: 90, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
+                  <th style={{ width: 75, padding: '6px 4px' }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
+                  <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
+                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>

@@ -387,15 +387,15 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
 
           <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', minWidth: 850, fontSize: 13, borderCollapse: 'collapse' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#ffedd5', borderBottom: '2px solid #fdba74' }}>
-                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
-                  <th style={{ minWidth: 250, padding: '8px 6px' }}>{lang === 'mr' ? 'तपशील / उत्पादन (Particulars)' : 'Particulars / Product'}</th>
-                  <th style={{ width: 90, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
-                  <th style={{ width: 110, padding: '8px 6px' }}>{lang === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
-                  <th style={{ width: 140, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
-                  <th style={{ width: 90, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Row Actions'}</th>
+                  <th style={{ width: 28, padding: '6px 4px' }}>#</th>
+                  <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील / उत्पादन' : 'Particulars / Product'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ width: 90, padding: '6px 4px' }}>{lang === 'mr' ? 'दर' : 'Rate (₹)'}</th>
+                  <th style={{ width: 110, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
+                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>

@@ -1090,6 +1090,74 @@ body {
 .level-2 { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: 0 1px 4px rgba(29, 78, 216, 0.12); }
 .level-3 { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; box-shadow: 0 1px 4px rgba(107, 33, 168, 0.12); }
 
+/* ─── 14-inch Laptop & Compact Monitor Responsive Scaling ───────────────── */
+@media (max-width: 1440px) {
+  :root {
+    --sidebar-width: 220px;
+    --header-h: 60px;
+  }
+
+  .sidebar {
+    width: 220px;
+  }
+
+  .main-content {
+    margin-left: 220px;
+  }
+
+  .page-content {
+    padding: 16px 20px 100px 20px;
+  }
+
+  .app-header {
+    padding: 10px 20px;
+    height: 60px;
+  }
+
+  .card {
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-input, .form-select {
+    padding: 5px 8px;
+    font-size: 13px;
+    height: 34px;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .table {
+    font-size: 12px !important;
+  }
+
+  .table th, .table td {
+    padding: 6px 6px !important;
+  }
+
+  /* Force tables to fit 100% without horizontal scroll */
+  .table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .table-responsive table {
+    min-width: 100% !important;
+  }
+}
+
 /* ─── Mobile, Tablet & Desktop Responsive Layout System ─────────────────────── */
 @media (max-width: 900px) {
   .app-layout {

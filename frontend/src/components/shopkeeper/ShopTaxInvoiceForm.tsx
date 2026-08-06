@@ -468,19 +468,19 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           </div>
 
           <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', minWidth: 980, fontSize: 13, borderCollapse: 'collapse' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#dbeafe', borderBottom: '2px solid #93c5fd' }}>
-                  <th style={{ width: 35, padding: '8px 6px' }}>#</th>
-                  <th style={{ minWidth: 220, padding: '8px 6px' }}>{lang === 'mr' ? 'उत्पादनाचे नाव (Product Name)' : 'Product Name'}</th>
-                  <th style={{ width: 90, padding: '8px 6px' }}>{lang === 'mr' ? 'एचएसएन' : 'HSN Code'}</th>
-                  <th style={{ width: 75, padding: '8px 6px' }}>{lang === 'mr' ? 'प्रमाण (Qty)' : 'Qty'}</th>
-                  <th style={{ width: 95, padding: '8px 6px' }}>{lang === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
-                  <th style={{ width: 100, padding: '8px 6px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base Amt (₹)'}</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'एसजीएसटी %' : 'SGST %'}</th>
-                  <th style={{ width: 85, padding: '8px 6px' }}>{lang === 'mr' ? 'सीजीएसटी %' : 'CGST %'}</th>
-                  <th style={{ width: 120, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
-                  <th style={{ width: 90, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Row Actions'}</th>
+                  <th style={{ width: 28, padding: '6px 4px' }}>#</th>
+                  <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'उत्पादनाचे नाव' : 'Product Name'}</th>
+                  <th style={{ width: 80, padding: '6px 4px' }}>{lang === 'mr' ? 'एचएसएन' : 'HSN'}</th>
+                  <th style={{ width: 60, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ width: 80, padding: '6px 4px' }}>{lang === 'mr' ? 'दर' : 'Rate (₹)'}</th>
+                  <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base (₹)'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'एसजीएसटी %' : 'SGST %'}</th>
+                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'सीजीएसटी %' : 'CGST %'}</th>
+                  <th style={{ width: 95, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
+                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
