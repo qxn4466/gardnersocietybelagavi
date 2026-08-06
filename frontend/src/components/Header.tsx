@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, User as UserIcon, LogOut, Menu, Keyboard } from 'lucide-react';
+import { Calendar, User as UserIcon, LogOut, Menu, Keyboard, Languages, Loader2 } from 'lucide-react';
 import PrintButton from './PrintButton';
 import MarathiKeyboard from './MarathiKeyboard';
 import type { User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LANG_LABELS, type Lang } from '../i18n/translations';
+import { translateToMarathi } from '../utils/translator';
 
 interface HeaderProps {
   title: string;
@@ -36,6 +37,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { lang, setLang } = useLanguage();
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [isTranslatingForm, setIsTranslatingForm] = useState(false);
+
   const now = new Date();
   const dateStr = now.toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', {
     weekday: 'short',
@@ -45,6 +48,41 @@ const Header: React.FC<HeaderProps> = ({
   });
 
   const levelLabels = lang === 'mr' ? LEVEL_LABELS_MR : LEVEL_LABELS;
+
+  // Single unified translation handler for all editable text fields across the open form
+  const handleTranslateAllFields = async () => {
+    setIsTranslatingForm(true);
+    try {
+      const editableElements = Array.from(
+        document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+          'input[type="text"]:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled])'
+        )
+      );
+
+      for (const el of editableElements) {
+        const val = el.value.trim();
+        if (val && !/[\u0900-\u097F]/.test(val)) {
+          const marathiVal = await translateToMarathi(val);
+          if (marathiVal && marathiVal !== val) {
+            const tracker = (el as any)._valueTracker;
+            if (tracker) tracker.setValue(el.value + '_diff');
+
+            const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+            const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+            if (setter) setter.call(el, marathiVal);
+            else el.value = marathiVal;
+
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      }
+    } catch {
+      // Ignore translation errors
+    } finally {
+      setIsTranslatingForm(false);
+    }
+  };
 
   return (
     <header className="app-header no-print">
@@ -86,8 +124,8 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-right">
-        {/* ── Language Switcher & Marathi Keypad Toggle ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* ── Single Language Switcher, Form Translator & Keypad Trigger ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <div className="lang-switcher no-print" role="group" aria-label="Language selector">
             {LANGS.map((l) => (
               <button
@@ -105,6 +143,29 @@ const Header: React.FC<HeaderProps> = ({
 
           <button
             type="button"
+            className="btn btn-sm btn-secondary"
+            onClick={handleTranslateAllFields}
+            disabled={isTranslatingForm}
+            style={{
+              padding: '5px 10px',
+              fontSize: 12,
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: isTranslatingForm ? '#e2e8f0' : '#f0fdf4',
+              color: isTranslatingForm ? '#64748b' : '#166534',
+              border: '1px solid #bbf7d0',
+              cursor: isTranslatingForm ? 'wait' : 'pointer',
+            }}
+            title="सर्व माहिती मराठीत भाषांतर करा (Translate all editable fields into Marathi)"
+          >
+            {isTranslatingForm ? <Loader2 size={14} className="spinner" /> : <Languages size={15} color="#166534" />}
+            <span>{isTranslatingForm ? (lang === 'mr' ? 'भाषांतर होत आहे...' : 'Translating...') : (lang === 'mr' ? '🌐 मराठीत भाषांतर' : '🌐 Translate to Marathi')}</span>
+          </button>
+
+          <button
+            type="button"
             className={`btn btn-sm ${showKeyboard ? 'btn-primary' : 'btn-secondary'}`}
             style={{
               padding: '5px 10px',
@@ -113,9 +174,9 @@ const Header: React.FC<HeaderProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              background: showKeyboard ? '#1d4ed8' : '#f1f5f9',
-              color: showKeyboard ? '#ffffff' : '#1e293b',
-              border: '1px solid #cbd5e1',
+              background: showKeyboard ? '#1d4ed8' : '#eff6ff',
+              color: showKeyboard ? '#ffffff' : '#1e40af',
+              border: '1px solid #bfdbfe',
             }}
             title="मराठी कीबोर्ड उघडा / बंद करा (Toggle Marathi Touch Keypad)"
             onClick={() => setShowKeyboard(!showKeyboard)}
