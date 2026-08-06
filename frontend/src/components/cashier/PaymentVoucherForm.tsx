@@ -513,10 +513,10 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             </h4>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn btn-secondary btn-sm" onClick={addCustomParticular} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 600 }}>
-                ➕ {lang === 'mr' ? '+ नवीन बाब जोडा' : '+ Add Custom Particular'}
+                <Plus size={14} /> {lang === 'mr' ? 'नवीन बाब जोडा' : 'Add Custom Particular'}
               </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
-                <Plus size={14} /> {lang === 'mr' ? '+ बाब ओळ जोडा (Add Row)' : '+ Add Item Row'}
+                <Plus size={14} /> {lang === 'mr' ? 'बाब ओळ जोडा' : 'Add Item Row'}
               </button>
             </div>
           </div>

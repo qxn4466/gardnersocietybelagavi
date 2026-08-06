@@ -331,7 +331,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
               </div>
             )}
 
-            {/* ➕ Add Custom Particular / Product Option */}
+            {/* Add Custom Particular / Product Option */}
             {allowCustom && (
               <div
                 onClick={handleAddNew}
@@ -356,11 +356,11 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
                 <span>
                   {searchTerm.trim()
                     ? (lang === 'mr'
-                        ? `➕ "+ ${searchTerm.trim()}" नवीन बाब म्हणून जोडा`
-                        : `➕ Add "${searchTerm.trim()}" as New Item`)
+                        ? `"${searchTerm.trim()}" नवीन बाब म्हणून जोडा`
+                        : `Add "${searchTerm.trim()}" as New Item`)
                     : (lang === 'mr'
-                        ? '➕ + नवीन बाब / उत्पादन यादीत जोडा...'
-                        : '➕ + Add New Custom Item / Product...')}
+                        ? 'नवीन बाब / उत्पादन यादीत जोडा...'
+                        : 'Add New Custom Item / Product...')}
                 </span>
               </div>
             )}

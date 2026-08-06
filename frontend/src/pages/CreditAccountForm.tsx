@@ -587,7 +587,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               disabled={loading}
               style={{ background: 'var(--blue-700)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <PlusCircle size={14} /> {lang === 'mr' ? '➕ २०२६ चाचणी नोंदी जोडा (जाने-जुलै)' : '➕ Add 2026 Test Records (Jan–July)'}
+              <PlusCircle size={14} /> {lang === 'mr' ? '२०२६ चाचणी नोंदी जोडा (जाने-जुलै)' : 'Add 2026 Test Records (Jan–July)'}
             </button>
             <button
               type="button"
@@ -870,6 +870,27 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     options={txnTypes
                       .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
                       .map(t => t.name)}
+                    allowCustom={true}
+                    onAddNewOption={newOpt => {
+                      const trimmed = newOpt.trim();
+                      if (trimmed) {
+                        const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
+                        if (!exists) {
+                          const newType: TransactionTypeMaster = {
+                            id: Date.now(),
+                            name: trimmed,
+                            code: trimmed.toUpperCase().replace(/\s+/g, '_'),
+                            entry_type: form.entry_nature || 'BOTH',
+                            description: trimmed,
+                          };
+                          setTxnTypes(prev => [...prev, newType]);
+                          setForm(prev => ({
+                            ...prev,
+                            transaction_type_id: String(newType.id),
+                          }));
+                        }
+                      }
+                    }}
                     lang={lang}
                     placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
                   />

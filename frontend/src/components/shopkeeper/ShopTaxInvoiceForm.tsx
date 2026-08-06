@@ -457,11 +457,11 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                   }
                 }}
               >
-                <FolderPlus size={14} /> {lang === 'mr' ? '➕ + नवीन वस्तू यादीत जोडा (Add Product)' : '➕ + Add Custom Product'}
+                <FolderPlus size={14} /> {lang === 'mr' ? 'नवीन वस्तू यादीत जोडा' : 'Add Custom Product'}
               </button>
               {!editingId && (
                 <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
-                  <Plus size={14} /> {lang === 'mr' ? '+ ओळ जोडा (Add Item)' : '+ Add Item Row'}
+                  <Plus size={14} /> {lang === 'mr' ? 'ओळ जोडा' : 'Add Item Row'}
                 </button>
               )}
             </div>
