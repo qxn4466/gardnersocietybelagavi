@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import SellingRateBookForm from '../components/shopkeeper/SellingRateBookForm';
@@ -21,21 +21,12 @@ const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({ user, onLogou
   const { lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabParam = searchParams.get('tab') as TabType;
-  const [activeTab, setActiveTab] = useState<TabType>(
-    tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register'].includes(tabParam)
-      ? tabParam
-      : 'selling-rate'
-  );
-
-  useEffect(() => {
-    if (tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register'].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
+  const tabParam = searchParams.get('tab') as TabType | null;
+  const activeTab: TabType = (tabParam && ['selling-rate', 'tax-invoice', 'retail-bill', 'pesticide-register'].includes(tabParam))
+    ? tabParam
+    : 'selling-rate';
 
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
     setSearchParams({ tab });
   };
 

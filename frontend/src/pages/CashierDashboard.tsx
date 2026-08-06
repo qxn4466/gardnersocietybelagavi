@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import PaymentVoucherForm from '../components/cashier/PaymentVoucherForm';
@@ -23,21 +23,11 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as CashierTab | null;
-  const [activeTab, setActiveTab] = useState<CashierTab>(
-    tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam)
-      ? tabParam
-      : 'payment-voucher'
-  );
-
-  // Sync activeTab whenever URL query parameter ?tab= changes!
-  useEffect(() => {
-    if (tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
+  const activeTab: CashierTab = (tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam))
+    ? tabParam
+    : 'payment-voucher';
 
   const handleTabChange = (tab: CashierTab) => {
-    setActiveTab(tab);
     setSearchParams({ tab });
   };
 
