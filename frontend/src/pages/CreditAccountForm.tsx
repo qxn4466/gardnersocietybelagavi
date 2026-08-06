@@ -876,12 +876,13 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       if (trimmed) {
                         const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
                         if (!exists) {
-                          const newType: TransactionTypeMaster = {
+                          const newType: TransactionType = {
                             id: Date.now(),
                             name: trimmed,
-                            code: trimmed.toUpperCase().replace(/\s+/g, '_'),
+                            cash_book_column: 'sundary_ac',
+                            ledger_account: trimmed,
                             entry_type: form.entry_nature || 'BOTH',
-                            description: trimmed,
+                            display_order: 99,
                           };
                           setTxnTypes(prev => [...prev, newType]);
                           setForm(prev => ({
