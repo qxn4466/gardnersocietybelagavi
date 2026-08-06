@@ -163,6 +163,14 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
     const updated = [...items];
     const item = { ...updated[index], [field]: val };
 
+    if (field === 'particular') {
+      if (val === 'The Pioneer Urban Bank CA' || val === 'CA NO') {
+        item.ref_no = '020523007720';
+      } else if (val === 'The Pioneer Urban Bank CC' || val === 'CC No') {
+        item.ref_no = '020522083249';
+      }
+    }
+
     const amt = parseFloat(String(item.amount)) || 0;
     const cgst = parseFloat(String(item.cgst_rate)) || 0;
     const sgst = parseFloat(String(item.sgst_rate)) || 0;
