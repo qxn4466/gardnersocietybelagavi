@@ -25,6 +25,7 @@ import {
   translateText,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
+import { RECEIPT_PARTICULARS_OPTIONS, PAYMENT_PARTICULARS_OPTIONS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
@@ -867,9 +868,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         entry_nature: defaultNature,
                       }));
                     }}
-                    options={txnTypes
-                      .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
-                      .map(t => t.name)}
+                    options={Array.from(new Set([
+                      ...(form.entry_nature === 'DEBIT' ? PAYMENT_PARTICULARS_OPTIONS : RECEIPT_PARTICULARS_OPTIONS),
+                      ...txnTypes
+                        .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
+                        .map(t => t.name)
+                    ]))}
                     allowCustom={true}
                     onAddNewOption={newOpt => {
                       const trimmed = newOpt.trim();
