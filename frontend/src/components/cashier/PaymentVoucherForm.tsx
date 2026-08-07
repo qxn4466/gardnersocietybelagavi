@@ -395,7 +395,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+        {/* Row 1: Voucher No + Date (2-col grid) */}
+        <div className="form-grid-2" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'व्हाऊचर क्र. (Voucher No.)' : 'Voucher No.'}</label>
             <input type="text" className="form-input" value={voucherNo} onChange={e => setVoucherNo(e.target.value)} required />
@@ -404,28 +405,30 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'}</label>
-              <button
-                type="button"
-                onClick={handleTranslatePaidTo}
-                disabled={translating}
-                style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
-              >
-                {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
-                {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
-              </button>
-            </div>
-            <input
-              type="text"
-              className="form-input"
-              placeholder={lang === 'mr' ? 'ज्या व्यक्तीस/संस्थेस रोख दिले त्यांचे नाव' : 'Name of person / entity paid to'}
-              value={paidTo}
-              onChange={e => setPaidTo(e.target.value)}
-              required
-            />
+        </div>
+
+        {/* Row 2: Paid To - full width */}
+        <div className="form-group" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'}</label>
+            <button
+              type="button"
+              onClick={handleTranslatePaidTo}
+              disabled={translating}
+              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
+            >
+              {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
+              {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
+            </button>
           </div>
+          <input
+            type="text"
+            className="form-input"
+            placeholder={lang === 'mr' ? 'ज्या व्यक्तीस/संस्थेस रोख दिले त्यांचे नाव' : 'Name of person / entity paid to'}
+            value={paidTo}
+            onChange={e => setPaidTo(e.target.value)}
+            required
+          />
         </div>
 
         {/* Payment Mode (CASH vs CHEQUE) */}
@@ -459,7 +462,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
           </div>
 
           {paymentMode === 'CHEQUE' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
+            <div className="form-grid-3" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'}</label>
                 <input
@@ -719,18 +722,23 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
 
       {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
+        <div style={{ marginBottom: 14 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px 0' }}>
             {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर नोंदवही' : 'Cash Payment Vouchers History'}
           </h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Calendar size={15} color="var(--blue-600)" />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
-            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-            <span style={{ fontSize: 12 }}>to</span>
-            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
-            <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
-            <input type="text" className="form-input" style={{ width: 160, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search paid to, no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <div className="filter-bar">
+            <div className="filter-bar-group">
+              <Calendar size={15} color="var(--blue-600)" />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+              <span style={{ fontSize: 12 }}>to</span>
+              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+            </div>
+            <div className="filter-bar-spacer" />
+            <div className="filter-bar-group">
+              <Search size={14} color="var(--text-secondary)" />
+              <input type="text" className="form-input" style={{ width: 200, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search paid to, no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
           </div>
         </div>
 

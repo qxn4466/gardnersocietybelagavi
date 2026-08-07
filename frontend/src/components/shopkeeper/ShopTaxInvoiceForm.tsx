@@ -408,7 +408,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
       {/* Entry Form */}
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <div className="form-grid-4" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No)' : 'Invoice No.'}</label>
             <input type="text" className="form-input" style={{ fontWeight: 700, color: '#2563eb' }} value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
@@ -642,16 +642,16 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
       {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="filter-bar" style={{ marginBottom: 16 }}>
+          <div className="filter-bar-group">
             <Calendar size={16} color="#2563eb" />
             <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
             <span style={{ fontSize: 13 }}>{lang === 'mr' ? 'ते' : 'to'}</span>
             <input type="date" className="form-input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="filter-bar-spacer" />
+          <div className="filter-bar-group">
             <Search size={16} color="var(--text-muted)" />
             <input
               type="text"
@@ -663,6 +663,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             />
           </div>
         </div>
+
 
         {/* Total Summary Metrics Cards */}
         {(() => {
@@ -687,7 +688,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           }, 0);
 
           return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div className="form-grid-3" style={{ marginBottom: 16 }}>
               <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
                   {lang === 'mr' ? 'एकूण टॅक्स इनव्हॉईस विक्री' : 'Total Tax Invoice Sales'}

@@ -148,7 +148,7 @@ const ShopkeeperAuditForm: React.FC<ShopkeeperAuditFormProps> = ({ user }) => {
       {summary && (
         <>
           {/* Summary KPI Cards (Screen Only) */}
-          <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <div className="no-print form-grid-4" style={{ marginBottom: 24 }}>
             <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 8, border: '1px solid #86efac' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>

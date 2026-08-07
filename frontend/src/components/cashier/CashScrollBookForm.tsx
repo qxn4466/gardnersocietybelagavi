@@ -233,7 +233,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
         <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
           {lang === 'mr' ? 'हस्ते स्क्रोल नोंद जोडा (Manual Scroll Entry)' : 'Add Manual Scroll Entry'}
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div className="form-grid-3" style={{ marginBottom: 14 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -271,39 +271,18 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="form-grid-3" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              style={{ fontWeight: 600, color: '#16a34a' }}
-              value={receivedAmount}
-              onChange={e => setReceivedAmount(e.target.value)}
-            />
+            <input type="number" step="0.01" className="form-input" style={{ fontWeight: 600, color: '#16a34a' }} value={receivedAmount} onChange={e => setReceivedAmount(e.target.value)} />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              style={{ fontWeight: 600, color: '#dc2626' }}
-              value={paidAmount}
-              onChange={e => setPaidAmount(e.target.value)}
-            />
+            <input type="number" step="0.01" className="form-input" style={{ fontWeight: 600, color: '#dc2626' }} value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              style={{ fontWeight: 600, color: '#2563eb' }}
-              value={chequeAmount}
-              onChange={e => setChequeAmount(e.target.value)}
-            />
+            <input type="number" step="0.01" className="form-input" style={{ fontWeight: 600, color: '#2563eb' }} value={chequeAmount} onChange={e => setChequeAmount(e.target.value)} />
           </div>
         </div>
 
@@ -317,22 +296,24 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
         </div>
       </form>
 
-      {/* Date Filter & Totals Bar matching Document #662 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, background: '#f8fafc', padding: '10px 16px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Date Filter & Totals Bar */}
+      <div className="filter-bar" style={{ marginBottom: 14 }}>
+        <div className="filter-bar-group">
           <Calendar size={15} color="var(--blue-600)" />
           <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी अनुसार स्क्रोल:' : 'Filter Scroll Period:'}</span>
           <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
           <span style={{ fontSize: 12 }}>to</span>
           <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
-          <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+        </div>
+        <div className="filter-bar-group">
+          <Search size={14} color="var(--text-secondary)" />
           <input type="text" className="form-input" style={{ width: 150, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
-
-        <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
-          <div>Total Rec: <strong style={{ color: '#16a34a' }}>₹{totalReceived.toFixed(2)}</strong></div>
-          <div>Total Paid: <strong style={{ color: '#dc2626' }}>₹{totalPaid.toFixed(2)}</strong></div>
-          <div>Total Cheque: <strong style={{ color: '#2563eb' }}>₹{totalCheque.toFixed(2)}</strong></div>
+        <div className="filter-bar-spacer" />
+        <div className="filter-bar-group" style={{ fontSize: 13, gap: 16 }}>
+          <div>Rec: <strong style={{ color: '#16a34a' }}>₹{totalReceived.toFixed(2)}</strong></div>
+          <div>Paid: <strong style={{ color: '#dc2626' }}>₹{totalPaid.toFixed(2)}</strong></div>
+          <div>Cheque: <strong style={{ color: '#2563eb' }}>₹{totalCheque.toFixed(2)}</strong></div>
         </div>
       </div>
 

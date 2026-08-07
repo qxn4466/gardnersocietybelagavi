@@ -232,7 +232,7 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
         <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
           {lang === 'mr' ? 'हस्ते चेक नोंद जोडा (Manual Cheque Entry)' : 'Add Manual Cheque Entry'}
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div className="form-grid-3" style={{ marginBottom: 14 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक' : 'Date of Issue / Encl.'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -261,39 +261,18 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="form-grid-3" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'चेक क्र. (Ch. No.)' : 'Cheque No. (Ch. No.)'}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. 048291"
-              value={chequeNo}
-              onChange={e => setChequeNo(e.target.value)}
-              required
-            />
+            <input type="text" className="form-input" placeholder="e.g. 048291" value={chequeNo} onChange={e => setChequeNo(e.target.value)} required />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'रक्कम ₹ (Amount)' : 'Amount (₹)'}</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              style={{ fontWeight: 600, color: '#ea580c' }}
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              required
-            />
+            <input type="number" step="0.01" className="form-input" style={{ fontWeight: 600, color: '#ea580c' }} value={amount} onChange={e => setAmount(e.target.value)} required />
           </div>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'रिमार्क्स / तपशील' : 'Remarks'}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Bank payment"
-              value={remarks}
-              onChange={e => setRemarks(e.target.value)}
-            />
+            <input type="text" className="form-input" placeholder="e.g. Bank payment" value={remarks} onChange={e => setRemarks(e.target.value)} />
           </div>
         </div>
 
@@ -308,26 +287,27 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
       </form>
 
       {/* Search & Filter Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, background: '#f8fafc', padding: '10px 16px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="filter-bar">
+        <div className="filter-bar-group">
           <Calendar size={15} color="var(--blue-600)" />
           <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
           <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
           <span style={{ fontSize: 12 }}>to</span>
           <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
-          <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
+        </div>
+        <div className="filter-bar-group">
+          <Search size={14} color="var(--text-secondary)" />
           <input
             type="text"
             className="form-input"
             style={{ width: 180, padding: '3px 6px', fontSize: 12 }}
-            placeholder={lang === 'mr' ? 'चेक क्र. किंवा नावाने शोधा...' : 'Search by Cheque No or Name...'}
+            placeholder={lang === 'mr' ? 'शोधा...' : 'Search name, cheque...'}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>
-          {lang === 'mr' ? 'एकूण दिलेले चेक रक्कम:' : 'Total Cheques Issued:'} <span style={{ color: '#ea580c' }}>₹{totalChequeAmount.toFixed(2)}</span>
-        </div>
+        <div className="filter-bar-spacer" />
+        <div style={{ fontSize: 13 }}>Total: <strong style={{ color: '#ea580c' }}>₹{totalChequeAmount.toFixed(2)}</strong></div>
       </div>
 
       {/* Cheque Issue Book Table matching Document #468 */}

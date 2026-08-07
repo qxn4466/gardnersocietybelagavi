@@ -430,7 +430,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <div className="form-grid-4" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -716,7 +716,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           const totalHistoryMotorRent = filteredHistory.reduce((acc, r) => acc + (safeNum(r.motor_rent) + safeNum(r.hmall)), 0);
 
           return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div className="form-grid-3" style={{ marginBottom: 16 }}>
               <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
                   {lang === 'mr' ? 'एकूण विक्री रक्कम (Total Sales Amount)' : 'Total Sales Amount'}
@@ -848,7 +848,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                 <div style={{ fontSize: 11, marginTop: 2 }}>Date: {selectedRowForPrint.date} | Stock Book No: {selectedRowForPrint.stock_book_no || '-'}</div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, marginBottom: 14 }}>
+              <div className="form-grid-2" style={{ fontSize: 13, marginBottom: 14 }}>
                 <div><strong>Customer/Farmer Name:</strong> {selectedRowForPrint.name}</div>
                 <div><strong>Particulars Item:</strong> {selectedRowForPrint.particulars}</div>
                 <div><strong>Pack Size:</strong> {selectedRowForPrint.pack_size || '1 Ltr / Pkt'}</div>

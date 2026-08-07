@@ -221,7 +221,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#6b21a8' }}>
           {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा (Manual Entry)' : 'Add Manual Pesticide Sale Entry'}
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div className="form-grid-3" style={{ marginBottom: 14 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -447,7 +447,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         const totalPesticideCount = filteredHistory.length;
 
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+          <div className="form-grid-3" style={{ marginBottom: 16 }}>
             <div style={{ background: '#faf5ff', padding: 12, borderRadius: 8, border: '1px solid #e9d5ff' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase' }}>
                 {lang === 'mr' ? 'एकूण कीटकनाशक विक्री रक्कम (Total Pesticide Register Sales)' : 'Total Pesticide Register Sales'}

@@ -340,7 +340,8 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+        {/* Row 1: Bill No + Date + GST + Phone in 4-col grid */}
+        <div className="form-grid-4" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'बिल क्र. (Bill No.)' : 'Bill No.'}</label>
             <input type="text" className="form-input" value={billNo} onChange={e => setBillNo(e.target.value)} required />
@@ -413,7 +414,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
           </div>
 
           {paymentMode === 'CHEQUE' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
+            <div className="form-grid-3" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'}</label>
                 <input
@@ -449,7 +450,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
         </div>
 
         {/* Dropdown for Receipt Particulars */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div className="form-grid-2" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label" style={{ marginBottom: 4 }}>{lang === 'mr' ? 'तपशील खाते (Particulars Dropdown)' : 'Particulars Dropdown'}</label>
             <SearchableCombobox
@@ -482,7 +483,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
           <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--text-primary)' }}>
             {lang === 'mr' ? 'रक्कम तपशील (Amount Details)' : 'Amount Details'}
           </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+          <div className="form-grid-3">
             <div className="form-group">
               <label className="form-label">{lang === 'mr' ? 'कर्ज रक्कम ₹ (Loan Amount)' : 'Loan Amount (₹)'}</label>
               <input
@@ -594,18 +595,23 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
 
       {/* History Register */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
+        <div style={{ marginBottom: 14 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px 0' }}>
             {lang === 'mr' ? 'रोख पावती नोंदवही (Cash Memos)' : 'Cash Receipt Vouchers History'}
           </h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Calendar size={15} color="var(--blue-600)" />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
-            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-            <span style={{ fontSize: 12 }}>to</span>
-            <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
-            <Search size={14} color="var(--text-secondary)" style={{ marginLeft: 8 }} />
-            <input type="text" className="form-input" style={{ width: 160, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search from, bill no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <div className="filter-bar">
+            <div className="filter-bar-group">
+              <Calendar size={15} color="var(--blue-600)" />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+              <span style={{ fontSize: 12 }}>to</span>
+              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+            </div>
+            <div className="filter-bar-spacer" />
+            <div className="filter-bar-group">
+              <Search size={14} color="var(--text-secondary)" />
+              <input type="text" className="form-input" style={{ width: 200, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search from, bill no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
           </div>
         </div>
 

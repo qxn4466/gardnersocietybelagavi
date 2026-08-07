@@ -300,7 +300,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
       </div>
 
       {/* Metric Cards Banner */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+      <div className="form-grid-4" style={{ marginBottom: 20 }}>
         <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
             {lang === 'mr' ? 'एकूण उत्पादने' : 'Total Products'}
@@ -525,7 +525,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
               <ArrowDownLeft size={16} /> {lang === 'mr' ? '१. नवीन खरेदी नोंदवा (Stock increases automatically)' : 'Record Product Purchase (Stock increases automatically)'}
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div className="form-grid-4" style={{ gap: 12 }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
                 <select
@@ -647,7 +647,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
               <ArrowUpRight size={16} /> {lang === 'mr' ? '२. नवीन विक्री नोंदवा (Stock decreases automatically)' : 'Record Product Sale (Stock decreases automatically)'}
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div className="form-grid-3" style={{ gap: 12 }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
                 <select
@@ -803,7 +803,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div className="form-grid-2" style={{ marginBottom: 12 }}>
                 <div className="form-group">
                   <label className="form-label">{lang === 'mr' ? 'प्रवर्ग (Category)' : 'Category'} *</label>
                   <select
@@ -848,7 +848,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div className="form-grid-2" style={{ marginBottom: 12 }}>
                 <div className="form-group">
                   <label className="form-label">{lang === 'mr' ? 'बॅच क्र. (Batch No.)' : 'Batch No.'}</label>
                   <input
@@ -871,7 +871,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div className="form-grid-3" style={{ marginBottom: 16 }}>
                 <div className="form-group">
                   <label className="form-label" style={{ fontSize: 11 }}>{lang === 'mr' ? 'खरेदी दर ₹ (Cost)' : 'Purchase Price ₹'}</label>
                   <input

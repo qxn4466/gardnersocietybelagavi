@@ -327,7 +327,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
       {/* Entry Form */}
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <div className="form-grid-4" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'रोख बिल क्र. (Bill No)' : 'Retail Bill No.'}</label>
             <input type="text" className="form-input" style={{ fontWeight: 700, color: '#ea580c' }} value={billNo} onChange={e => setBillNo(e.target.value)} required />
@@ -549,7 +549,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           const totalRetailCount = filteredHistory.length;
 
           return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div className="form-grid-3" style={{ marginBottom: 16 }}>
               <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
                   {lang === 'mr' ? 'एकूण किरकोळ रोख विक्री (Total Retail Cash Sales)' : 'Total Retail Cash Sales'}
