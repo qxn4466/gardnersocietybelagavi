@@ -161,26 +161,69 @@ export const CASH_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = [
 ];
 
 export const CREDIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = [
-  { key: "shares", label: "Shares" },
-  { key: "commissions", label: "Commissions" },
-  { key: "interest", label: "Interest" },
-  { key: "pigmi_comm", label: "Pigmi Comm." },
-  { key: "lakshmi_pigmi_deposit", label: "Lakshmi Pigmi Deposit" },
-  { key: "vegetable_comm", label: "Vegetable Comm." },
-  { key: "cash_sales", label: "Cash Sales" },
-  { key: "pesticide_sales", label: "Pesticide Sales" },
-  { key: "sundary_ac", label: "Sundary a/c" },
+  { key: "sundary_ac", label: "Pooja Expenses" },
+  { key: "lakshmi_pigmi_deposit_loan", label: "Sou Lakshmi Pigmy Deposit Loan" },
+  { key: "sundary_ac", label: "Sundrey A/C" },
+  { key: "sundary_ac", label: "Rikshaw charges" },
+  { key: "sundary_ac", label: "PF A/C" },
+  { key: "sundary_ac", label: "Mobile Recharge" },
+  { key: "bank_current", label: "The Pioneer Urban Bank CC" },
+  { key: "sundary_ac", label: "ESI A/C" },
+  { key: "sundary_ac", label: "Administrative charges" },
+  { key: "lakshmi_pigmi_deposit", label: "Sou Lakshmi Pigmy Deposit" },
+  { key: "sundary_ac", label: "Insurance Fund" },
+  { key: "sundary_ac", label: "FD A/C" },
+  { key: "interest", label: "FD Interest" },
+  { key: "sundary_ac", label: "Daily Wages" },
+  { key: "sundary_ac", label: "Electric Power A/C" },
+  { key: "advance", label: "Advance A/C" },
+  { key: "bank_current", label: "The Pioneer Urban Bank CA" },
+  { key: "sundary_ac", label: "Printing And Stationary" },
+  { key: "sundary_ac", label: "Seed Section Plastic Bag" },
+  { key: "sundary_ac", label: "Contigency A/C" },
+  { key: "sundary_ac", label: "CGST paid (9%)" },
+  { key: "sundary_ac", label: "SGST paid (9%)" },
+  { key: "sundary_ac", label: "CGST paid (2.5%)" },
+  { key: "sundary_ac", label: "SGST paid (2.5%)" },
+  { key: "sundary_ac", label: "GST Feeding fee" },
+  { key: "purchases", label: "Pesticide purchases" },
+  { key: "sundary_ac", label: "Meeting allowance" },
+  { key: "sundary_ac", label: "Legal Fee" },
+  { key: "lakshmi_pigmi_deposit_interest", label: "Sou Lakshmi Pigmy Deposit Interest" },
+  { key: "purchases", label: "Seed purchase" },
+  { key: "sundary_ac", label: "PF and other contribution" },
+  { key: "sundary_ac", label: "ESI and other contribution" },
+  { key: "sundary_ac", label: "PAY A/C" },
+  { key: "bank_current", label: "Union Bank of India" },
+  { key: "sundary_ac", label: "TDS A/C" },
+  { key: "pigmi_comm", label: "Sou Lakshmi Pigmy Deposit commission" }
 ];
 
 export const DEBIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = [
-  { key: "purchases", label: "Purchases" },
-  { key: "loan_ac", label: "Loan a/c" },
-  { key: "bank_current", label: "Bank Current" },
-  { key: "advance", label: "Advance" },
-  { key: "cold_storage_adv", label: "Cold Storage Adv" },
-  { key: "lakshmi_pigmi_deposit_loan", label: "Lakshmi Pigmi Deposit Loan" },
-  { key: "lakshmi_pigmi_deposit_interest", label: "Lakshmi Pigmi Deposit Interest" },
-  { key: "sundary_ac", label: "Sundary a/c" },
+  { key: "lakshmi_pigmi_deposit", label: "Sou Lakshmi Pigmy Deposit" },
+  { key: "pesticide_sales", label: "Pesticide sales" },
+  { key: "sundary_ac", label: "CGST(9%)" },
+  { key: "sundary_ac", label: "SGST(9%)" },
+  { key: "sundary_ac", label: "CGST received (2.5%)" },
+  { key: "sundary_ac", label: "SGST received (2.5%)" },
+  { key: "bank_current", label: "Union Bank of India" },
+  { key: "bank_current", label: "The Pioneer Urban Bank CC" },
+  { key: "sundary_ac", label: "FD A/C" },
+  { key: "cold_storage_adv", label: "Cold Stove Godawan" },
+  { key: "sundary_ac", label: "Head Office Building rent" },
+  { key: "sundary_ac", label: "Onion Market Godawan" },
+  { key: "sundary_ac", label: "Under Godawan Rent" },
+  { key: "bank_current", label: "The Pioneer Urban Bank CA" },
+  { key: "pigmi_comm", label: "Sou Lakshmi Pigmy Deposit commission" },
+  { key: "lakshmi_pigmi_deposit_loan", label: "Sou Lakshmi Pigmy Deposit Loan" },
+  { key: "lakshmi_pigmi_deposit_interest", label: "Sou Lakshmi Pigmy Deposit Interest" },
+  { key: "sundary_ac", label: "Electric Power A/C" },
+  { key: "shares", label: "Shares A/C" },
+  { key: "sundary_ac", label: "Sundrey A/C" },
+  { key: "advance", label: "Advance A/C" },
+  { key: "sundary_ac", label: "PF A/C" },
+  { key: "sundary_ac", label: "ESI A/C" },
+  { key: "vegetable_comm", label: "Vegetable Commission" }
 ];
 
 // ─── Cashier Types ──────────────────────────────────────────────────────────
@@ -317,10 +360,7 @@ export const RECEIPT_PARTICULARS_OPTIONS = [
   "PAY A/C",
   "Union Bank of India",
   "TDS A/C",
-  "Sou Lakshmi Pigmy Deposit commission",
-  "Advance a/c",
-  "Pesticide sale",
-  "Seed sale",
+  "Sou Lakshmi Pigmy Deposit commission"
 ];
 
 export const PAYMENT_PARTICULARS_OPTIONS = [
@@ -347,12 +387,7 @@ export const PAYMENT_PARTICULARS_OPTIONS = [
   "Advance A/C",
   "PF A/C",
   "ESI A/C",
-  "Vegetable Commission",
-  "Daily wages pay",
-  "Legal Fee",
-  "License renewal fee",
-  "Seeds purchase a/c",
-  "Pesticide purchase a/c",
+  "Vegetable Commission"
 ];
 
 
