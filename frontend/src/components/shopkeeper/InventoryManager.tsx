@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Package, ArrowUpRight, ArrowDownLeft, Plus, CheckCircle, AlertTriangle, Layers, DollarSign, Calendar, RefreshCw } from 'lucide-react';
+import {
+  Package, ArrowUpRight, ArrowDownLeft, Plus, CheckCircle, AlertTriangle,
+  Layers, Trash2, PlusCircle, Edit3, X, Tag
+} from 'lucide-react';
 import {
   getInventoryProducts,
   addOrUpdateInventoryProduct,
+  deleteInventoryProduct,
   getPurchaseRecords,
   recordPurchase,
   getSalesRecords,
   recordSale,
+  seedInventoryTestData,
+  clearInventoryTestData,
+  STANDARD_PACK_SIZES,
+  PRODUCT_CATEGORIES,
   type InventoryProduct,
   type PurchaseRecord,
   type SalesRecord
@@ -27,13 +35,18 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
   const [sales, setSales] = useState<SalesRecord[]>([]);
 
   // Alert State
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // New Product Form State
+  // New Product Modal State
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [prodName, setProdName] = useState('');
-  const [prodPackSize, setProdPackSize] = useState('500 ml');
+  const [prodCategory, setProdCategory] = useState(PRODUCT_CATEGORIES[0]);
+  const [prodBatchNo, setProdBatchNo] = useState('');
+  const [prodExpiryDate, setProdExpiryDate] = useState('2028-12-31');
+  const [prodPackSize, setProdPackSize] = useState(STANDARD_PACK_SIZES[3]); // 500 ml
+  const [customPackSize, setCustomPackSize] = useState('');
+  const [prodPurchasePrice, setProdPurchasePrice] = useState('180');
   const [prodSellingPrice, setProdSellingPrice] = useState('250');
   const [prodInitialStock, setProdInitialStock] = useState('20');
 
@@ -68,7 +81,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
     }
   };
 
-  // 1. Add / Edit Product Submit
+  // 1. Seed & Clear Test Data
+  const handleSeedTestData = () => {
+    const res = seedInventoryTestData();
+    refreshData();
+    setMsg({ type: 'success', text: res.message });
+  };
+
+  const handleClearTestData = () => {
+    if (!window.confirm(lang === 'mr' ? 'आपण सर्व साठा चाचणी डेटा हटवू इच्छिता?' : 'Are you sure you want to clear all inventory test data?')) return;
+    const res = clearInventoryTestData();
+    refreshData();
+    setMsg({ type: 'info', text: res.message });
+  };
+
+  // 2. Add / Edit Product Submit
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodName.trim()) {
@@ -76,13 +103,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
       return;
     }
 
+    const costPrice = parseFloat(prodPurchasePrice) || 0;
     const price = parseFloat(prodSellingPrice) || 0;
     const stock = parseInt(prodInitialStock) || 0;
+    const finalPackSize = prodPackSize === 'Custom' ? (customPackSize.trim() || '1 Unit') : prodPackSize;
 
     const newProd: InventoryProduct = {
       id: editingProductId || 'p_' + Date.now(),
       name: prodName.trim(),
-      pack_size: prodPackSize.trim() || '1 Ltr',
+      category: prodCategory,
+      batch_no: prodBatchNo.trim() || ('BAT-' + Date.now().toString().slice(-4)),
+      expiry_date: prodExpiryDate || '2028-12-31',
+      pack_size: finalPackSize,
+      purchase_price: costPrice,
       selling_price: price,
       current_stock: stock,
     };
@@ -93,14 +126,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
     resetProductForm();
     setMsg({
       type: 'success',
-      text: lang === 'mr' ? `उत्पादन ${newProd.name} यशस्वीरित्या जतन झाले!` : `Product ${newProd.name} saved successfully!`,
+      text: lang === 'mr' ? `उत्पादन ${newProd.name} (${newProd.pack_size}) यशस्वीरित्या जतन झाले!` : `Product ${newProd.name} (${newProd.pack_size}) saved successfully!`,
     });
   };
 
   const resetProductForm = () => {
     setEditingProductId(null);
     setProdName('');
-    setProdPackSize('500 ml');
+    setProdCategory(PRODUCT_CATEGORIES[0]);
+    setProdBatchNo('');
+    setProdExpiryDate('2028-12-31');
+    setProdPackSize(STANDARD_PACK_SIZES[3]);
+    setCustomPackSize('');
+    setProdPurchasePrice('180');
     setProdSellingPrice('250');
     setProdInitialStock('20');
   };
@@ -108,13 +146,30 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
   const handleEditProduct = (p: InventoryProduct) => {
     setEditingProductId(p.id);
     setProdName(p.name);
-    setProdPackSize(p.pack_size);
+    setProdCategory(p.category || PRODUCT_CATEGORIES[0]);
+    setProdBatchNo(p.batch_no || '');
+    setProdExpiryDate(p.expiry_date || '2028-12-31');
+    if (STANDARD_PACK_SIZES.includes(p.pack_size)) {
+      setProdPackSize(p.pack_size);
+      setCustomPackSize('');
+    } else {
+      setProdPackSize('Custom');
+      setCustomPackSize(p.pack_size);
+    }
+    setProdPurchasePrice(String(p.purchase_price || 0));
     setProdSellingPrice(String(p.selling_price));
     setProdInitialStock(String(p.current_stock));
     setShowAddProductModal(true);
   };
 
-  // 2. Record Purchase Submit (Stock Increases Automatically)
+  const handleDeleteProduct = (id: string, name: string) => {
+    if (!window.confirm(lang === 'mr' ? `आपण नक्की ${name} उत्पादन हटवू इच्छिता?` : `Are you sure you want to delete product "${name}"?`)) return;
+    deleteInventoryProduct(id);
+    refreshData();
+    setMsg({ type: 'info', text: lang === 'mr' ? `उत्पादन ${name} हटवले.` : `Product ${name} deleted.` });
+  };
+
+  // 3. Record Purchase Submit (Stock Increases Automatically)
   const handlePurchaseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const qty = parseInt(purQty) || 0;
@@ -140,7 +195,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
     }
   };
 
-  // 3. Record Sales Submit (Stock Decreases Automatically)
+  // 4. Record Sales Submit (Stock Decreases Automatically)
   const handleSaleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const qty = parseInt(saleQty) || 0;
@@ -165,24 +220,68 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
     }
   };
 
-  // Calculations for Metrics Banner
+  // Calculations for Banner
   const totalProductsCount = products.length;
   const totalStockUnits = products.reduce((acc, p) => acc + p.current_stock, 0);
   const totalStockValuation = products.reduce((acc, p) => acc + (p.current_stock * p.selling_price), 0);
-  const lowStockCount = products.filter(p => p.current_stock <= 10).length;
+  const lowStockCount = products.filter(p => p.current_stock > 0 && p.current_stock <= 10).length;
+  const outOfStockCount = products.filter(p => p.current_stock <= 0).length;
 
   return (
     <div style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
 
-      {/* Top Banner & Title */}
+      {/* Test Data Toolbar */}
+      <div style={{
+        marginBottom: 16, padding: '10px 16px', background: '#f8fafc',
+        borderRadius: 10, border: '1px solid #cbd5e1',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10
+      }}>
+        <div>
+          <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
+            {lang === 'mr' ? '🧪 साठा चाचणी डेटा संच (Inventory Test Data Tool)' : '🧪 Inventory Test Dataset Toolbar'}
+          </span>
+          <div style={{ fontSize: 11, color: '#64748b' }}>
+            {lang === 'mr' ? 'चाचणी उत्पादने (In Stock 🟢, Low Stock 🟠, Out of Stock 🔴) जोडा किंवा साफ करा' : 'Seed or clear sample pesticide products covering In Stock 🟢, Low Stock 🟠, and Out of Stock 🔴 statuses'}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={handleSeedTestData}
+            style={{
+              background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <PlusCircle size={14} />
+            {lang === 'mr' ? 'साठा चाचणी डेटा जोडा (Seed Data)' : 'Add Inventory Test Data'}
+          </button>
+          <button
+            type="button"
+            onClick={handleClearTestData}
+            style={{
+              background: '#ffffff', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: 6,
+              padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <Trash2 size={14} />
+            {lang === 'mr' ? 'चाचणी डेटा हटवा (Clear Data)' : 'Clear Inventory Test Data'}
+          </button>
+        </div>
+      </div>
+
+      {/* Header Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Package size={20} color="#2563eb" />
+            <Package size={22} color="#2563eb" />
             {lang === 'mr' ? 'कीटकनाशक दुकानाची साठा व्यवस्थापन प्रणाली (Pesticide Store Inventory)' : 'Pesticide Store Inventory System'}
           </h3>
           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-            {lang === 'mr' ? 'सोपा प्रवाह: १. उत्पादने (Products) → २. खरेदी (Purchase +Stock) → ३. साठा (Stock) → ४. विक्री (Sales -Stock)' : 'Simple Flow: Products → Purchase (+Stock) → Live Stock → Sales (-Stock)'}
+            {lang === 'mr' ? 'प्रवाह: उत्पादने (Products) → खरेदी (+साठा वाढतो) → साठा (Stock) → विक्री (-साठा कमी होतो)' : 'Simple Flow: Products → Purchase (+Stock) → Live Stock → Sales (-Stock)'}
           </div>
         </div>
 
@@ -190,13 +289,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
           type="button"
           onClick={() => { resetProductForm(); setShowAddProductModal(true); }}
           style={{
-            background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 8,
-            padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(37,99,235,0.3)'
+            background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 8,
+            padding: '9px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
           }}
         >
           <Plus size={16} />
-          {lang === 'mr' ? 'नवीन उत्पादन जोडा' : 'Add New Product'}
+          {lang === 'mr' ? 'नवीन उत्पादन जोडा (+ New Product)' : 'Add New Product'}
         </button>
       </div>
 
@@ -229,13 +328,17 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
           </div>
         </div>
 
-        <div style={{ background: lowStockCount > 0 ? '#fff7ed' : '#f8fafc', padding: 14, borderRadius: 8, border: lowStockCount > 0 ? '1px solid #fed7aa' : '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: lowStockCount > 0 ? '#c2410c' : '#64748b', textTransform: 'uppercase' }}>
-            {lang === 'mr' ? 'कमी साठा इशारा (<१०)' : 'Low Stock Alerts'}
+        <div style={{ background: (lowStockCount > 0 || outOfStockCount > 0) ? '#fff7ed' : '#f8fafc', padding: 14, borderRadius: 8, border: (lowStockCount > 0 || outOfStockCount > 0) ? '1px solid #fed7aa' : '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: (lowStockCount > 0 || outOfStockCount > 0) ? '#c2410c' : '#64748b', textTransform: 'uppercase' }}>
+            {lang === 'mr' ? 'साठा इशारा (Low / Out)' : 'Stock Alerts'}
           </div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: lowStockCount > 0 ? '#9a3412' : '#1e293b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {lowStockCount > 0 && <AlertTriangle size={18} color="#c2410c" />}
-            {lowStockCount} {lang === 'mr' ? 'उत्पादने' : 'items'}
+          <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ color: '#c2410c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              🟠 Low: <strong>{lowStockCount}</strong>
+            </span>
+            <span style={{ color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              🔴 Out: <strong>{outOfStockCount}</strong>
+            </span>
           </div>
         </div>
       </div>
@@ -244,9 +347,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
       {msg && (
         <div style={{
           marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-          background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2',
-          color: msg.type === 'success' ? '#15803d' : '#b91c1c',
-          border: msg.type === 'success' ? '1px solid #86efac' : '1px solid #fca5a5',
+          background: msg.type === 'success' ? '#f0fdf4' : msg.type === 'info' ? '#eff6ff' : '#fef2f2',
+          color: msg.type === 'success' ? '#15803d' : msg.type === 'info' ? '#1d4ed8' : '#b91c1c',
+          border: msg.type === 'success' ? '1px solid #86efac' : msg.type === 'info' ? '1px solid #bfdbfe' : '1px solid #fca5a5',
           display: 'flex', alignItems: 'center', gap: 8
         }}>
           {msg.type === 'success' ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
@@ -254,7 +357,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
         </div>
       )}
 
-      {/* Sub-Tab Navigation Switcher */}
+      {/* Sub-Tab Switcher */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 4 }}>
         <button
           type="button"
@@ -266,7 +369,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
             display: 'flex', alignItems: 'center', gap: 6
           }}
         >
-          <Layers size={15} /> 1. {lang === 'mr' ? 'उत्पादने व साठा (Products)' : 'Products & Current Stock'}
+          <Layers size={15} /> 1. {lang === 'mr' ? 'उत्पादने व साठा (Products List)' : 'Products & Stock'}
         </button>
 
         <button
@@ -279,7 +382,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
             display: 'flex', alignItems: 'center', gap: 6
           }}
         >
-          <ArrowDownLeft size={15} /> 2. {lang === 'mr' ? 'खरेदी (+साठा वाढतो)' : 'Purchase (Stock +)'}
+          <ArrowDownLeft size={15} /> 2. {lang === 'mr' ? 'खरेदी (+साठा ऑटो वाढतो)' : 'Purchase (Stock Increases)'}
         </button>
 
         <button
@@ -292,7 +395,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
             display: 'flex', alignItems: 'center', gap: 6
           }}
         >
-          <ArrowUpRight size={15} /> 3. {lang === 'mr' ? 'विक्री (-साठा कमी होतो)' : 'Sales (Stock -)'}
+          <ArrowUpRight size={15} /> 3. {lang === 'mr' ? 'विक्री (-साठा ऑटो कमी होतो)' : 'Sales (Stock Decreases)'}
         </button>
       </div>
 
@@ -303,60 +406,108 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
             <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', fontSize: 11, color: '#475569' }}>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>#</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{lang === 'mr' ? 'उत्पादनाचे नाव (Product Name)' : 'Product Name'}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{lang === 'mr' ? 'पॅक आझाद / आकार (Pack Size)' : 'Pack Size'}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>{lang === 'mr' ? 'विक्री दर (Selling Price)' : 'Selling Price (₹)'}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>{lang === 'mr' ? 'उपलब्ध साठा (Current Stock)' : 'Current Stock'}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'center' }}>{lang === 'mr' ? 'स्थिती' : 'Stock Status'}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'left' }}>#</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'left' }}>{lang === 'mr' ? 'उत्पादनाचे नाव (Product Name)' : 'Product Name'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'left' }}>{lang === 'mr' ? 'प्रवर्ग (Category)' : 'Category'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'left' }}>{lang === 'mr' ? 'पॅक आकार (Pack Size)' : 'Pack Size'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'left' }}>{lang === 'mr' ? 'बॅच व मुदत (Batch & Expiry)' : 'Batch & Expiry'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'right' }}>{lang === 'mr' ? 'खरेदी दर (Cost ₹)' : 'Purchase Price ₹'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'right' }}>{lang === 'mr' ? 'विक्री दर (Selling ₹)' : 'Selling Price ₹'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'right' }}>{lang === 'mr' ? 'उपलब्ध साठा (Current Stock)' : 'Current Stock'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'center' }}>{lang === 'mr' ? 'साठा स्थिती (Stock Status)' : 'Stock Status'}</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
                 {products.length > 0 ? (
                   products.map((p, idx) => {
-                    const isLow = p.current_stock <= 10;
+                    const isLow = p.current_stock > 0 && p.current_stock <= 10;
                     const isOut = p.current_stock <= 0;
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{idx + 1}</td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
-                        <td style={{ padding: '10px 12px', color: '#475569' }}>{p.pack_size}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#15803d' }}>
-                          ₹ {Number(p.selling_price).toFixed(2)}
-                        </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: isOut ? '#b91c1c' : isLow ? '#c2410c' : '#1e293b' }}>
-                          {p.current_stock}
-                        </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '3px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700,
-                            background: isOut ? '#fee2e2' : isLow ? '#ffedd5' : '#dcfce7',
-                            color: isOut ? '#991b1b' : isLow ? '#9a3412' : '#166534',
-                            border: isOut ? '1px solid #fca5a5' : isLow ? '1px solid #fed7aa' : '1px solid #86efac',
-                          }}>
-                            {isOut ? (lang === 'mr' ? 'निःशेष (Out of Stock)' : 'Out of Stock') : isLow ? (lang === 'mr' ? 'कमी साठा (Low Stock)' : 'Low Stock') : (lang === 'mr' ? 'उपलब्ध (In Stock)' : 'In Stock')}
+                        <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{idx + 1}</td>
+                        <td style={{ padding: '10px 10px', fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, color: '#64748b' }}>{p.category || 'Insecticide'}</td>
+                        <td style={{ padding: '10px 10px', fontWeight: 600, color: '#1e293b' }}>
+                          <span style={{ padding: '2px 6px', background: '#f1f5f9', borderRadius: 4, border: '1px solid #cbd5e1' }}>
+                            {p.pack_size}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleEditProduct(p)}
-                            style={{
-                              background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#1e293b',
-                              borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer'
-                            }}
-                          >
-                            {lang === 'mr' ? 'संपादित करा' : 'Edit'}
-                          </button>
+                        <td style={{ padding: '10px 10px', fontSize: 11, color: '#475569' }}>
+                          <div>{p.batch_no || '—'}</div>
+                          <div style={{ color: '#94a3b8' }}>Exp: {p.expiry_date || '—'}</div>
+                        </td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right', color: '#64748b' }}>
+                          ₹ {Number(p.purchase_price || 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#15803d' }}>
+                          ₹ {Number(p.selling_price).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: isOut ? '#b91c1c' : isLow ? '#c2410c' : '#1e293b' }}>
+                          {p.current_stock}
+                        </td>
+                        <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                          {isOut ? (
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 800,
+                              background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5',
+                              display: 'inline-flex', alignItems: 'center', gap: 4
+                            }}>
+                              🔴 {lang === 'mr' ? 'Out of Stock (०)' : 'Out of Stock (0)'}
+                            </span>
+                          ) : isLow ? (
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 800,
+                              background: '#ffedd5', color: '#9a3412', border: '1px solid #fed7aa',
+                              display: 'inline-flex', alignItems: 'center', gap: 4
+                            }}>
+                              🟠 {lang === 'mr' ? 'Low Stock (≤ १०)' : 'Low Stock (≤ 10)'}
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 800,
+                              background: '#dcfce7', color: '#166534', border: '1px solid #86efac',
+                              display: 'inline-flex', alignItems: 'center', gap: 4
+                            }}>
+                              🟢 {lang === 'mr' ? 'In Stock' : 'In Stock'}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleEditProduct(p)}
+                              title={lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                              style={{
+                                background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#1e293b',
+                                borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                display: 'inline-flex', alignItems: 'center', gap: 4
+                              }}
+                            >
+                              <Edit3 size={12} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              title={lang === 'mr' ? 'हटवा' : 'Delete'}
+                              style={{
+                                background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c',
+                                borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                display: 'inline-flex', alignItems: 'center', gap: 4
+                              }}
+                            >
+                              <Trash2 size={12} /> {lang === 'mr' ? 'हटवा' : 'Del'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} style={{ padding: 20, textAlign: 'center', color: '#94a3b8' }}>
-                      {lang === 'mr' ? 'कोणतीही उत्पादने उपलब्ध नाहीत.' : 'No inventory products found.'}
+                    <td colSpan={10} style={{ padding: 20, textAlign: 'center', color: '#94a3b8' }}>
+                      {lang === 'mr' ? 'कोणतीही उत्पादने आढळली नाहीत. चाचणी डेटा जोडा बटणावर क्लिक करा.' : 'No inventory products found. Click "Add Inventory Test Data" button above.'}
                     </td>
                   </tr>
                 )}
@@ -383,11 +534,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                   onChange={e => setPurProductId(e.target.value)}
                   required
                 >
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.pack_size}) — {lang === 'mr' ? `सध्याचा साठा: ${p.current_stock}` : `Current Stock: ${p.current_stock}`}
-                    </option>
-                  ))}
+                  {products.map(p => {
+                    const isOut = p.current_stock <= 0;
+                    const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                    const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -505,11 +661,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                   }}
                   required
                 >
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.pack_size}) — {lang === 'mr' ? `उपलब्ध साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
-                    </option>
-                  ))}
+                  {products.map(p => {
+                    const isOut = p.current_stock <= 0;
+                    const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                    const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -613,12 +774,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
         }}>
           <div style={{
-            background: '#ffffff', borderRadius: 12, width: '100%', maxWidth: 450,
-            padding: 20, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            background: '#ffffff', borderRadius: 12, width: '100%', maxWidth: 520,
+            padding: 22, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
           }}>
-            <h4 style={{ margin: '0 0 14px 0', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
-              {editingProductId ? (lang === 'mr' ? 'उत्पादन संपादित करा' : 'Edit Product') : (lang === 'mr' ? 'नवीन उत्पादन जोडा' : 'Add New Inventory Product')}
-            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
+                {editingProductId ? (lang === 'mr' ? 'उत्पादन तपशील संपादित करा' : 'Edit Product Details') : (lang === 'mr' ? 'नवीन उत्पादन जोडा' : 'Add New Inventory Product')}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddProductModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} color="#64748b" />
+              </button>
+            </div>
 
             <form onSubmit={handleSaveProduct}>
               <div className="form-group" style={{ marginBottom: 12 }}>
@@ -633,21 +803,90 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label className="form-label">{lang === 'mr' ? 'पॅक आकार / प्रमाण (Pack Size)' : 'Pack Size'} *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. 500 ml / 1 Ltr / 1 Kg"
-                  value={prodPackSize}
-                  onChange={e => setProdPackSize(e.target.value)}
-                  required
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'प्रवर्ग (Category)' : 'Category'} *</label>
+                  <select
+                    className="form-select"
+                    value={prodCategory}
+                    onChange={e => setProdCategory(e.target.value)}
+                    required
+                  >
+                    {PRODUCT_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'पॅक आकार (Pack Size)' : 'Pack Size'} *</label>
+                  <select
+                    className="form-select"
+                    value={prodPackSize}
+                    onChange={e => setProdPackSize(e.target.value)}
+                    required
+                  >
+                    {STANDARD_PACK_SIZES.map(sz => (
+                      <option key={sz} value={sz}>{sz}</option>
+                    ))}
+                    <option value="Custom">+ Custom Pack Size...</option>
+                  </select>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              {prodPackSize === 'Custom' && (
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label className="form-label">{lang === 'mr' ? 'कस्टम पॅक आकार (Custom Pack Size)' : 'Custom Pack Size'} *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. 750 ml / 2.5 Kg"
+                    value={customPackSize}
+                    onChange={e => setCustomPackSize(e.target.value)}
+                    required={prodPackSize === 'Custom'}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <div className="form-group">
-                  <label className="form-label">{lang === 'mr' ? 'विक्री दर ₹ (Selling Price)' : 'Selling Price (₹)'} *</label>
+                  <label className="form-label">{lang === 'mr' ? 'बॅच क्र. (Batch No.)' : 'Batch No.'}</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. CHL-2026-A1"
+                    value={prodBatchNo}
+                    onChange={e => setProdBatchNo(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'मुदत समाप्ती (Expiry Date)' : 'Expiry Date'}</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={prodExpiryDate}
+                    onChange={e => setProdExpiryDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 11 }}>{lang === 'mr' ? 'खरेदी दर ₹ (Cost)' : 'Purchase Price ₹'}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="180.00"
+                    value={prodPurchasePrice}
+                    onChange={e => setProdPurchasePrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 11 }}>{lang === 'mr' ? 'विक्री दर ₹ (Selling)' : 'Selling Price ₹'}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -660,7 +899,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{lang === 'mr' ? 'सुरुवातीचा साठा (Initial Stock)' : 'Current/Initial Stock'} *</label>
+                  <label className="form-label" style={{ fontSize: 11 }}>{lang === 'mr' ? 'साठा (Stock)' : 'Current Stock'}</label>
                   <input
                     type="number"
                     className="form-input"
