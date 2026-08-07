@@ -89,6 +89,11 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
     fetchOffice().then(setOffice).catch(() => { });
   }, []); // eslint-disable-line
 
+  // Auto-reload when dates change
+  useEffect(() => {
+    if (startDate && endDate) loadData();
+  }, [startDate, endDate]); // eslint-disable-line
+
   const handleDelete = async (id: number, memoNo: string) => {
     if (!window.confirm(lang === 'mr'
       ? `व्यवहार ${memoNo} हटवायचा आहे का?`
@@ -114,39 +119,46 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
     }
   };
 
-  // Calculate individual column values matching transaction head and particulars
+  // Match transaction type name directly to each column label for precise amount placement
   const getCellValue = (row: CashBookRow, col: { key: keyof CashBookRow; label: string }): number => {
+    // Tax columns – read parsed fields directly
     if (col.key === 'cgst_9') return Number(row.cgst_9) || 0;
     if (col.key === 'sgst_9') return Number(row.sgst_9) || 0;
     if (col.key === 'cgst_2_5') return Number(row.cgst_2_5) || 0;
     if (col.key === 'sgst_2_5') return Number(row.sgst_2_5) || 0;
 
-    const txnType = (row.transaction_type || '').trim().toLowerCase();
-    const colLabel = (col.label || '').trim().toLowerCase();
-    const particulars = (row.particulars || '').trim().toLowerCase();
+    const txnType = (row.transaction_type || '').trim();
+    const colLabel = (col.label || '').trim();
+    const amount = Number(row.total) || Number(row.amount) || 0;
 
-    if (
-      (txnType && (txnType === colLabel || colLabel.includes(txnType) || txnType.includes(colLabel))) ||
-      (particulars && particulars.includes(colLabel))
-    ) {
-      return Number(row.amount || row.total) || 0;
-    }
+    // Exact match: transaction type name == column label (case-insensitive)
+    if (txnType.toLowerCase() === colLabel.toLowerCase()) return amount;
 
+    // For columns with unique backend fields (non-sundary_ac), use direct field value
     const directVal = Number(row[col.key]);
-    if (directVal && !isNaN(directVal) && directVal !== 0) {
-      if (['shares', 'purchases', 'commissions', 'loan_ac', 'interest', 'pigmi_comm', 'bank_current', 'advance', 'lakshmi_pigmi_deposit', 'vegetable_comm', 'cash_sales', 'pesticide_sales', 'cold_storage_adv', 'lakshmi_pigmi_deposit_loan', 'lakshmi_pigmi_deposit_interest'].includes(String(col.key))) {
-        return directVal;
+    if (!isNaN(directVal) && directVal > 0) {
+      const uniqueKeys = ['shares', 'purchases', 'commissions', 'loan_ac', 'interest', 'pigmi_comm',
+        'bank_current', 'advance', 'lakshmi_pigmi_deposit', 'vegetable_comm', 'cash_sales',
+        'pesticide_sales', 'cold_storage_adv', 'lakshmi_pigmi_deposit_loan', 'lakshmi_pigmi_deposit_interest'];
+      if (uniqueKeys.includes(String(col.key))) {
+        if (Number(row[col.key]) > 0) return Number(row[col.key]);
       }
     }
 
-    if (col.key === 'sundary_ac' && directVal > 0) {
-      const matchesAnyOtherCol = CREDIT_BOOK_COLUMNS.some(c =>
-        c.label !== col.label &&
-        ((txnType && (txnType === c.label.toLowerCase() || c.label.toLowerCase().includes(txnType))) ||
-         (particulars && particulars.includes(c.label.toLowerCase())))
+    // For sundary_ac columns: show amount only in the column whose label matches the transaction type
+    if (col.key === 'sundary_ac' && Number(row[col.key]) > 0) {
+      // Only show for the specific column whose label matches the transaction type
+      const isMatch = colLabel.toLowerCase() === txnType.toLowerCase();
+      // Fallback: if no other column exactly matches, show in first sundary_ac column matching
+      const anyExactColMatch = CREDIT_BOOK_COLUMNS.some(
+        c => c.key !== 'sundary_ac' && c.label.toLowerCase() === txnType.toLowerCase()
       );
-      if (!matchesAnyOtherCol) {
-        return directVal;
+      const exactSundaryMatch = CREDIT_BOOK_COLUMNS.find(
+        c => c.key === 'sundary_ac' && c.label.toLowerCase() === txnType.toLowerCase()
+      );
+      if (exactSundaryMatch) return isMatch ? amount : 0;
+      if (!anyExactColMatch && CREDIT_BOOK_COLUMNS.findIndex(c => c.key === 'sundary_ac') === CREDIT_BOOK_COLUMNS.findIndex(c => c.label === col.label)) {
+        return amount;
       }
     }
 

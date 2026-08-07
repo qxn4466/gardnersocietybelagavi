@@ -229,7 +229,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [expandedParticularsId, setExpandedParticularsId] = useState<number | null>(null);
 
   // History Filter states
-  const [hStartDate, setHStartDate] = useState(firstOfMonthStr);
+  const [hStartDate, setHStartDate] = useState(todayStr);
   const [hEndDate, setHEndDate] = useState(todayStr);
   const [hTxnTypeId, setHTxnTypeId] = useState('');
   const [hCustomerId, setHCustomerId] = useState('');
@@ -1440,7 +1440,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
                       <th>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'Transaction Type'}</th>
                       <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
-                      <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम (रु.पै)' : 'Amount (Rs.Ps)'}</th>
+                       <th style={{ textAlign: 'right', color: '#15803d' }}>{lang === 'mr' ? 'जमा रक्कम' : 'Credit Amt (Rs.Ps)'}</th>
+                       <th style={{ textAlign: 'right', color: '#b91c1c' }}>{lang === 'mr' ? 'नावे रक्कम' : 'Debit Amt (Rs.Ps)'}</th>
                       <th>{lang === 'mr' ? 'स्थिती' : 'Status'}</th>
                       <th>{lang === 'mr' ? 'क्रिया' : 'Actions'}</th>
                     </tr>
@@ -1483,8 +1484,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               </span>
                             )}
                           </td>
-                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)' }}>
-                            ₹ {totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#15803d' }}>
+                            {nature === 'CREDIT' ? `₹ ${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#b91c1c' }}>
+                            {nature === 'DEBIT' ? `₹ ${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
                           </td>
                           <td>
                             <span style={{
@@ -1531,8 +1535,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   <tfoot>
                     <tr>
                       <td colSpan={6} style={{ fontWeight: 700 }}>{lang === 'mr' ? `कालावधी एकूण (${historyList.length} व्यवहार)` : `PERIOD TOTAL (${historyList.length} Transactions)`}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: 'var(--blue-800)' }}>
-                        ₹ {historyTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: '#15803d' }}>
+                        ₹ {historyCreditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: '#b91c1c' }}>
+                        ₹ {historyDebitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                       <td colSpan={2} />
                     </tr>
