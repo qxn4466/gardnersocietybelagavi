@@ -413,12 +413,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       loadHistory();
 
       if (isDraft) {
-        setAlert({ type: 'success', msg: `Draft saved successfully! (Memo: ${saved.cash_memo_no})` });
+        setAlert({
+          type: 'success',
+          msg: lang === 'mr'
+            ? `मसुदा यशस्वीरित्या जतन केला! (कॅश मेमो: ${saved.cash_memo_no})`
+            : `Draft saved successfully! (Memo: ${saved.cash_memo_no})`
+        });
         setEditingDraftId(saved.id);
       } else {
         localStorage.removeItem('bgs_credit_form_draft');
-        setAlert({ type: 'success', msg: `Transaction posted successfully! Cash Memo: ${saved.cash_memo_no}` });
-        handleReset();
+        setSavedMemo(saved.cash_memo_no);
+        setLastSavedTxn(saved);
+        setAlert({
+          type: 'success',
+          msg: lang === 'mr'
+            ? `व्यवहार यशस्वीरित्या जतन आणि पोस्ट केला! (कॅश मेमो: ${saved.cash_memo_no})`
+            : `Transaction posted successfully! Cash Memo: ${saved.cash_memo_no}`
+        });
+        handleReset(false);
       }
     } catch (err: unknown) {
       const msg =
@@ -430,12 +442,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
   };
 
-  const handleReset = () => {
+  const handleReset = (clearAlertAndMemo: boolean = true) => {
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
-    setAlert(null);
-    setSavedMemo(null);
+    if (clearAlertAndMemo === true) {
+      setAlert(null);
+      setSavedMemo(null);
+    }
     setEditingDraftId(null);
     refreshMemo(INITIAL_FORM.date);
   };
@@ -604,9 +618,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
         {/* ── Alert ── */}
         {alert && (
-          <div className={`alert ${alert.type === 'info' ? 'alert-info' : alert.type === 'success' ? 'alert-success' : 'alert-error'}`}>
-            {alert.type === 'info' ? <Loader2 size={18} className="spinner" /> : alert.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-            {alert.msg}
+          <div
+            className={`alert ${alert.type === 'info' ? 'alert-info' : alert.type === 'success' ? 'alert-success' : 'alert-error'}`}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {alert.type === 'info' ? <Loader2 size={18} className="spinner" /> : alert.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+              <span style={{ fontWeight: 600 }}>{alert.msg}</span>
+            </div>
+            {alert.type === 'success' && lastSavedTxn && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setPrintingTxn(lastSavedTxn)}
+                style={{ marginLeft: 'auto', background: '#15803d', borderColor: '#166534', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Printer size={14} /> {lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
+              </button>
+            )}
           </div>
         )}
 
@@ -1148,7 +1177,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
               {/* ── Action Buttons ── */}
               <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-end' }} className="no-print">
-                <button type="button" className="btn btn-secondary" onClick={handleReset} id="reset-btn">
+                <button type="button" className="btn btn-secondary" onClick={() => handleReset(true)} id="reset-btn">
                   <RotateCcw size={15} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
                 </button>
 
