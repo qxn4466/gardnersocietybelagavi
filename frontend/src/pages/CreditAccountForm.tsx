@@ -472,6 +472,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       setSavedMemo(saved.cash_memo_no);
       setLastSavedTxn(saved);
       loadDrafts();
+      if (saved.date && saved.date < hStartDate) setHStartDate(saved.date);
+      if (saved.date && saved.date > hEndDate) setHEndDate(saved.date);
       loadHistory();
 
       if (isDraft) {
