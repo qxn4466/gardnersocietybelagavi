@@ -476,6 +476,7 @@ export interface ShopSellingRateEntry {
   date: string;
   name: string;
   particulars: string;
+  pack_size?: string | null;
   qty: number;
   amount: number;
   sgst: number;
@@ -496,6 +497,7 @@ export interface ShopSellingRateCreate {
   date: string;
   name: string;
   particulars: string;
+  pack_size?: string;
   qty?: number;
   amount?: number;
   sgst?: number;

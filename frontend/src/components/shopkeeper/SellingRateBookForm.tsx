@@ -48,7 +48,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRowForPrint, setSelectedRowForPrint] = useState<SellingRateBookEntry | null>(null);
+  const [selectedRowForPrint, setSelectedRowForPrint] = useState<ShopSellingRateEntry | null>(null);
 
   const safeNum = (val: any): number => {
     const n = parseFloat(String(val));
@@ -698,42 +698,6 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={16} color="var(--text-muted)" />
-            {(() => {
-              const totalHistorySales = filteredHistory.reduce((acc, r) => acc + safeNum(r.total_amount || (safeNum(r.qty) * safeNum(r.selling_rate))), 0);
-              const totalHistoryBase = filteredHistory.reduce((acc, r) => acc + safeNum(r.amount), 0);
-              const totalHistoryMotorRent = filteredHistory.reduce((acc, r) => acc + (safeNum(r.motor_rent) + safeNum(r.hmall)), 0);
-
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
-                  <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
-                      {lang === 'mr' ? 'एकूण विक्री रक्कम (Total Sales Amount)' : 'Total Sales Amount'}
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
-                      ₹{totalHistorySales.toFixed(2)}
-                    </div>
-                  </div>
-
-                  <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
-                      {lang === 'mr' ? 'एकूण मूळ खरेदी रक्कम (Total Base Cost)' : 'Total Base Purchases'}
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>
-                      ₹{totalHistoryBase.toFixed(2)}
-                    </div>
-                  </div>
-
-                  <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
-                      {lang === 'mr' ? 'एकूण भाडे व हमाली आकार (Total Motor Rent)' : 'Total Rental Cash Bills'}
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3412', marginTop: 4 }}>
-                      ₹{totalHistoryMotorRent.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
             <input
               type="text"
               className="form-input"
@@ -746,34 +710,42 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         </div>
 
         {/* Total Summary Metrics Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
-          <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
-              {lang === 'mr' ? 'एकूण विक्री रक्कम (Total Sales Amount)' : 'Total Sales Amount'}
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
-              ₹{totalHistorySales.toFixed(2)}
-            </div>
-          </div>
+        {(() => {
+          const totalHistorySales = filteredHistory.reduce((acc, r) => acc + safeNum(r.total_amount || (safeNum(r.qty) * safeNum(r.selling_rate))), 0);
+          const totalHistoryBase = filteredHistory.reduce((acc, r) => acc + safeNum(r.amount), 0);
+          const totalHistoryMotorRent = filteredHistory.reduce((acc, r) => acc + (safeNum(r.motor_rent) + safeNum(r.hmall)), 0);
 
-          <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
-              {lang === 'mr' ? 'एकूण मूळ खरेदी रक्कम (Total Base Cost)' : 'Total Base Purchases'}
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>
-              ₹{totalHistoryBase.toFixed(2)}
-            </div>
-          </div>
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण विक्री रक्कम (Total Sales Amount)' : 'Total Sales Amount'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
+                  ₹{totalHistorySales.toFixed(2)}
+                </div>
+              </div>
 
-          <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
-              {lang === 'mr' ? 'एकूण भाडे व हमाली आकार (Total Motor Rent)' : 'Total Rental Cash Bills'}
+              <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण मूळ खरेदी रक्कम (Total Base Cost)' : 'Total Base Purchases'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>
+                  ₹{totalHistoryBase.toFixed(2)}
+                </div>
+              </div>
+
+              <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण भाडे व हमाली आकार (Total Motor Rent)' : 'Total Rental Cash Bills'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3412', marginTop: 4 }}>
+                  ₹{totalHistoryMotorRent.toFixed(2)}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3412', marginTop: 4 }}>
-              ₹{totalHistoryMotorRent.toFixed(2)}
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
