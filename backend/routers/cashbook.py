@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import date, datetime
@@ -28,6 +29,53 @@ COLUMN_FIELD_MAP = {
     "Lakshmi Pigmi Deposit Loan": "lakshmi_pigmi_deposit_loan",
     "Lakshmi Pigmi Deposit Interest": "lakshmi_pigmi_deposit_interest",
 }
+
+
+def parse_tax_amounts(particulars: str):
+    cgst_9 = Decimal("0")
+    sgst_9 = Decimal("0")
+    cgst_2_5 = Decimal("0")
+    sgst_2_5 = Decimal("0")
+
+    if not particulars:
+        return cgst_9, sgst_9, cgst_2_5, sgst_2_5
+
+    # Match CGST/SGST 9%
+    c9 = re.search(r'CGST\s*(?:\(9%\)|9%)\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+    if c9:
+        try: cgst_9 = Decimal(c9.group(1))
+        except: pass
+
+    s9 = re.search(r'SGST\s*(?:\(9%\)|9%)\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+    if s9:
+        try: sgst_9 = Decimal(s9.group(1))
+        except: pass
+
+    # Match CGST/SGST 2.5%
+    c25 = re.search(r'CGST\s*(?:\(2\.5%\)|2\.5%)\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+    if c25:
+        try: cgst_2_5 = Decimal(c25.group(1))
+        except: pass
+
+    s25 = re.search(r'SGST\s*(?:\(2\.5%\)|2\.5%)\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+    if s25:
+        try: sgst_2_5 = Decimal(s25.group(1))
+        except: pass
+
+    # Fallback: general CGST / SGST note if no explicit percentage match
+    if cgst_9 == 0 and cgst_2_5 == 0:
+        c_gen = re.search(r'CGST\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+        if c_gen:
+            try: cgst_2_5 = Decimal(c_gen.group(1))
+            except: pass
+
+    if sgst_9 == 0 and sgst_2_5 == 0:
+        s_gen = re.search(r'SGST\s*:\s*Rs\.?\s*([\d\.]+)', particulars, re.IGNORECASE)
+        if s_gen:
+            try: sgst_2_5 = Decimal(s_gen.group(1))
+            except: pass
+
+    return cgst_9, sgst_9, cgst_2_5, sgst_2_5
 
 
 @router.get("/", response_model=List[CashBookRow])
@@ -65,6 +113,8 @@ def get_cashbook(
         cash_book_col = txn.transaction_type.cash_book_column if txn.transaction_type else ""
         field_name = COLUMN_FIELD_MAP.get(cash_book_col, "")
 
+        cgst_9, sgst_9, cgst_2_5, sgst_2_5 = parse_tax_amounts(txn.particulars or "")
+
         row_data = {
             "id": txn.id,
             "date": txn.date,
@@ -76,6 +126,10 @@ def get_cashbook(
             "transaction_type": txn.transaction_type.name if txn.transaction_type else "",
             "cash_book_column": cash_book_col,
             "amount": amount,
+            "cgst_9": cgst_9,
+            "sgst_9": sgst_9,
+            "cgst_2_5": cgst_2_5,
+            "sgst_2_5": sgst_2_5,
             "total": amount,
         }
 

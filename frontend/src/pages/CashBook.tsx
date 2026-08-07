@@ -11,10 +11,15 @@ import { CREDIT_BOOK_COLUMNS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
-const fmt = (v: number) =>
-  v === 0 ? <span className="amount-cell zero">—</span> : (
-    <span className="amount-cell">₹{Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+const fmt = (v: any) => {
+  const num = parseFloat(String(v));
+  if (isNaN(num) || num === 0) {
+    return <span className="amount-cell zero">—</span>;
+  }
+  return (
+    <span className="amount-cell">₹{num.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
   );
+};
 
 interface CashBookProps {
   user?: User | null;
@@ -28,18 +33,20 @@ const COLUMN_LABELS_MR: Record<string, string> = {
   commissions: 'कमिशन',
   interest: 'व्याज',
   pigmi_comm: 'पिगमी कमिशन',
-  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेव',
+  bank_current: 'बँक चालू खाते',
+  advance: 'अ‍ॅडव्हान्स',
+  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेवी',
   vegetable_comm: 'भाजीपाला कमिशन',
+  sundary_ac: 'इतर (सुंदरी) खाते',
   cash_sales: 'रोख विक्री',
   pesticide_sales: 'कीटकनाशक विक्री',
-  sundary_ac: 'विविध खाते',
-  purchases: 'खरेदी',
-  loan_ac: 'कर्ज खाते',
-  bank_current: 'बँक चालू खाते',
-  advance: 'आगाऊ',
-  cold_storage_adv: 'शीतगृह आगाऊ',
-  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी कर्ज',
-  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी व्याज',
+  cold_storage_adv: 'कोल्ड स्टोरेज अ‍ॅडव्हान्स',
+  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी ठेव कर्ज',
+  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी ठेव व्याज',
+  cgst_9: 'सीजीएसटी (९%)',
+  sgst_9: 'एसजीएसटी (९%)',
+  cgst_2_5: 'सीजीएसटी (२.५%)',
+  sgst_2_5: 'एसजीएसटी (२.५%)',
 };
 
 const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu }) => {
@@ -90,12 +97,12 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
       await deleteTransaction(id);
       loadData();
     } catch {
-      alert(lang === 'mr' ? 'व्यवहार हटवण्यात अयशस्वी.' : 'Failed to delete transaction.');
+      alert(lang === 'mr' ? 'व्यवहार हटवता आला नाही.' : 'Could not delete transaction.');
     }
   };
 
   const handleEdit = (id: number) => {
-    navigate(`/?edit=${id}`);
+    window.location.href = `/?edit=${id}`;
   };
 
   const handlePrintReceipt = async (id: number) => {
@@ -109,10 +116,13 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
 
   // Column totals
   const totals = CREDIT_BOOK_COLUMNS.reduce((acc, col) => {
-    acc[col.key as string] = rows.reduce((s, r) => s + (Number(r[col.key]) || 0), 0);
+    acc[col.key as string] = rows.reduce((s, r) => {
+      const val = parseFloat(String(r[col.key]));
+      return s + (isNaN(val) ? 0 : val);
+    }, 0);
     return acc;
   }, {} as Record<string, number>);
-  const grandTotal = rows.reduce((s, r) => s + Number(r.total), 0);
+  const grandTotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
 
   // Stats
   const txnCount = rows.length;

@@ -111,6 +111,10 @@ class CashBookRow(BaseModel):
     cold_storage_adv: Decimal = Decimal("0")
     lakshmi_pigmi_deposit_loan: Decimal = Decimal("0")
     lakshmi_pigmi_deposit_interest: Decimal = Decimal("0")
+    cgst_9: Decimal = Decimal("0")
+    sgst_9: Decimal = Decimal("0")
+    cgst_2_5: Decimal = Decimal("0")
+    sgst_2_5: Decimal = Decimal("0")
     total: Decimal = Decimal("0")
 
 

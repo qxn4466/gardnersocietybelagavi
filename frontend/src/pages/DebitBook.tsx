@@ -11,10 +11,15 @@ import { DEBIT_BOOK_COLUMNS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
-const fmt = (v: number) =>
-  v === 0 ? <span className="amount-cell zero">—</span> : (
-    <span className="amount-cell" style={{ color: '#b91c1c' }}>₹{Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+const fmt = (v: any) => {
+  const num = parseFloat(String(v));
+  if (isNaN(num) || num === 0) {
+    return <span className="amount-cell zero">—</span>;
+  }
+  return (
+    <span className="amount-cell" style={{ color: '#b91c1c' }}>₹{num.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
   );
+};
 
 interface DebitBookProps {
   user?: User | null;
@@ -23,22 +28,20 @@ interface DebitBookProps {
 }
 
 const COLUMN_LABELS_MR: Record<string, string> = {
-  shares: 'समभाग',
-  commissions: 'कमिशन',
-  interest: 'व्याज',
-  pigmi_comm: 'पिगमी कमिशन',
-  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेव',
-  vegetable_comm: 'भाजीपाला कमिशन',
-  cash_sales: 'रोख विक्री',
+  lakshmi_pigmi_deposit: 'लक्ष्मी पिगमी ठेवी',
   pesticide_sales: 'कीटकनाशक विक्री',
-  sundary_ac: 'विविध खाते',
-  purchases: 'खरेदी',
-  loan_ac: 'कर्ज खाते',
+  cgst_9: 'सीजीएसटी (९%)',
+  sgst_9: 'एसजीएसटी (९%)',
+  cgst_2_5: 'सीजीएसटी (२.५%)',
+  sgst_2_5: 'एसजीएसटी (२.५%)',
   bank_current: 'बँक चालू खाते',
-  advance: 'आगाऊ',
-  cold_storage_adv: 'शीतगृह आगाऊ',
-  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी कर्ज',
-  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी व्याज',
+  sundary_ac: 'इतर (सुंदरी) खाते',
+  cold_storage_adv: 'कोल्ड स्टोरेज अ‍ॅडव्हान्स',
+  pigmi_comm: 'पिगमी कमिशन',
+  lakshmi_pigmi_deposit_loan: 'लक्ष्मी पिगमी ठेव कर्ज',
+  lakshmi_pigmi_deposit_interest: 'लक्ष्मी पिगमी ठेव व्याज',
+  shares: 'समभाग',
+  advance: 'अ‍ॅडव्हान्स',
 };
 
 const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMenu }) => {
@@ -78,7 +81,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
 
   useEffect(() => {
     loadData();
-    fetchOffice().then(setOffice).catch(() => {});
+    fetchOffice().then(setOffice).catch(() => { });
   }, []); // eslint-disable-line
 
   const handleDelete = async (id: number, memoNo: string) => {
@@ -89,12 +92,12 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
       await deleteTransaction(id);
       loadData();
     } catch {
-      alert(lang === 'mr' ? 'व्यवहार हटवण्यात अयशस्वी.' : 'Failed to delete transaction.');
+      alert(lang === 'mr' ? 'व्यवहार हटवता आला नाही.' : 'Could not delete transaction.');
     }
   };
 
   const handleEdit = (id: number) => {
-    navigate(`/?edit=${id}`);
+    window.location.href = `/?edit=${id}`;
   };
 
   const handlePrintReceipt = async (id: number) => {
@@ -108,10 +111,13 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
 
   // Column totals
   const totals = DEBIT_BOOK_COLUMNS.reduce((acc, col) => {
-    acc[col.key as string] = rows.reduce((s, r) => s + (Number(r[col.key]) || 0), 0);
+    acc[col.key as string] = rows.reduce((s, r) => {
+      const val = parseFloat(String(r[col.key]));
+      return s + (isNaN(val) ? 0 : val);
+    }, 0);
     return acc;
   }, {} as Record<string, number>);
-  const grandTotal = rows.reduce((s, r) => s + Number(r.total), 0);
+  const grandTotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
 
   // Stats
   const txnCount = rows.length;
