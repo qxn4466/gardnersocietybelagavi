@@ -64,7 +64,7 @@ class TransactionCreate(BaseModel):
     mobile_no: Optional[str] = None
     customer_name: str
     particulars: Optional[str] = None
-    transaction_type_id: int
+    transaction_type_id: Optional[int] = 1
     entry_nature: Optional[str] = "CREDIT"
     amount_rs: Decimal
     amount_ps: Decimal = Decimal("0.00")

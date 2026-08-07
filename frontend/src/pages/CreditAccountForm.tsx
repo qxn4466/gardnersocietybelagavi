@@ -448,12 +448,18 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
     setLoading(true);
     try {
+      let parsedTypeId = parseInt(form.transaction_type_id || '1');
+      if (isNaN(parsedTypeId) || !parsedTypeId) {
+        const matched = txnTypes.find(t => t.name.toLowerCase() === form.transaction_type_id.trim().toLowerCase());
+        parsedTypeId = matched ? matched.id : (txnTypes[0]?.id || 1);
+      }
+
       const payload = {
         date: form.date,
         customer_id: custIdTrimmed || undefined,
         customer_name: form.customer_name.startsWith(form.salutation) ? form.customer_name : `${form.salutation} ${form.customer_name}`,
         particulars: [particularsText, taxNote].filter(Boolean).join(' — '),
-        transaction_type_id: parseInt(form.transaction_type_id || '1'),
+        transaction_type_id: parsedTypeId,
         entry_nature: form.entry_nature,
         amount_rs: grandRs,
         amount_ps: grandPs,

@@ -39,18 +39,17 @@ def get_drafts(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=TransactionOut, status_code=201)
 def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)):
-    # Validate transaction type
+    type_id = payload.transaction_type_id or 1
     tt = db.query(TransactionTypeMaster).filter(
-        TransactionTypeMaster.id == payload.transaction_type_id
+        TransactionTypeMaster.id == type_id
     ).first()
     if not tt:
-        raise HTTPException(status_code=404, detail="Transaction type not found")
+        tt = db.query(TransactionTypeMaster).first()
 
     memo_no = generate_cash_memo_no(db, payload.date)
 
-    # Determine entry_nature (CREDIT vs DEBIT)
     nature = payload.entry_nature
-    if not nature or tt.entry_type in ["CREDIT", "DEBIT"]:
+    if tt and (not nature or tt.entry_type in ["CREDIT", "DEBIT"]):
         nature = tt.entry_type if tt.entry_type != "BOTH" else (payload.entry_nature or "CREDIT")
 
     txn = Transaction(
@@ -60,8 +59,8 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         mobile_no=payload.mobile_no,
         customer_name=payload.customer_name,
         particulars=payload.particulars,
-        transaction_type_id=payload.transaction_type_id,
-        entry_nature=nature,
+        transaction_type_id=tt.id if tt else type_id,
+        entry_nature=nature or "CREDIT",
         amount_rs=payload.amount_rs,
         amount_ps=payload.amount_ps,
         remarks=payload.remarks,
@@ -80,14 +79,15 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
+    type_id = payload.transaction_type_id or 1
     tt = db.query(TransactionTypeMaster).filter(
-        TransactionTypeMaster.id == payload.transaction_type_id
+        TransactionTypeMaster.id == type_id
     ).first()
     if not tt:
-        raise HTTPException(status_code=404, detail="Transaction type not found")
+        tt = db.query(TransactionTypeMaster).first()
 
     nature = payload.entry_nature
-    if not nature or tt.entry_type in ["CREDIT", "DEBIT"]:
+    if tt and (not nature or tt.entry_type in ["CREDIT", "DEBIT"]):
         nature = tt.entry_type if tt.entry_type != "BOTH" else (payload.entry_nature or "CREDIT")
 
     txn.date = payload.date
@@ -95,8 +95,8 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     txn.mobile_no = payload.mobile_no
     txn.customer_name = payload.customer_name
     txn.particulars = payload.particulars
-    txn.transaction_type_id = payload.transaction_type_id
-    txn.entry_nature = nature
+    txn.transaction_type_id = tt.id if tt else type_id
+    txn.entry_nature = nature or "CREDIT"
     txn.amount_rs = payload.amount_rs
     txn.amount_ps = payload.amount_ps
     txn.remarks = payload.remarks
