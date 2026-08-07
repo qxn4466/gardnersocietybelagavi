@@ -121,6 +121,12 @@ export interface CashBookRow {
   cold_storage_adv: number;
   lakshmi_pigmi_deposit_loan: number;
   lakshmi_pigmi_deposit_interest: number;
+  cgst_9?: number;
+  sgst_9?: number;
+  cgst_2_5?: number;
+  sgst_2_5?: number;
+  cgst?: number;
+  sgst?: number;
   total: number;
 }
 
@@ -181,10 +187,10 @@ export const CREDIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = 
   { key: "sundary_ac", label: "Printing And Stationary" },
   { key: "sundary_ac", label: "Seed Section Plastic Bag" },
   { key: "sundary_ac", label: "Contigency A/C" },
-  { key: "sundary_ac", label: "CGST paid (9%)" },
-  { key: "sundary_ac", label: "SGST paid (9%)" },
-  { key: "sundary_ac", label: "CGST paid (2.5%)" },
-  { key: "sundary_ac", label: "SGST paid (2.5%)" },
+  { key: "cgst_9", label: "CGST Paid (9%)" },
+  { key: "sgst_9", label: "SGST Paid (9%)" },
+  { key: "cgst_2_5", label: "CGST Paid (2.5%)" },
+  { key: "sgst_2_5", label: "SGST Paid (2.5%)" },
   { key: "sundary_ac", label: "GST Feeding fee" },
   { key: "purchases", label: "Pesticide purchases" },
   { key: "sundary_ac", label: "Meeting allowance" },
@@ -202,10 +208,10 @@ export const CREDIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = 
 export const DEBIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = [
   { key: "lakshmi_pigmi_deposit", label: "Sou Lakshmi Pigmy Deposit" },
   { key: "pesticide_sales", label: "Pesticide sales" },
-  { key: "sundary_ac", label: "CGST(9%)" },
-  { key: "sundary_ac", label: "SGST(9%)" },
-  { key: "sundary_ac", label: "CGST received (2.5%)" },
-  { key: "sundary_ac", label: "SGST received (2.5%)" },
+  { key: "cgst_9", label: "CGST Received (9%)" },
+  { key: "sgst_9", label: "SGST Received (9%)" },
+  { key: "cgst_2_5", label: "CGST Received (2.5%)" },
+  { key: "sgst_2_5", label: "SGST Received (2.5%)" },
   { key: "bank_current", label: "Union Bank of India" },
   { key: "bank_current", label: "The Pioneer Urban Bank CC" },
   { key: "sundary_ac", label: "FD A/C" },
@@ -345,10 +351,6 @@ export const RECEIPT_PARTICULARS_OPTIONS = [
   "Printing And Stationary",
   "Seed Section Plastic Bag",
   "Contigency A/C",
-  "CGST paid (9%)",
-  "SGST paid (9%)",
-  "CGST paid (2.5%)",
-  "SGST paid (2.5%)",
   "GST Feeding fee",
   "Pesticide purchases",
   "Meeting allowance",
@@ -366,10 +368,6 @@ export const RECEIPT_PARTICULARS_OPTIONS = [
 export const PAYMENT_PARTICULARS_OPTIONS = [
   "Sou Lakshmi Pigmy Deposit",
   "Pesticide sales",
-  "CGST(9%)",
-  "SGST(9%)",
-  "CGST received (2.5%)",
-  "SGST received (2.5%)",
   "Union Bank of India",
   "The Pioneer Urban Bank CC",
   "FD A/C",

@@ -30,10 +30,6 @@ TRANSACTION_TYPES = [
     {"name": "Printing And Stationary", "cash_book_column": "Sundary a/c", "ledger_account": "Printing And Stationary", "display_order": 18, "entry_type": "CREDIT"},
     {"name": "Seed Section Plastic Bag", "cash_book_column": "Sundary a/c", "ledger_account": "Seed Section Plastic Bag", "display_order": 19, "entry_type": "CREDIT"},
     {"name": "Contigency A/C", "cash_book_column": "Sundary a/c", "ledger_account": "Contigency A/C", "display_order": 20, "entry_type": "CREDIT"},
-    {"name": "CGST paid (9%)", "cash_book_column": "Sundary a/c", "ledger_account": "CGST paid (9%)", "display_order": 21, "entry_type": "CREDIT"},
-    {"name": "SGST paid (9%)", "cash_book_column": "Sundary a/c", "ledger_account": "SGST paid (9%)", "display_order": 22, "entry_type": "CREDIT"},
-    {"name": "CGST paid (2.5%)", "cash_book_column": "Sundary a/c", "ledger_account": "CGST paid (2.5%)", "display_order": 23, "entry_type": "CREDIT"},
-    {"name": "SGST paid (2.5%)", "cash_book_column": "Sundary a/c", "ledger_account": "SGST paid (2.5%)", "display_order": 24, "entry_type": "CREDIT"},
     {"name": "GST Feeding fee", "cash_book_column": "Sundary a/c", "ledger_account": "GST Feeding fee", "display_order": 25, "entry_type": "CREDIT"},
     {"name": "Pesticide purchases", "cash_book_column": "Purchases", "ledger_account": "Pesticide purchases", "display_order": 26, "entry_type": "CREDIT"},
     {"name": "Meeting allowance", "cash_book_column": "Sundary a/c", "ledger_account": "Meeting allowance", "display_order": 27, "entry_type": "CREDIT"},
@@ -50,10 +46,6 @@ TRANSACTION_TYPES = [
     # ── Debit Items ──
     {"name": "Sou Lakshmi Pigmy Deposit", "cash_book_column": "Lakshmi Pigmi Deposit", "ledger_account": "Sou Lakshmi Pigmy Deposit", "display_order": 37, "entry_type": "BOTH"},
     {"name": "Pesticide sales", "cash_book_column": "Pesticide Sales", "ledger_account": "Pesticide sales", "display_order": 38, "entry_type": "DEBIT"},
-    {"name": "CGST(9%)", "cash_book_column": "Sundary a/c", "ledger_account": "CGST(9%)", "display_order": 39, "entry_type": "DEBIT"},
-    {"name": "SGST(9%)", "cash_book_column": "Sundary a/c", "ledger_account": "SGST(9%)", "display_order": 40, "entry_type": "DEBIT"},
-    {"name": "CGST received (2.5%)", "cash_book_column": "Sundary a/c", "ledger_account": "CGST received (2.5%)", "display_order": 41, "entry_type": "DEBIT"},
-    {"name": "SGST received (2.5%)", "cash_book_column": "Sundary a/c", "ledger_account": "SGST received (2.5%)", "display_order": 42, "entry_type": "DEBIT"},
     {"name": "Union Bank of India", "cash_book_column": "Bank Current", "ledger_account": "Union Bank of India", "display_order": 43, "entry_type": "BOTH"},
     {"name": "The Pioneer Urban Bank CC", "cash_book_column": "Bank Current", "ledger_account": "The Pioneer Urban Bank CC", "display_order": 44, "entry_type": "BOTH"},
     {"name": "FD A/C", "cash_book_column": "Sundary a/c", "ledger_account": "FD A/C", "display_order": 45, "entry_type": "BOTH"},
@@ -101,6 +93,14 @@ def seed():
             db.add(OfficeMaster(**OFFICE))
             print("✓ Office master seeded")
         
+        # Clean up old tax entries from TransactionTypeMaster so they don't appear in dropdowns
+        db.query(TransactionTypeMaster).filter(
+            TransactionTypeMaster.name.in_([
+                "CGST paid (9%)", "SGST paid (9%)", "CGST paid (2.5%)", "SGST paid (2.5%)",
+                "CGST(9%)", "SGST(9%)", "CGST received (2.5%)", "SGST received (2.5%)"
+            ])
+        ).delete(synchronize_session=False)
+
         # Transaction Types
         for tt in TRANSACTION_TYPES:
             existing = db.query(TransactionTypeMaster).filter_by(name=tt["name"]).first()
