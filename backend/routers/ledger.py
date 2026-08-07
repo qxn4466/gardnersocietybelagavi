@@ -10,6 +10,10 @@ from schemas import LedgerRow
 
 router = APIRouter(prefix="/ledger", tags=["ledger"])
 
+MONTH_NAMES = [
+    '', 'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+]
 
 @router.get("/", response_model=List[LedgerRow])
 def get_ledger(
@@ -19,18 +23,13 @@ def get_ledger(
     db: Session = Depends(get_db)
 ):
     """
-    Return yearly general ledger rows.
-    Groups by (year, ledger_account, entry_nature).
-    
-    Classification Rules:
-    - RECEIPT (Credit Inflows): Shares, Sales, Commission, Interest, Sundry (Credit)
-    - DEBIT (Outflows / Expenses): Purchases, Cold Storage Adv, Lakshmi Pigmi Deposit Interest, Sundry (Debit)
-    - PAYABLE (Liabilities Owed): Loan a/c, Bank Current, Lakshmi Pigmi Deposit
-    - RECEIVABLE (Assets Owed to Society): Advance, Lakshmi Pigmi Deposit Loan
+    Return general ledger rows grouped by (year, month, ledger_account, entry_nature).
+    Shows all POSTED transactions in a monthly breakdown for yearly ledger view.
     """
     q = (
         db.query(
-            extract("year", Transaction.date).label("year"),
+            extract("year",  Transaction.date).label("yr"),
+            extract("month", Transaction.date).label("mo"),
             TransactionTypeMaster.ledger_account.label("account"),
             Transaction.entry_nature.label("nature"),
             func.sum(Transaction.amount_rs + Transaction.amount_ps / 100).label("total"),
@@ -48,38 +47,42 @@ def get_ledger(
         q = q.filter(TransactionTypeMaster.ledger_account == account)
 
     q = q.group_by(
-        extract("year", Transaction.date),
+        extract("year",  Transaction.date),
+        extract("month", Transaction.date),
         TransactionTypeMaster.ledger_account,
         Transaction.entry_nature,
     ).order_by(
-        extract("year", Transaction.date),
+        extract("year",  Transaction.date),
+        extract("month", Transaction.date),
         TransactionTypeMaster.ledger_account,
         Transaction.entry_nature,
     )
 
     results = q.all()
 
-    RECEIPT_ACCOUNTS = {
-        "Shares", "Commission", "Pigmi Comm.", "Vegetable Comm.",
-        "Cash Sales", "Pesticide Sales", "Interest", "Lakshmi Pigmi Deposit"
-    }
-    DEBIT_ACCOUNTS = {"Purchases", "Cold Storage Adv", "Lakshmi Pigmi Deposit Interest"}
-    PAYABLE_ACCOUNTS = {"Loan a/c", "Bank Current"}
+    # Accounts that are naturally DEBIT (outgoing/expenses)
+    DEBIT_ACCOUNTS    = {"Purchases", "Cold Storage Adv", "Lakshmi Pigmi Deposit Interest"}
+    PAYABLE_ACCOUNTS  = {"Loan a/c", "Bank Current"}
     RECEIVABLE_ACCOUNTS = {"Advance", "Lakshmi Pigmi Deposit Loan"}
 
     rows: List[LedgerRow] = []
     for r in results:
-        yr, acc, nature, total = int(r.year), r.account, r.nature, Decimal(str(r.total or 0))
-        mo = month if month else 0
-        label = f"Year {yr}"
+        yr   = int(r.yr)
+        mo   = int(r.mo)
+        acc  = r.account
+        nature = r.nature
+        total  = Decimal(str(r.total or 0))
 
-        account_display_name = acc
+        label = f"{MONTH_NAMES[mo]} {yr}"
+
+        # For Sundary A/C, distinguish credit vs debit
+        account_display = acc
         if acc == "Sundary a/c":
-            account_display_name = f"Sundary a/c ({'Credit' if nature == 'CREDIT' else 'Debit'})"
+            account_display = f"Sundary a/c ({'Credit' if nature == 'CREDIT' else 'Debit'})"
 
-        receipt = Decimal("0")
-        debit = Decimal("0")
-        payable = Decimal("0")
+        receipt    = Decimal("0")
+        debit      = Decimal("0")
+        payable    = Decimal("0")
         receivable = Decimal("0")
 
         if nature == "CREDIT":
@@ -95,7 +98,7 @@ def get_ledger(
             month=mo,
             year=yr,
             month_year_label=label,
-            account=account_display_name,
+            account=account_display,
             receipt=receipt,
             debit=debit,
             payable=payable,
