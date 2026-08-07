@@ -109,12 +109,48 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
     }
   };
 
+  // Calculate individual column values matching transaction head and particulars
+  const getCellValue = (row: CashBookRow, col: { key: keyof CashBookRow; label: string }): number => {
+    if (col.key === 'cgst_9') return Number(row.cgst_9) || 0;
+    if (col.key === 'sgst_9') return Number(row.sgst_9) || 0;
+    if (col.key === 'cgst_2_5') return Number(row.cgst_2_5) || 0;
+    if (col.key === 'sgst_2_5') return Number(row.sgst_2_5) || 0;
+
+    const txnType = (row.transaction_type || '').trim().toLowerCase();
+    const colLabel = (col.label || '').trim().toLowerCase();
+    const particulars = (row.particulars || '').trim().toLowerCase();
+
+    if (
+      (txnType && (txnType === colLabel || colLabel.includes(txnType) || txnType.includes(colLabel))) ||
+      (particulars && particulars.includes(colLabel))
+    ) {
+      return Number(row.amount || row.total) || 0;
+    }
+
+    const directVal = Number(row[col.key]);
+    if (directVal && !isNaN(directVal) && directVal !== 0) {
+      if (['shares', 'purchases', 'commissions', 'loan_ac', 'interest', 'pigmi_comm', 'bank_current', 'advance', 'lakshmi_pigmi_deposit', 'vegetable_comm', 'cash_sales', 'pesticide_sales', 'cold_storage_adv', 'lakshmi_pigmi_deposit_loan', 'lakshmi_pigmi_deposit_interest'].includes(String(col.key))) {
+        return directVal;
+      }
+    }
+
+    if (col.key === 'sundary_ac' && directVal > 0) {
+      const matchesAnyOtherCol = DEBIT_BOOK_COLUMNS.some(c =>
+        c.label !== col.label &&
+        ((txnType && (txnType === c.label.toLowerCase() || c.label.toLowerCase().includes(txnType))) ||
+         (particulars && particulars.includes(c.label.toLowerCase())))
+      );
+      if (!matchesAnyOtherCol) {
+        return directVal;
+      }
+    }
+
+    return 0;
+  };
+
   // Column totals
   const totals = DEBIT_BOOK_COLUMNS.reduce((acc, col) => {
-    acc[col.key as string] = rows.reduce((s, r) => {
-      const val = parseFloat(String(r[col.key]));
-      return s + (isNaN(val) ? 0 : val);
-    }, 0);
+    acc[col.key as string] = rows.reduce((s, r) => s + getCellValue(r, col), 0);
     return acc;
   }, {} as Record<string, number>);
   const grandTotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
@@ -127,7 +163,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
 
   // Active columns (columns with non-zero amounts in currently displayed rows)
   const activeColumns = DEBIT_BOOK_COLUMNS.filter(col =>
-    rows.some(r => Number(r[col.key]) !== 0)
+    rows.some(r => getCellValue(r, col) > 0)
   );
 
   const visibleColumns = showAllColumns || activeColumns.length === 0 ? DEBIT_BOOK_COLUMNS : activeColumns;
@@ -266,27 +302,60 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                       <td>{new Date(row.date).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{tr(row.name)}</td>
-                      <td
-                        style={{ maxWidth: expandedParticularId === row.id ? 300 : 180, fontSize: 12, cursor: 'pointer' }}
-                        onClick={() => setExpandedParticularId(expandedParticularId === row.id ? null : row.id)}
-                      >
-                        <div style={{
-                          whiteSpace: expandedParticularId === row.id ? 'normal' : 'nowrap',
-                          overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)',
-                        }} title={row.particulars || '—'}>
-                          {row.particulars ? tr(row.particulars) : '—'}
+                      <td>
+                        <div
+                          style={{
+                            minWidth: 200,
+                            maxWidth: expandedParticularId === row.id ? 320 : 220,
+                            fontSize: 12,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setExpandedParticularId(expandedParticularId === row.id ? null : row.id)}
+                        >
+                          {expandedParticularId !== row.id ? (
+                            <div
+                              style={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                color: 'var(--text-primary)',
+                                fontWeight: 500,
+                              }}
+                              title={row.particulars || '—'}
+                            >
+                              {(row.particulars || '—').replace(/Rs\.?/gi, '₹')}
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0', textAlign: 'left' }}>
+                              {(row.particulars || '—')
+                                .split(/\s*—\s*/)[0]
+                                .split(/\s*\|\s*/)
+                                .map(s => s.trim())
+                                .filter(Boolean)
+                                .map((item, idx) => (
+                                  <div key={idx} style={{ color: 'var(--text-primary)', fontWeight: 500, lineHeight: 1.4, wordBreak: 'break-word' }}>
+                                    • {item.replace(/Rs\.?/gi, '₹')}
+                                  </div>
+                                ))}
+                              {(row.particulars || '').split(/\s*—\s*/)[1] && (
+                                <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 2, background: '#fef3c7', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
+                                  🏷️ {(row.particulars || '').split(/\s*—\s*/)[1].replace(/Rs\.?/gi, '₹')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {row.particulars && row.particulars.length > 25 && (
+                            <span style={{ fontSize: 10, color: '#b91c1c', fontWeight: 700, display: 'inline-block', marginTop: 3 }}>
+                              {expandedParticularId === row.id
+                                ? (lang === 'mr' ? '▲ संकुचित करा' : '▲ Collapse')
+                                : (lang === 'mr' ? '▼ तपशील पहा' : '▼ View Details')}
+                            </span>
+                          )}
                         </div>
-                        {row.particulars && row.particulars.length > 25 && (
-                          <span style={{ fontSize: 10, color: '#b91c1c', fontWeight: 700, display: 'block', marginTop: 2 }}>
-                            {expandedParticularId === row.id
-                              ? (lang === 'mr' ? '▲ संकुचित करा' : '▲ Collapse')
-                              : (lang === 'mr' ? '▼ विस्तारित करा' : '▼ Expand Items')}
-                          </span>
-                        )}
                       </td>
                       {visibleColumns.map(col => (
                         <td key={col.key} style={{ textAlign: 'right' }}>
-                          {fmt(Number(row[col.key]))}
+                          {fmt(getCellValue(row, col))}
                         </td>
                       ))}
                       <td style={{ textAlign: 'right', fontWeight: 700, color: '#b91c1c' }}>

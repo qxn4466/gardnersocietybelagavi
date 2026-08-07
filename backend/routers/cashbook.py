@@ -111,7 +111,7 @@ def get_cashbook(
 
         amount = txn.amount_rs + (txn.amount_ps / 100)
         cash_book_col = txn.transaction_type.cash_book_column if txn.transaction_type else ""
-        field_name = COLUMN_FIELD_MAP.get(cash_book_col, "")
+        field_name = COLUMN_FIELD_MAP.get(cash_book_col, "") or "sundary_ac"
 
         cgst_9, sgst_9, cgst_2_5, sgst_2_5 = parse_tax_amounts(txn.particulars or "")
 
