@@ -539,6 +539,38 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           </div>
         </div>
 
+        {/* Total Summary Metrics Cards */}
+        {(() => {
+          const safeNum = (val: any): number => {
+            const n = parseFloat(String(val));
+            return isNaN(n) ? 0 : n;
+          };
+          const totalRetailSales = filteredHistory.reduce((acc, r) => acc + safeNum(r.amount), 0);
+          const totalRetailCount = filteredHistory.length;
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण किरकोळ रोख विक्री (Total Retail Cash Sales)' : 'Total Retail Cash Sales'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#ea580c', marginTop: 4 }}>
+                  ₹{totalRetailSales.toFixed(2)}
+                </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण पावती संख्या (Total Bills Count)' : 'Total Retail Bills Count'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginTop: 4 }}>
+                  {totalRetailCount} {lang === 'mr' ? 'पावत्या' : 'Bills'}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
@@ -553,6 +585,8 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
                   <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
+                  <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
                   <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
                   <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
@@ -560,36 +594,48 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredHistory.map(row => (
-                  <tr key={row.id}>
-                    <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
-                    <td>{row.date}</td>
-                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
-                    <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
-                    <td>₹{Number(row.rate).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{Number(row.amount).toFixed(2)}</td>
-                    <td>
-                      {row.doc_path ? (
-                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
-                          📎 Doc
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Bill">
-                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
-                      </button>
-                      <button className="btn btn-primary btn-sm" onClick={() => setSelectedBillForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }} title="Print Bill">
-                        <Printer size={13} />
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredHistory.map(row => {
+                  const safeNum = (val: any): number => {
+                    const n = parseFloat(String(val));
+                    return isNaN(n) ? 0 : n;
+                  };
+                  const amt = safeNum(row.amount);
+                  const rate = safeNum(row.rate);
+                  const qty = safeNum(row.qty || (rate > 0 ? amt / rate : 1));
+
+                  return (
+                    <tr key={row.id}>
+                      <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
+                      <td>{row.date}</td>
+                      <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
+                      <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
+                      <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
+                      <td>{qty}</td>
+                      <td>₹{rate.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{amt.toFixed(2)}</td>
+                      <td>
+                        {row.doc_path ? (
+                          <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                            📎 Doc
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Bill">
+                          <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={() => setSelectedBillForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#ea580c', borderColor: '#ea580c' }} title="Print Bill">
+                          <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -437,6 +437,38 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       </div>
 
       {/* History Detailed Register Table */}
+      {/* Total Summary Metrics Cards */}
+      {(() => {
+        const safeNum = (val: any): number => {
+          const n = parseFloat(String(val));
+          return isNaN(n) ? 0 : n;
+        };
+        const totalPesticideSales = filteredHistory.reduce((acc, r) => acc + safeNum(r.amount), 0);
+        const totalPesticideCount = filteredHistory.length;
+
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ background: '#faf5ff', padding: 12, borderRadius: 8, border: '1px solid #e9d5ff' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase' }}>
+                {lang === 'mr' ? 'एकूण कीटकनाशक विक्री रक्कम (Total Pesticide Register Sales)' : 'Total Pesticide Register Sales'}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#7c3aed', marginTop: 4 }}>
+                ₹{totalPesticideSales.toFixed(2)}
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                {lang === 'mr' ? 'एकूण नोंदवही संख्या (Total Register Entries)' : 'Total Register Entries Count'}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginTop: 4 }}>
+                {totalPesticideCount} {lang === 'mr' ? 'नोंदी' : 'Entries'}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)' }}>
         {lang === 'mr' ? 'दैनंदिन हस्ते व ऑटो नोंदवही (Detailed Transactions Log)' : 'Detailed Transactions Log'}
       </h4>
@@ -447,6 +479,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               <th>Date</th>
               <th>Customer Name</th>
               <th>Product Name</th>
+              <th>Pack Size</th>
               <th>Batch / Source Ref</th>
               <th>Qty</th>
               <th>Rate (₹)</th>
@@ -458,43 +491,59 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           <tbody>
             {filteredHistory.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                <td colSpan={10} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                   {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
                 </td>
               </tr>
             ) : (
-              filteredHistory.map(row => (
-                <tr key={row.id}>
-                  <td>{row.date}</td>
-                  <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
-                  <td>
-                    <span className={`badge ${row.product_name.toLowerCase().includes('boric acid') ? 'badge-primary' : 'badge-secondary'}`}>
-                      {row.product_name}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
-                  <td>{row.qty}</td>
-                  <td>₹{Number(row.rate).toFixed(2)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>₹{Number(row.amount).toFixed(2)}</td>
-                  <td>
-                    {row.doc_path ? (
-                      <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
-                        📎 Doc
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
-                      <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
-                    </button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filteredHistory.map(row => {
+                const safeNum = (val: any): number => {
+                  const n = parseFloat(String(val));
+                  return isNaN(n) ? 0 : n;
+                };
+                const amt = safeNum(row.amount);
+                const rate = safeNum(row.rate);
+                const qty = safeNum(row.qty);
+
+                return (
+                  <tr key={row.id}>
+                    <td>{row.date}</td>
+                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
+                    <td>
+                      <span className={`badge ${row.product_name.toLowerCase().includes('boric acid') ? 'badge-primary' : 'badge-secondary'}`}>
+                        {row.product_name}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
+                    <td>{qty}</td>
+                    <td>₹{rate.toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>₹{amt.toFixed(2)}</td>
+                    <td>
+                      {row.doc_path ? (
+                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                          📎 Doc
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
+                        <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
+                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => {
+                        setShowPrintModal(true);
+                      }} style={{ marginRight: 4, padding: '4px 8px', background: '#7c3aed', borderColor: '#7c3aed' }} title="Print Entry">
+                        <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
           {filteredHistory.length > 0 && (

@@ -681,7 +681,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
 
       {/* Date Range Filter Bar & Search Input Bar */}
       <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 14, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Calendar size={16} color="#16a34a" />
             <label style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी / संपूर्ण महिना:' : 'Filter Month / Date Range:'}</label>
@@ -703,6 +703,36 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         </div>
 
+        {/* Total Summary Metrics Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+          <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+              {lang === 'mr' ? 'एकूण विक्री रक्कम (Total Sales Amount)' : 'Total Sales Amount'}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
+              ₹{totalHistorySales.toFixed(2)}
+            </div>
+          </div>
+
+          <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
+              {lang === 'mr' ? 'एकूण मूळ खरेदी रक्कम (Total Base Cost)' : 'Total Base Purchases'}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>
+              ₹{totalHistoryBase.toFixed(2)}
+            </div>
+          </div>
+
+          <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
+              {lang === 'mr' ? 'एकूण भाडे व हमाली आकार (Total Motor Rent)' : 'Total Rental Cash Bills'}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3412', marginTop: 4 }}>
+              ₹{totalHistoryMotorRent.toFixed(2)}
+            </div>
+          </div>
+        </div>
+
         {/* History Register Table with Marathi Header Translation */}
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
@@ -716,6 +746,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'नाव' : 'Name'}</th>
                   <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
                   <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
                   <th>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
                   <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
@@ -736,15 +767,16 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                     <td>{row.date}</td>
                     <td style={{ fontWeight: 600 }}>{row.name}</td>
                     <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
+                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
                     <td>{row.qty}</td>
-                    <td>₹{Number(row.amount).toFixed(2)}</td>
-                    <td>₹{Number(row.sgst).toFixed(2)}</td>
-                    <td>₹{Number(row.cgst).toFixed(2)}</td>
-                    <td>₹{Number(row.hmall).toFixed(2)}</td>
-                    <td>₹{Number(row.motor_rent).toFixed(2)}</td>
-                    <td style={{ fontWeight: 700, color: '#16a34a' }}>₹{Number(row.total_amount).toFixed(2)}</td>
-                    <td>₹{Number(row.net_rate).toFixed(2)}</td>
-                    <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{Number(row.selling_rate).toFixed(2)}</td>
+                    <td>₹{safeNum(row.amount).toFixed(2)}</td>
+                    <td>₹{safeNum(row.sgst).toFixed(2)}</td>
+                    <td>₹{safeNum(row.cgst).toFixed(2)}</td>
+                    <td>₹{safeNum(row.hmall).toFixed(2)}</td>
+                    <td>₹{safeNum(row.motor_rent).toFixed(2)}</td>
+                    <td style={{ fontWeight: 700, color: '#16a34a' }}>₹{safeNum(row.total_amount).toFixed(2)}</td>
+                    <td>₹{safeNum(row.net_rate).toFixed(2)}</td>
+                    <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{safeNum(row.selling_rate).toFixed(2)}</td>
                     <td>{row.stock_book_no || '-'}</td>
                     <td>
                       {row.doc_path ? (
@@ -757,7 +789,10 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                     </td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
-                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                        <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
+                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => setSelectedRowForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Entry">
+                        <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
                         <Trash2 size={13} />
@@ -770,6 +805,73 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Single Row Print Modal */}
+      {selectedRowForPrint && (
+        <div className="modal-backdrop" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
+        }}>
+          <div className="modal-content" style={{ background: '#fff', width: '90%', maxWidth: 700, padding: 24, borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h4 style={{ fontWeight: 700, margin: 0 }}>Selling Rate Receipt #{selectedRowForPrint.stock_book_no || selectedRowForPrint.id}</h4>
+              <div>
+                <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ marginRight: 8, background: '#2563eb', borderColor: '#2563eb' }}>
+                  <Printer size={14} /> Print Receipt
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setSelectedRowForPrint(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="printable-rate-receipt" style={{ border: '2px solid #000', padding: 24, fontFamily: 'serif', background: '#fff', color: '#000' }}>
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 10, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>
+                  THE BELGAUM GARDENERS CO-OP. WEAVERS & AGRICULTURAL SOCIETY LTD.
+                </h3>
+                <div style={{ fontSize: 13, fontWeight: 'bold', marginTop: 4 }}>SELLING RATE VOUCHER RECEIPT</div>
+                <div style={{ fontSize: 11, marginTop: 2 }}>Date: {selectedRowForPrint.date} | Stock Book No: {selectedRowForPrint.stock_book_no || '-'}</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, marginBottom: 14 }}>
+                <div><strong>Customer/Farmer Name:</strong> {selectedRowForPrint.name}</div>
+                <div><strong>Particulars Item:</strong> {selectedRowForPrint.particulars}</div>
+                <div><strong>Pack Size:</strong> {selectedRowForPrint.pack_size || '1 Ltr / Pkt'}</div>
+                <div><strong>Quantity:</strong> {selectedRowForPrint.qty}</div>
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontSize: 12, marginBottom: 14 }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #000' }}>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Base Amount</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>SGST</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>CGST</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>HMall / Rent</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Total Amount</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Selling Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{safeNum(selectedRowForPrint.amount).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{safeNum(selectedRowForPrint.sgst).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{safeNum(selectedRowForPrint.cgst).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{(safeNum(selectedRowForPrint.hmall) + safeNum(selectedRowForPrint.motor_rent)).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold' }}>₹{safeNum(selectedRowForPrint.total_amount).toFixed(2)}</td>
+                    <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right', fontWeight: 'bold', color: '#2563eb' }}>₹{safeNum(selectedRowForPrint.selling_rate).toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style={{ marginTop: 30, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <div>Prepared By: _________________</div>
+                <div>Authorized Signatory: _________________</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Printable Register Modal for Range / Full Month */}
       {showPrintModal && (

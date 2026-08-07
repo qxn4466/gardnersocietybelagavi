@@ -518,6 +518,7 @@ export interface ShopTaxInvoice {
   customer_name: string;
   customer_phone?: string | null;
   product_name: string;
+  pack_size?: string | null;
   hsn_code?: string | null;
   qty: number;
   rate: number;
@@ -538,6 +539,7 @@ export interface ShopTaxInvoiceCreate {
   customer_name: string;
   customer_phone?: string;
   product_name: string;
+  pack_size?: string;
   hsn_code?: string;
   qty?: number;
   rate?: number;
@@ -558,6 +560,7 @@ export interface ShopRetailBill {
   tin_no?: string | null;
   customer_name: string;
   particulars: string;
+  pack_size?: string | null;
   qty?: number;
   rate: number;
   amount: number;
@@ -573,6 +576,7 @@ export interface ShopRetailBillCreate {
   tin_no?: string;
   customer_name: string;
   particulars: string;
+  pack_size?: string;
   qty?: number;
   rate?: number;
   amount?: number;
@@ -586,6 +590,7 @@ export interface PesticideSaleEntry {
   date: string;
   customer_name: string;
   product_name: string;
+  pack_size?: string | null;
   qty: number;
   rate: number;
   amount: number;
@@ -600,6 +605,7 @@ export interface PesticideSaleEntryCreate {
   date: string;
   customer_name: string;
   product_name: string;
+  pack_size?: string;
   qty?: number;
   rate?: number;
   amount?: number;

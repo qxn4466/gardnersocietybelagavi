@@ -664,6 +664,60 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
           </div>
         </div>
 
+        {/* Total Summary Metrics Cards */}
+        {(() => {
+          const safeNum = (val: any): number => {
+            const n = parseFloat(String(val));
+            return isNaN(n) ? 0 : n;
+          };
+          const totalInvoiceSales = filteredHistory.reduce((acc, r) => {
+            const qty = safeNum(r.qty);
+            const rate = safeNum(r.rate);
+            const base = qty * rate;
+            const sgst = safeNum(r.sgst_amount ?? (base * 0.09));
+            const cgst = safeNum(r.cgst_amount ?? (base * 0.09));
+            const tot = safeNum(r.total_amount ?? (base + sgst + cgst));
+            return acc + tot;
+          }, 0);
+
+          const totalBasePurchases = filteredHistory.reduce((acc, r) => acc + (safeNum(r.qty) * safeNum(r.rate)), 0);
+          const totalTaxCollected = filteredHistory.reduce((acc, r) => {
+            const base = safeNum(r.qty) * safeNum(r.rate);
+            return acc + safeNum(r.sgst_amount ?? (base * 0.09)) + safeNum(r.cgst_amount ?? (base * 0.09));
+          }, 0);
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण टॅक्स इनव्हॉईस विक्री' : 'Total Tax Invoice Sales'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>
+                  ₹{totalInvoiceSales.toFixed(2)}
+                </div>
+              </div>
+
+              <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण मूळ रक्कम' : 'Total Base Sales Value'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
+                  ₹{totalBasePurchases.toFixed(2)}
+                </div>
+              </div>
+
+              <div style={{ background: '#fff7ed', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>
+                  {lang === 'mr' ? 'एकूण जीएसटी कर (SGST + CGST)' : 'Total GST Tax Amount'}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3412', marginTop: 4 }}>
+                  ₹{totalTaxCollected.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {filteredHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16 }}>
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणताही टॅक्स इनव्हॉईस आढळला नाही.' : 'No tax invoices found for selected date range.'}
@@ -677,49 +731,64 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
                   <th>{lang === 'mr' ? 'उत्पादनाचे नाव' : 'Product Name'}</th>
+                  <th>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
                   <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
                   <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
-                  <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST (9%)'}</th>
-                  <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST (9%)'}</th>
+                  <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
+                  <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
                   <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
                   <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
                   <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredHistory.map(row => (
-                  <tr key={row.id}>
-                    <td style={{ fontWeight: 600 }}>{row.invoice_no}</td>
-                    <td>{row.date}</td>
-                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
-                    <td>{lang === 'mr' ? getMarathiItem(row.product_name) : row.product_name}</td>
-                    <td>{row.qty}</td>
-                    <td>₹{Number(row.rate).toFixed(2)}</td>
-                    <td>₹{Number(row.sgst_amount).toFixed(2)}</td>
-                    <td>₹{Number(row.cgst_amount).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.total_amount).toFixed(2)}</td>
-                    <td>
-                      {row.doc_path ? (
-                        <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
-                          📎 Doc
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Invoice">
-                        <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
-                      </button>
-                      <button className="btn btn-primary btn-sm" onClick={() => setSelectedInvoiceForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Invoice">
-                        <Printer size={13} />
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredHistory.map(row => {
+                  const safeNum = (val: any): number => {
+                    const n = parseFloat(String(val));
+                    return isNaN(n) ? 0 : n;
+                  };
+                  const qty = safeNum(row.qty);
+                  const rate = safeNum(row.rate);
+                  const base = qty * rate;
+                  const sgstVal = safeNum(row.sgst_amount ?? (base * 0.09));
+                  const cgstVal = safeNum(row.cgst_amount ?? (base * 0.09));
+                  const totalVal = safeNum(row.total_amount ?? (base + sgstVal + cgstVal));
+
+                  return (
+                    <tr key={row.id}>
+                      <td style={{ fontWeight: 600 }}>{row.invoice_no}</td>
+                      <td>{row.date}</td>
+                      <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
+                      <td>{lang === 'mr' ? getMarathiItem(row.product_name) : row.product_name}</td>
+                      <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
+                      <td>{qty}</td>
+                      <td>₹{rate.toFixed(2)}</td>
+                      <td>₹{sgstVal.toFixed(2)}</td>
+                      <td>₹{cgstVal.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>₹{totalVal.toFixed(2)}</td>
+                      <td>
+                        {row.doc_path ? (
+                          <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
+                            📎 Doc
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Invoice">
+                          <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={() => setSelectedInvoiceForPrint(row)} style={{ marginRight: 4, padding: '4px 8px', background: '#2563eb', borderColor: '#2563eb' }} title="Print Invoice">
+                          <Printer size={13} /> {lang === 'mr' ? 'प्रिंट' : 'Print'}
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '4px 6px' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
