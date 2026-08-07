@@ -76,6 +76,29 @@ function amountToWords(total: number): string {
   return 'Zero Rupees Only';
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (!err) return fallback;
+  const resData = (err as { response?: { data?: { detail?: any } } })?.response?.data;
+  if (!resData || resData.detail === undefined) {
+    return (err as Error)?.message || fallback;
+  }
+  const detail = resData.detail;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map(item => {
+        if (typeof item === 'string') return item;
+        if (item && item.msg) return item.msg;
+        return JSON.stringify(item);
+      })
+      .join('; ');
+  }
+  if (typeof detail === 'object' && detail !== null) {
+    return detail.msg || JSON.stringify(detail);
+  }
+  return String(detail);
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ParticularRow {
   id: number;
@@ -299,11 +322,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     fetchTransactionTypes().then(setTxnTypes);
     fetchCustomers().then(setCustomerList).catch(() => {});
     loadDrafts();
-  }, [loadDrafts]);
-
-  useEffect(() => {
     loadHistory();
-  }, [loadHistory]);
+  }, [loadDrafts, loadHistory]);
 
   const refreshMemo = useCallback((d: string) => {
     fetchNextMemo(d).then(r => setNextMemo(r.cash_memo_no)).catch(() => setNextMemo('BGS-AUTO'));
@@ -356,21 +376,63 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   // ── Save function (Draft vs Post) ────────────────────────────────────────────
   const handleSave = async (isDraft: boolean) => {
+    const custIdTrimmed = form.customer_id.trim();
+
     if (isDraft) {
+      if (custIdTrimmed && !/^\d{10}$/.test(custIdTrimmed)) {
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr'
+            ? 'ग्राहक ओळख क्र. / खाते क्रमांक १० अंकी असणे आवश्यक आहे (उदा. 1000000001).'
+            : 'Customer ID / Account No. must be a 10-digit numeric ID (e.g. 1000000001).'
+        });
+        return;
+      }
       if (!form.customer_name.trim()) {
-        setAlert({ type: 'error', msg: 'Please enter at least customer name to save a draft.' });
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr' ? 'मसुदा जतन करण्यासाठी किमान ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter at least customer name to save a draft.'
+        });
         return;
       }
     } else {
+      if (!custIdTrimmed) {
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr' ? 'कृपया १०-अंकी ग्राहक ओळख क्र. / खाते क्र. प्रविष्ट करा.' : 'Please enter 10-Digit Customer ID / Account No.'
+        });
+        return;
+      }
+      if (!/^\d{10}$/.test(custIdTrimmed)) {
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr'
+            ? 'ग्राहक ओळख क्र. / खाते क्रमांक १० अंकी असणे आवश्यक आहे (उदा. 1000000001).'
+            : 'Customer ID / Account No. must be a 10-digit numeric ID (e.g. 1000000001).'
+        });
+        return;
+      }
       if (!form.customer_name.trim()) {
-        setAlert({ type: 'error', msg: 'Please enter the customer name.' }); return;
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr' ? 'कृपया ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter the customer name.'
+        });
+        return;
       }
       if (!form.transaction_type_id) {
-        setAlert({ type: 'error', msg: 'Please select a transaction type.' }); return;
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr' ? 'कृपया व्यवहाराचा प्रकार निवडा.' : 'Please select a transaction type.'
+        });
+        return;
       }
       const hasItems = rows.some(r => r.description.trim() || parseFloat(r.amount_rs || '0') > 0);
       if (!hasItems || grandTotal <= 0) {
-        setAlert({ type: 'error', msg: 'Please add at least one particular with an amount.' }); return;
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr' ? 'कृपया किमान एक तपशील व रक्कम जोडा.' : 'Please add at least one particular with an amount.'
+        });
+        return;
       }
     }
 
@@ -388,7 +450,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     try {
       const payload = {
         date: form.date,
-        customer_id: form.customer_id.trim() || undefined,
+        customer_id: custIdTrimmed || undefined,
         customer_name: form.customer_name.startsWith(form.salutation) ? form.customer_name : `${form.salutation} ${form.customer_name}`,
         particulars: [particularsText, taxNote].filter(Boolean).join(' — '),
         transaction_type_id: parseInt(form.transaction_type_id || '1'),
@@ -433,9 +495,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         handleReset(false);
       }
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Save failed. Check backend connection.';
+      const msg = extractErrorMessage(
+        err,
+        lang === 'mr' ? 'जतन करताना त्रुटी आली. बॅकएंड कनेक्शन तपासा.' : 'Save failed. Check backend connection.'
+      );
       setAlert({ type: 'error', msg });
     } finally {
       setLoading(false);
@@ -760,16 +823,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
                 {/* Customer ID */}
                 <div className="form-group">
-                  <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'} <span className="required">*</span></label>
+                    {form.customer_id.trim().length > 0 && form.customer_id.trim().length !== 10 && (
+                      <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
+                        {lang === 'mr' ? `(${form.customer_id.trim().length}/१० अंक)` : `(${form.customer_id.trim().length}/10 digits)`}
+                      </span>
+                    )}
+                  </div>
                   <input
                     id="customer-id"
                     type="text"
+                    maxLength={10}
                     list="saved-customers-list"
                     className="form-input"
-                    placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. शोधा (e.g. 1000000001)' : 'Search/Select 10-Digit ID (e.g. 1000000001)'}
+                    placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. (e.g. 1000000001)' : 'Enter 10-Digit ID (e.g. 1000000001)'}
                     value={form.customer_id}
                     onChange={e => {
-                      const val = e.target.value;
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setForm(prev => ({ ...prev, customer_id: val }));
                       const match = customerList.find(c => c.customer_id === val || c.full_name === val);
                       if (match) {
@@ -782,6 +853,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
                       }
                     }}
+                    required
                   />
                   <datalist id="saved-customers-list">
                     {customerList.map(c => (
