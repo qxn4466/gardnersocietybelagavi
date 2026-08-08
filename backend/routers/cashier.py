@@ -478,10 +478,11 @@ def get_cash_scroll_entries(
 
 @router.post("/cash-scroll-entries", response_model=CashScrollBookOut, status_code=201)
 def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depends(get_db)):
+    v_no = payload.voucher_no or f"CS-{payload.date.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6]}"
     record = CashScrollBookEntry(
         date=payload.date,
         page_no=payload.page_no,
-        voucher_no=payload.voucher_no,
+        voucher_no=v_no,
         from_received_paid=payload.from_received_paid,
         received_amount=payload.received_amount,
         paid_amount=payload.paid_amount,
@@ -489,6 +490,52 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
         created_by=payload.created_by
     )
     db.add(record)
+
+    # ── Auto-Post to Main Transactions Table for Accountant General Ledger ───
+    rec_amt = Decimal(str(payload.received_amount or 0))
+    paid_amt = Decimal(str(payload.paid_amount or 0))
+    chq_amt = Decimal(str(payload.cheque_amount or 0))
+
+    if rec_amt > 0:
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=v_no,
+            v_date=payload.date,
+            customer_name=payload.from_received_paid,
+            particulars=f"Cash Scroll Received: {payload.from_received_paid}",
+            nature="CREDIT",
+            total_amount=rec_amt,
+            remarks=f"Cash Scroll Book {v_no}",
+            created_by=payload.created_by,
+            target_account_name="Sundrey A/C"
+        )
+    elif paid_amt > 0:
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=v_no,
+            v_date=payload.date,
+            customer_name=payload.from_received_paid,
+            particulars=f"Cash Scroll Paid: {payload.from_received_paid}",
+            nature="DEBIT",
+            total_amount=paid_amt,
+            remarks=f"Cash Scroll Book {v_no}",
+            created_by=payload.created_by,
+            target_account_name="Sundrey A/C"
+        )
+    elif chq_amt > 0:
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=v_no,
+            v_date=payload.date,
+            customer_name=payload.from_received_paid,
+            particulars=f"Cash Scroll Cheque: {payload.from_received_paid}",
+            nature="DEBIT",
+            total_amount=chq_amt,
+            remarks=f"Cash Scroll Book {v_no}",
+            created_by=payload.created_by,
+            target_account_name="Sundrey A/C"
+        )
+
     db.commit()
     db.refresh(record)
     return record
@@ -499,6 +546,8 @@ def delete_cash_scroll_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(CashScrollBookEntry).filter(CashScrollBookEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Cash scroll entry not found")
+    if record.voucher_no:
+        delete_transaction_for_cashier_voucher(db, record.voucher_no)
     db.delete(record)
     db.commit()
     return {"message": "Cash scroll entry deleted successfully"}
@@ -531,6 +580,22 @@ def create_cheque_issue_entry(payload: ChequeIssueBookCreate, db: Session = Depe
         created_by=payload.created_by
     )
     db.add(record)
+
+    # ── Auto-Post to Main Transactions Table for Accountant General Ledger ───
+    memo_no = f"CHQ-{payload.cheque_no}"
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=memo_no,
+        v_date=payload.issue_date,
+        customer_name=payload.name_to_whom_issued,
+        particulars=payload.remarks or f"Cheque Issued to {payload.name_to_whom_issued}",
+        nature="DEBIT",
+        total_amount=payload.amount_rs,
+        remarks=f"Cheque Issue Book (No. {payload.cheque_no})",
+        created_by=payload.created_by,
+        target_account_name="Sundrey A/C"
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -541,6 +606,8 @@ def delete_cheque_issue_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Cheque issue entry not found")
+    memo_no = f"CHQ-{record.cheque_no}"
+    delete_transaction_for_cashier_voucher(db, memo_no)
     db.delete(record)
     db.commit()
     return {"message": "Cheque issue entry deleted successfully"}
