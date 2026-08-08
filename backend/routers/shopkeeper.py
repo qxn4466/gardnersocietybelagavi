@@ -211,30 +211,20 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
     )
     db.add(record)
 
-    # ── Auto-Post to Pesticide Sale Register ─────────────────────────────────
-    check_and_auto_post_pesticide(
-        db=db,
-        date_val=payload.date,
-        customer_name=payload.name,
-        prod_name=payload.particulars,
-        qty_val=payload.qty,
-        rate_val=payload.selling_rate or payload.net_rate,
-        amt_val=payload.total_amount,
-        source_ref="Selling Rate Book",
-        created_by=payload.created_by
-    )
+    db.flush()
 
-    # ── Auto-Post to Main Transactions Table for General Ledger & Credit Book ──
-    memo_no = payload.stock_book_no or f"SRB-RATE-{record.id or 'NEW'}"
-    sync_shopkeeper_sale_transaction(
+    # ── Selling Rate Book = Purchase / Inward Stock Register ─────────────────
+    # Auto-Post to Debit Book & General Ledger under "Pesticide purchases"
+    memo_no = payload.stock_book_no or f"SRB-RATE-{record.id}"
+    sync_shopkeeper_purchase_transaction(
         db=db,
         memo_no=memo_no,
         v_date=payload.date,
-        customer_name=payload.name,
+        supplier_name=payload.name,
         product_name=payload.particulars,
         qty=payload.qty,
         total_amount=payload.total_amount,
-        remarks=f"Selling Rate Entry ({payload.particulars})",
+        remarks=f"Selling Rate Book Purchase ({payload.particulars})",
         created_by=payload.created_by
     )
 
@@ -268,11 +258,11 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
     record.sign_status = payload.sign_status or "Signed"
     
     memo_no = payload.stock_book_no or f"SRB-RATE-{record.id}"
-    sync_shopkeeper_sale_transaction(
+    sync_shopkeeper_purchase_transaction(
         db=db,
         memo_no=memo_no,
         v_date=payload.date,
-        customer_name=payload.name,
+        supplier_name=payload.name,
         product_name=payload.particulars,
         qty=payload.qty,
         total_amount=payload.total_amount,
