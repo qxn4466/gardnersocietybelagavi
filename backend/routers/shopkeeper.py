@@ -98,11 +98,14 @@ def get_selling_rate_entries(
 
 @router.post("/selling-rate-entries", response_model=ShopSellingRateOut, status_code=201)
 def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depends(get_db)):
+    u_val = payload.unit or payload.pack_size or "kg"
     record = ShopSellingRateEntry(
         date=payload.date,
         name=payload.name,
         particulars=payload.particulars,
         qty=payload.qty,
+        unit=u_val,
+        pack_size=u_val,
         amount=payload.amount,
         sgst=payload.sgst,
         cgst=payload.cgst,
@@ -141,10 +144,13 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
     if not record:
         raise HTTPException(status_code=404, detail="Selling rate entry not found")
     
+    u_val = payload.unit or payload.pack_size or record.unit or "kg"
     record.date = payload.date
     record.name = payload.name
     record.particulars = payload.particulars
     record.qty = payload.qty
+    record.unit = u_val
+    record.pack_size = u_val
     record.amount = payload.amount
     record.sgst = payload.sgst
     record.cgst = payload.cgst

@@ -21,6 +21,7 @@ interface SellingRateRow {
   particulars: string;
   isCustomText?: boolean;
   qty: number;
+  unit: string;
   amount: number;
   sgst: number;
   cgst: number;
@@ -77,6 +78,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
       id: '1',
       particulars: PESTICIDE_PRODUCT_LIST[0],
       qty: 1,
+      unit: 'kg',
       amount: 0,
       sgst: 0,
       cgst: 0,
@@ -139,6 +141,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         id: Date.now().toString(),
         particulars: PESTICIDE_PRODUCT_LIST[0],
         qty: 1,
+        unit: 'kg',
         amount: 0,
         sgst: 0,
         cgst: 0,
@@ -169,6 +172,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         id: '1',
         particulars: PESTICIDE_PRODUCT_LIST[0],
         qty: 1,
+        unit: 'kg',
         amount: 0,
         sgst: 0,
         cgst: 0,
@@ -193,6 +197,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         id: entry.id.toString(),
         particulars: entry.particulars,
         qty: entry.qty,
+        unit: entry.unit || entry.pack_size || 'kg',
         amount: entry.amount,
         sgst: entry.sgst,
         cgst: entry.cgst,
@@ -267,6 +272,8 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           name: name.trim(),
           particulars: item.particulars,
           qty: Number(item.qty) || 1,
+          unit: item.unit || 'kg',
+          pack_size: item.unit || 'kg',
           amount: Number(item.amount) || 0,
           sgst: Number(item.sgst) || 0,
           cgst: Number(item.cgst) || 0,
@@ -291,6 +298,8 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
               name: name.trim(),
               particulars: item.particulars,
               qty: Number(item.qty) || 1,
+              unit: item.unit || 'kg',
+              pack_size: item.unit || 'kg',
               amount: Number(item.amount) || 0,
               sgst: Number(item.sgst) || 0,
               cgst: Number(item.cgst) || 0,
@@ -504,6 +513,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <th style={{ width: 28, padding: '6px 4px' }}>#</th>
                   <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars / Item Name'}</th>
                   <th style={{ width: 60, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ width: 95, padding: '6px 4px' }}>{lang === 'mr' ? 'एकक (Unit)' : 'Unit'}</th>
                   <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base (₹)'}</th>
                   <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
                   <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
@@ -540,6 +550,50 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         value={row.qty}
                         onChange={e => updateRow(idx, 'qty', e.target.value)}
                       />
+                    </td>
+                    <td style={{ padding: '6px 4px', minWidth: 95 }}>
+                      <select
+                        className="form-select"
+                        style={{ fontSize: 12, padding: '6px 4px' }}
+                        value={row.unit || 'kg'}
+                        onChange={e => updateRow(idx, 'unit', e.target.value)}
+                      >
+                        <optgroup label={lang === 'mr' ? 'घन / वजन (Solids)' : 'Solids / Weight'}>
+                          <option value="kg">kg (किलो)</option>
+                          <option value="50 gm">50 gm</option>
+                          <option value="100 gm">100 gm</option>
+                          <option value="250 gm">250 gm</option>
+                          <option value="500 gm">500 gm</option>
+                          <option value="gm">gm (ग्रॅम)</option>
+                          <option value="1 kg">1 kg</option>
+                          <option value="5 kg">5 kg</option>
+                          <option value="10 kg">10 kg</option>
+                          <option value="25 kg">25 kg</option>
+                          <option value="50 kg">50 kg</option>
+                          <option value="Quintal">Quintal (क्विंटल)</option>
+                          <option value="MT">MT (मेट्रिक टन)</option>
+                        </optgroup>
+                        <optgroup label={lang === 'mr' ? 'द्रव (Liquids)' : 'Liquids / Volume'}>
+                          <option value="Liter">Liter (लीटर)</option>
+                          <option value="50 ml">50 ml</option>
+                          <option value="100 ml">100 ml</option>
+                          <option value="250 ml">250 ml</option>
+                          <option value="500 ml">500 ml</option>
+                          <option value="ml">ml (मिली)</option>
+                          <option value="1 Liter">1 Liter</option>
+                          <option value="5 Liter">5 Liter</option>
+                          <option value="10 Liter">10 Liter</option>
+                          <option value="20 Liter">20 Liter</option>
+                        </optgroup>
+                        <optgroup label={lang === 'mr' ? 'इतर / पॅक (Pack / General)' : 'General / Pack'}>
+                          <option value="Pkt">Pkt (पाकीट)</option>
+                          <option value="Btl">Btl (बाटली)</option>
+                          <option value="Can">Can (कॅन)</option>
+                          <option value="Box">Box (बॉक्स)</option>
+                          <option value="Bag">Bag (पोते/बॅग)</option>
+                          <option value="Nos">Nos (नग/संख्या)</option>
+                        </optgroup>
+                      </select>
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input
@@ -760,8 +814,8 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                   <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th>{lang === 'mr' ? 'नाव' : 'Name'}</th>
                   <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
-                  <th>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
                   <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th>{lang === 'mr' ? 'एकक (Unit)' : 'Unit'}</th>
                   <th>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
                   <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
                   <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
@@ -781,8 +835,8 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                     <td>{row.date}</td>
                     <td style={{ fontWeight: 600 }}>{row.name}</td>
                     <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
-                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
                     <td>{row.qty}</td>
+                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.unit || row.pack_size || 'kg'}</td>
                     <td>₹{safeNum(row.amount).toFixed(2)}</td>
                     <td>₹{safeNum(row.sgst).toFixed(2)}</td>
                     <td>₹{safeNum(row.cgst).toFixed(2)}</td>

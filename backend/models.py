@@ -225,6 +225,8 @@ class ShopSellingRateEntry(Base):
     name = Column(String(250), nullable=False)
     particulars = Column(String(250), nullable=False)
     qty = Column(Numeric(10, 2), nullable=False, default=1.0)
+    unit = Column(String(50), nullable=True, default="kg")
+    pack_size = Column(String(50), nullable=True, default="kg")
     amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     sgst = Column(Numeric(12, 2), nullable=False, default=0.0)
     cgst = Column(Numeric(12, 2), nullable=False, default=0.0)

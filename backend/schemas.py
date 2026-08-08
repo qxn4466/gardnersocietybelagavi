@@ -311,6 +311,8 @@ class ShopSellingRateCreate(BaseModel):
     name: str
     particulars: str
     qty: Decimal = Decimal("1.00")
+    unit: Optional[str] = "kg"
+    pack_size: Optional[str] = "kg"
     amount: Decimal = Decimal("0.00")
     sgst: Decimal = Decimal("0.00")
     cgst: Decimal = Decimal("0.00")
