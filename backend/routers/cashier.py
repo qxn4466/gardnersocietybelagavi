@@ -200,21 +200,19 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
     )
     db.add(record)
 
-    # ── Auto-Post to Cash Scroll Book ──────────────────────────────────────────
+    # ── Auto-Post to Cash Scroll Book ONLY if CASH payment mode ────────────────
     is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
-    paid_amt = payload.amount_rs if not is_cheque else Decimal("0.00")
-    cheque_amt = payload.amount_rs if is_cheque else Decimal("0.00")
-
-    scroll_entry = CashScrollBookEntry(
-        date=payload.date,
-        voucher_no=v_no,
-        from_received_paid=f"Paid To: {payload.paid_to}",
-        received_amount=Decimal("0.00"),
-        paid_amount=paid_amt,
-        cheque_amount=cheque_amt,
-        created_by=payload.created_by
-    )
-    db.add(scroll_entry)
+    if not is_cheque:
+        scroll_entry = CashScrollBookEntry(
+            date=payload.date,
+            voucher_no=v_no,
+            from_received_paid=f"Paid To: {payload.paid_to}",
+            received_amount=Decimal("0.00"),
+            paid_amount=payload.amount_rs,
+            cheque_amount=Decimal("0.00"),
+            created_by=payload.created_by
+        )
+        db.add(scroll_entry)
 
     # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────────
     if is_cheque and payload.cheque_no:
@@ -253,6 +251,10 @@ def delete_payment_voucher(id: int, db: Session = Depends(get_db)):
     if not record:
         raise HTTPException(status_code=404, detail="Payment voucher not found")
     delete_transaction_for_cashier_voucher(db, record.voucher_no)
+    db.query(CashScrollBookEntry).filter(CashScrollBookEntry.voucher_no == record.voucher_no).delete()
+    if record.cheque_no:
+        db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.cheque_no == record.cheque_no).delete()
+    db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.remarks.like(f"%{record.voucher_no}%")).delete()
     db.delete(record)
     db.commit()
     return {"message": "Payment voucher deleted successfully"}
@@ -549,6 +551,10 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
     record = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Payment voucher not found")
+    
+    old_vno = record.voucher_no
+    old_cheque_no = record.cheque_no
+
     record.paid_to = payload.paid_to
     record.purpose_remarks = payload.purpose_remarks
     record.details_of_expenditure = payload.details_of_expenditure
@@ -558,6 +564,57 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+
+    is_cheque = (record.payment_mode or "CASH").upper() == "CHEQUE"
+
+    # 1. Sync CashScrollBookEntry (Cheque transaction MUST NOT be shown in cash scroll book!)
+    scroll = db.query(CashScrollBookEntry).filter(CashScrollBookEntry.voucher_no == old_vno).first()
+    if is_cheque:
+        if scroll:
+            db.delete(scroll)
+    else:
+        if scroll:
+            scroll.date = payload.date
+            scroll.from_received_paid = f"Paid To: {payload.paid_to}"
+            scroll.paid_amount = payload.amount_rs
+            scroll.received_amount = Decimal("0.00")
+            scroll.cheque_amount = Decimal("0.00")
+        else:
+            db.add(CashScrollBookEntry(
+                date=payload.date,
+                voucher_no=old_vno,
+                from_received_paid=f"Paid To: {payload.paid_to}",
+                received_amount=Decimal("0.00"),
+                paid_amount=payload.amount_rs,
+                cheque_amount=Decimal("0.00"),
+                created_by=payload.created_by or record.created_by
+            ))
+
+    # 2. Sync ChequeIssueBookEntry
+    chq_entry = None
+    if old_cheque_no:
+        chq_entry = db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.cheque_no == old_cheque_no).first()
+    if not chq_entry:
+        chq_entry = db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.remarks.like(f"%{old_vno}%")).first()
+
+    if is_cheque and payload.cheque_no:
+        if chq_entry:
+            chq_entry.issue_date = payload.cheque_date or payload.date
+            chq_entry.name_to_whom_issued = payload.paid_to
+            chq_entry.cheque_no = payload.cheque_no
+            chq_entry.amount_rs = payload.amount_rs
+            chq_entry.remarks = payload.purpose_remarks or f"Payment Voucher {old_vno}"
+        else:
+            db.add(ChequeIssueBookEntry(
+                issue_date=payload.cheque_date or payload.date,
+                name_to_whom_issued=payload.paid_to,
+                cheque_no=payload.cheque_no,
+                amount_rs=payload.amount_rs,
+                remarks=payload.purpose_remarks or f"Payment Voucher {old_vno}",
+                created_by=payload.created_by or record.created_by
+            ))
+    elif not is_cheque and chq_entry:
+        db.delete(chq_entry)
 
     sync_transaction_for_cashier_voucher(
         db=db,
@@ -766,17 +823,18 @@ def generate_30_days_cashier_test_data(db: Session = Depends(get_db)):
         db.add(pv)
         pv_count += 1
 
-        # Auto-post PV to Cash Scroll & Cheque Issue
-        db.add(CashScrollBookEntry(
-            date=entry_date,
-            voucher_no=pv_vno,
-            from_received_paid=f"Paid To: {pv.paid_to}",
-            received_amount=Decimal("0.00"),
-            paid_amount=Decimal("0.00") if is_chq_pv else p_amt,
-            cheque_amount=p_amt if is_chq_pv else Decimal("0.00"),
-            created_by="Test Generator"
-        ))
-        if is_chq_pv:
+        # Auto-post PV to Cash Scroll (ONLY if CASH) & Cheque Issue (if CHEQUE)
+        if not is_chq_pv:
+            db.add(CashScrollBookEntry(
+                date=entry_date,
+                voucher_no=pv_vno,
+                from_received_paid=f"Paid To: {pv.paid_to}",
+                received_amount=Decimal("0.00"),
+                paid_amount=p_amt,
+                cheque_amount=Decimal("0.00"),
+                created_by="Test Generator"
+            ))
+        else:
             db.add(ChequeIssueBookEntry(
                 issue_date=entry_date,
                 name_to_whom_issued=pv.paid_to,

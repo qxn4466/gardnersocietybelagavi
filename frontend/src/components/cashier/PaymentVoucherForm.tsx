@@ -278,7 +278,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
       } else {
         const created = await createPaymentVoucher(payload);
         const modeNote = paymentMode === 'CHEQUE'
-          ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book & Cheque Issue Book!')
+          ? (lang === 'mr' ? ' चेक बुकमध्ये स्वयंचलित नोंदवली (स्क्रोल बुकात दर्शविले जाणार नाही)!' : ' Auto-updated in Cheque Issue Book (Not shown in Cash Scroll)!')
           : (lang === 'mr' ? ' स्क्रोल पुस्तक (नावे/Paid) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
 
         setMsg({
