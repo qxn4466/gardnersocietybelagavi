@@ -665,7 +665,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: editingId ? '#d97706' : undefined, borderColor: editingId ? '#d97706' : undefined }}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'व्हाऊचर बदल जतन करा' : 'Update Voucher') : (lang === 'mr' ? 'व्हाऊचर जतन करा' : 'Save Voucher')}
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'व्हाऊचर बदल जतन करा' : 'Update Voucher') : (lang === 'mr' ? 'जतन करा आणि व्यवहार पोस्ट करा' : 'Save & Post Transaction')}
           </button>
           <button
             type="button"

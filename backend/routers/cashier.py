@@ -13,7 +13,9 @@ from models import (
     CashReceiptVoucher,
     RentBill,
     CashScrollBookEntry,
-    ChequeIssueBookEntry
+    ChequeIssueBookEntry,
+    Transaction,
+    TransactionTypeMaster
 )
 from schemas import (
     CashPaymentVoucherCreate, CashPaymentVoucherOut,
@@ -25,6 +27,70 @@ from schemas import (
 )
 
 router = APIRouter(prefix="/cashier", tags=["cashier"])
+
+
+# ─── Helper for Auto-Posting to Main Transactions Table ───────────────────────
+def sync_transaction_for_cashier_voucher(
+    db: Session,
+    memo_no: str,
+    v_date: date,
+    customer_name: str,
+    particulars: str,
+    nature: str,
+    total_amount: Decimal,
+    remarks: str,
+    created_by: str,
+    status: str = "POSTED",
+    target_account_name: Optional[str] = None
+):
+    """Auto-post or update transaction in main Transactions table so Credit Book, Debit Book & General Ledger update immediately."""
+    tt_query = db.query(TransactionTypeMaster)
+    tt_match = None
+    if target_account_name:
+        tt_match = tt_query.filter(TransactionTypeMaster.name.ilike(f"%{target_account_name}%")).first()
+    if not tt_match:
+        tt_match = tt_query.filter(TransactionTypeMaster.name == "Sundrey A/C").first()
+    if not tt_match:
+        tt_match = tt_query.first()
+
+    tt_id = tt_match.id if tt_match else 1
+
+    tot_dec = Decimal(str(total_amount or 0))
+    amt_rs = int(tot_dec)
+    amt_ps = int(round((tot_dec - Decimal(amt_rs)) * 100))
+
+    existing = db.query(Transaction).filter(Transaction.cash_memo_no == memo_no).first()
+    if existing:
+        existing.date = v_date
+        existing.customer_name = customer_name
+        existing.particulars = particulars
+        existing.transaction_type_id = tt_id
+        existing.entry_nature = nature
+        existing.amount_rs = Decimal(str(amt_rs))
+        existing.amount_ps = Decimal(str(amt_ps))
+        existing.remarks = remarks
+        existing.created_by = created_by
+        existing.status = status
+    else:
+        new_txn = Transaction(
+            date=v_date,
+            cash_memo_no=memo_no,
+            customer_name=customer_name,
+            particulars=particulars,
+            transaction_type_id=tt_id,
+            entry_nature=nature,
+            amount_rs=Decimal(str(amt_rs)),
+            amount_ps=Decimal(str(amt_ps)),
+            remarks=remarks,
+            created_by=created_by,
+            status=status
+        )
+        db.add(new_txn)
+
+
+def delete_transaction_for_cashier_voucher(db: Session, memo_no: str):
+    """Delete corresponding transaction when cashier voucher/bill is deleted."""
+    db.query(Transaction).filter(Transaction.cash_memo_no == memo_no).delete(synchronize_session=False)
 
 
 # Upload Directory for Cashier Receipts
@@ -162,6 +228,20 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
         )
         db.add(cheque_entry)
 
+    # ── Auto-Post to Main Transactions Table (Updates Debit Book & General Ledger)
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=v_no,
+        v_date=payload.date,
+        customer_name=payload.paid_to,
+        particulars=payload.details_of_expenditure or f"Payment Voucher: {payload.paid_to}",
+        nature="DEBIT",
+        total_amount=payload.amount_rs,
+        remarks=payload.purpose_remarks or f"Payment Voucher {v_no}",
+        created_by=payload.created_by,
+        target_account_name="Sundrey A/C"
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -172,6 +252,7 @@ def delete_payment_voucher(id: int, db: Session = Depends(get_db)):
     record = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Payment voucher not found")
+    delete_transaction_for_cashier_voucher(db, record.voucher_no)
     db.delete(record)
     db.commit()
     return {"message": "Payment voucher deleted successfully"}
@@ -244,10 +325,23 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         )
         db.add(cheque_entry)
 
+    # ── Auto-Post to Main Transactions Table (Updates Credit Book & General Ledger)
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=b_no,
+        v_date=payload.date,
+        customer_name=payload.received_from,
+        particulars=payload.particulars or f"Receipt Voucher: {payload.received_from}",
+        nature="CREDIT",
+        total_amount=payload.total_amount,
+        remarks=f"Receipt Voucher {b_no}",
+        created_by=payload.created_by,
+        target_account_name="Sundrey A/C"
+    )
+
     db.commit()
     db.refresh(record)
     return record
-
 
 
 @router.delete("/receipt-vouchers/{id}")
@@ -255,6 +349,7 @@ def delete_receipt_voucher(id: int, db: Session = Depends(get_db)):
     record = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Receipt voucher not found")
+    delete_transaction_for_cashier_voucher(db, record.bill_no)
     db.delete(record)
     db.commit()
     return {"message": "Receipt voucher deleted successfully"}
@@ -333,10 +428,23 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         )
         db.add(cheque_entry)
 
+    # ── Auto-Post to Main Transactions Table (Updates Credit Book & General Ledger)
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=inv_no,
+        v_date=payload.date,
+        customer_name=payload.consignee_name,
+        particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
+        nature="CREDIT",
+        total_amount=payload.total_amount,
+        remarks=f"Rent Invoice {inv_no}",
+        created_by=payload.created_by,
+        target_account_name="Rent"
+    )
+
     db.commit()
     db.refresh(record)
     return record
-
 
 
 @router.delete("/rent-bills/{id}")
@@ -344,6 +452,7 @@ def delete_rent_bill(id: int, db: Session = Depends(get_db)):
     record = db.query(RentBill).filter(RentBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Rent bill not found")
+    delete_transaction_for_cashier_voucher(db, record.invoice_no)
     db.delete(record)
     db.commit()
     return {"message": "Rent bill deleted successfully"}
@@ -449,6 +558,20 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=record.voucher_no,
+        v_date=payload.date,
+        customer_name=payload.paid_to,
+        particulars=payload.details_of_expenditure or f"Payment Voucher: {payload.paid_to}",
+        nature="DEBIT",
+        total_amount=payload.amount_rs,
+        remarks=payload.purpose_remarks or f"Payment Voucher {record.voucher_no}",
+        created_by=payload.created_by or record.created_by,
+        target_account_name="Sundrey A/C"
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -470,6 +593,20 @@ def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Sessi
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=record.bill_no,
+        v_date=payload.date,
+        customer_name=payload.received_from,
+        particulars=payload.particulars or f"Receipt Voucher: {payload.received_from}",
+        nature="CREDIT",
+        total_amount=payload.total_amount,
+        remarks=f"Receipt Voucher {record.bill_no}",
+        created_by=payload.created_by or record.created_by,
+        target_account_name="Sundrey A/C"
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -494,6 +631,20 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+
+    sync_transaction_for_cashier_voucher(
+        db=db,
+        memo_no=record.invoice_no,
+        v_date=payload.date,
+        customer_name=payload.consignee_name,
+        particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
+        nature="CREDIT",
+        total_amount=payload.total_amount,
+        remarks=f"Rent Invoice {record.invoice_no}",
+        created_by=payload.created_by or record.created_by,
+        target_account_name="Rent"
+    )
+
     db.commit()
     db.refresh(record)
     return record

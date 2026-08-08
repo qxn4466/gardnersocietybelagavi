@@ -533,7 +533,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: editingId ? '#d97706' : undefined, borderColor: editingId ? '#d97706' : undefined }}>
-            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'भाडे बिल बदल जतन करा' : 'Update Rent Invoice') : (lang === 'mr' ? 'भाडे बिल इनव्हॉईस जतन करा' : 'Save Rent Invoice')}
+            <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : editingId ? (lang === 'mr' ? 'भाडे बिल बदल जतन करा' : 'Update Rent Invoice') : (lang === 'mr' ? 'जतन करा आणि व्यवहार पोस्ट करा' : 'Save & Post Transaction')}
           </button>
           <button
             type="button"
