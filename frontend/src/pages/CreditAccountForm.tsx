@@ -118,10 +118,8 @@ interface FormState {
   transaction_type_id: string;
   entry_nature: 'CREDIT' | 'DEBIT';
   remarks: string;
-  cgst_rs: string;
-  cgst_ps: string;
-  sgst_rs: string;
-  sgst_ps: string;
+  cgst_pct: string;   // CGST percentage, e.g. "2.5" means 2.5%
+  sgst_pct: string;   // SGST percentage, e.g. "2.5" means 2.5%
   created_by: string;
 }
 
@@ -133,10 +131,8 @@ const INITIAL_FORM: FormState = {
   transaction_type_id: '',
   entry_nature: 'CREDIT',
   remarks: '',
-  cgst_rs: '2.5',
-  cgst_ps: '00',
-  sgst_rs: '2.5',
-  sgst_ps: '00',
+  cgst_pct: '2.5',
+  sgst_pct: '2.5',
   created_by: '',
 };
 
@@ -347,9 +343,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   // ── Computed totals for entry form ──────────────────────────────────────────
   const particularsTotal = rows.reduce((s, r) => s + rowAmount(r), 0);
-  const cgst  = parseFloat(form.cgst_rs  || '0') + parseFloat(form.cgst_ps  || '0') / 100;
-  const sgst  = parseFloat(form.sgst_rs  || '0') + parseFloat(form.sgst_ps  || '0') / 100;
-  const grandTotal = particularsTotal + cgst + sgst;
+  const cgstPct  = parseFloat(form.cgst_pct  || '0');   // e.g. 2.5 → 2.5%
+  const sgstPct  = parseFloat(form.sgst_pct  || '0');
+  const cgstAmt  = (particularsTotal * cgstPct) / 100;   // computed tax amount
+  const sgstAmt  = (particularsTotal * sgstPct) / 100;
+  const grandTotal = particularsTotal + cgstAmt + sgstAmt;
   const grandRs = Math.floor(grandTotal);
   const grandPs = Math.round((grandTotal - grandRs) * 100);
   const amountInWords = amountToWords(grandTotal);
@@ -442,8 +440,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       .join(' | ');
 
     const taxNote = [
-      cgst > 0 ? `CGST: Rs.${cgst.toFixed(2)}` : '',
-      sgst > 0 ? `SGST: Rs.${sgst.toFixed(2)}` : '',
+      cgstPct > 0 ? `CGST (${cgstPct}%): Rs.${cgstAmt.toFixed(2)}` : '',
+      sgstPct > 0 ? `SGST (${sgstPct}%): Rs.${sgstAmt.toFixed(2)}` : '',
     ].filter(Boolean).join(', ');
 
     setLoading(true);
@@ -546,10 +544,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       transaction_type_id: String(d.transaction_type_id),
       entry_nature: (d.entry_nature as 'CREDIT' | 'DEBIT') || 'CREDIT',
       remarks: d.remarks || '',
-      cgst_rs: '2.5',
-      cgst_ps: '00',
-      sgst_rs: '2.5',
-      sgst_ps: '00',
+      cgst_pct: '2.5',
+      sgst_pct: '2.5',
       created_by: d.created_by || '',
     });
 
@@ -1146,24 +1142,22 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     background: '#fffbeb',
                   }}>
                     <div style={{ padding: '6px 8px 6px 12px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'केंद्रीय GST' : 'CGST'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'केंद्रीय GST %' : 'CGST %'}</span>
                     </div>
-                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <input id="cgst-rs" type="number" min="0" step="any"
-                        className="form-input" style={{ ...gridInput, textAlign: 'right' }}
-                        placeholder="0" value={form.cgst_rs}
-                        onChange={handleChange('cgst_rs')} />
+                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input id="cgst-pct" type="number" min="0" max="50" step="0.5"
+                        className="form-input" style={{ ...gridInput, textAlign: 'right', flex: 1 }}
+                        placeholder="2.5" value={form.cgst_pct}
+                        onChange={handleChange('cgst_pct')} />
+                      <span style={{ fontSize: 12, color: '#b45309', fontWeight: 700 }}>%</span>
                     </div>
-                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <input id="cgst-ps" type="number" min="0" max="99" step="any"
-                        className="form-input" style={{ ...gridInput, textAlign: 'right' }}
-                        placeholder="00" value={form.cgst_ps}
-                        onChange={handleChange('cgst_ps')} />
+                    <div style={{ padding: '6px 10px', borderRight: '1px solid var(--border-subtle)', textAlign: 'right', fontFamily: 'monospace', fontSize: 13, color: '#92400e' }}>
+                      {cgstAmt > 0 ? `₹ ${cgstAmt.toFixed(2)}` : '—'}
                     </div>
                     <span />
                   </div>
 
-                  {/* ── 4. SGST row ── */}
+                  {/* ── 5. SGST row ── */}
                   <div style={{
                     display: 'grid', gridTemplateColumns: colGrid,
                     borderTop: '1px solid var(--border-subtle)',
@@ -1171,19 +1165,17 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     background: '#fffbeb',
                   }}>
                     <div style={{ padding: '6px 8px 6px 12px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'राज्य GST' : 'SGST'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>{lang === 'mr' ? 'राज्य GST %' : 'SGST %'}</span>
                     </div>
-                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <input id="sgst-rs" type="number" min="0" step="any"
-                        className="form-input" style={{ ...gridInput, textAlign: 'right' }}
-                        placeholder="0" value={form.sgst_rs}
-                        onChange={handleChange('sgst_rs')} />
+                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input id="sgst-pct" type="number" min="0" max="50" step="0.5"
+                        className="form-input" style={{ ...gridInput, textAlign: 'right', flex: 1 }}
+                        placeholder="2.5" value={form.sgst_pct}
+                        onChange={handleChange('sgst_pct')} />
+                      <span style={{ fontSize: 12, color: '#b45309', fontWeight: 700 }}>%</span>
                     </div>
-                    <div style={{ padding: '6px', borderRight: '1px solid var(--border-subtle)' }}>
-                      <input id="sgst-ps" type="number" min="0" max="99" step="any"
-                        className="form-input" style={{ ...gridInput, textAlign: 'right' }}
-                        placeholder="00" value={form.sgst_ps}
-                        onChange={handleChange('sgst_ps')} />
+                    <div style={{ padding: '6px 10px', borderRight: '1px solid var(--border-subtle)', textAlign: 'right', fontFamily: 'monospace', fontSize: 13, color: '#92400e' }}>
+                      {sgstAmt > 0 ? `₹ ${sgstAmt.toFixed(2)}` : '—'}
                     </div>
                     <span />
                   </div>
