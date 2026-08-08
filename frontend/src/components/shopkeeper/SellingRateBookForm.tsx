@@ -807,46 +807,46 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही नोंदी आढळल्या नाहीत.' : 'No rate book entries found for selected date range.'}
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 12 }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f0fdf4' }}>
-                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
-                  <th>{lang === 'mr' ? 'नाव' : 'Name'}</th>
-                  <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
-                  <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
-                  <th>{lang === 'mr' ? 'एकक (Unit)' : 'Unit'}</th>
-                  <th>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
-                  <th>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
-                  <th>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
-                  <th>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
-                  <th>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
-                  <th style={{ color: '#16a34a' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
-                  <th>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
-                  <th style={{ color: '#2563eb' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
-                  <th>{lang === 'mr' ? 'स्टॉक बुक क्र.' : 'Stock Book No.'}</th>
-                  <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
-                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
+                <tr style={{ background: '#f0fdf4', borderBottom: '2px solid #86efac' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 95 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 140 }}>{lang === 'mr' ? 'नाव' : 'Name'}</th>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 130 }}>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 55 }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 65 }}>{lang === 'mr' ? 'एकक' : 'Unit'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 85 }}>{lang === 'mr' ? 'रक्कम' : 'Amount'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 70 }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 70 }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 70 }}>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 85 }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 100, color: '#16a34a' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total Amount'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 85 }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 90, color: '#2563eb' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 95 }}>{lang === 'mr' ? 'स्टॉक बुक क्र.' : 'Stock Book No.'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 80 }}>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 120 }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredHistory.map(row => (
-                  <tr key={row.id}>
-                    <td>{row.date}</td>
-                    <td style={{ fontWeight: 600 }}>{row.name}</td>
-                    <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
-                    <td>{row.qty}</td>
-                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.unit || row.pack_size || 'kg'}</td>
-                    <td>₹{safeNum(row.amount).toFixed(2)}</td>
-                    <td>₹{safeNum(row.sgst).toFixed(2)}</td>
-                    <td>₹{safeNum(row.cgst).toFixed(2)}</td>
-                    <td>₹{safeNum(row.hmall).toFixed(2)}</td>
-                    <td>₹{safeNum(row.motor_rent).toFixed(2)}</td>
-                    <td style={{ fontWeight: 700, color: '#16a34a' }}>₹{safeNum(row.total_amount).toFixed(2)}</td>
-                    <td>₹{safeNum(row.net_rate).toFixed(2)}</td>
-                    <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{safeNum(row.selling_rate).toFixed(2)}</td>
-                    <td>{row.stock_book_no || '-'}</td>
-                    <td>
+                  <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ textAlign: 'left', padding: '8px 6px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                    <td style={{ textAlign: 'left', padding: '8px 6px', fontWeight: 600 }}>{row.name}</td>
+                    <td style={{ textAlign: 'left', padding: '8px 6px' }}>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 600 }}>{row.qty}</td>
+                    <td style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 600, color: '#475569' }}>{row.unit || row.pack_size || 'kg'}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.amount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.sgst).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.cgst).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.hmall).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.motor_rent).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 700, color: '#16a34a' }}>₹{safeNum(row.total_amount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{safeNum(row.net_rate).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 700, color: '#2563eb' }}>₹{safeNum(row.selling_rate).toFixed(2)}</td>
+                    <td style={{ textAlign: 'center', padding: '8px 6px' }}>{row.stock_book_no || '-'}</td>
+                    <td style={{ textAlign: 'center', padding: '8px 6px' }}>
                       {row.doc_path ? (
                         <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
                           📎 Doc
@@ -855,7 +855,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', padding: '8px 6px', whiteSpace: 'nowrap' }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
                         <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
                       </button>

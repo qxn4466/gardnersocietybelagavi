@@ -601,6 +601,11 @@ export interface ShopRetailBill {
   qty?: number;
   rate: number;
   amount: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  total_amount?: number;
   seller_signature?: string | null;
   doc_path?: string | null;
   created_by?: string | null;
@@ -617,6 +622,11 @@ export interface ShopRetailBillCreate {
   qty?: number;
   rate?: number;
   amount?: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  total_amount?: number;
   seller_signature?: string;
   doc_path?: string;
   created_by?: string;

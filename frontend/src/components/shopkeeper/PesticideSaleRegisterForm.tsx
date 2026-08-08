@@ -377,64 +377,125 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             />
           </div>
         </div>
-
-        {/* ACTUAL STRUCTURED PRODUCT-WISE SALES TABLE GRID (Fixes Requirement 3 & Screenshot 2) */}
-        <div style={{ background: '#fff', border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ background: '#7c3aed', color: '#fff', padding: '12px 16px', fontWeight: 700, fontSize: 14 }}>
-            📊 {lang === 'mr' ? 'उत्पादननिहाय विक्री नोंदवही तक्ता (Product-wise Sales Grid)' : 'Product-wise Sales Grid Table'}
-          </div>
-
-          <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f3e8ff', borderBottom: '2px solid #d8b4fe' }}>
-                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'left' }}>Product Name</th>
-                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', width: 90 }}>Total Qty</th>
-                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'right', width: 120 }}>Total Sales (₹)</th>
-                  <th style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', width: 100 }}>Share (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mainPesticides.map((pName) => {
-                  const matching = filteredHistory.filter(h => h.product_name.toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
-                  const totalQ = matching.reduce((s, h) => s + Number(h.qty || 0), 0);
-                  const totalA = matching.reduce((s, h) => s + Number(h.amount || 0), 0);
-                  const pct = grandTotalAmount > 0 ? ((totalA / grandTotalAmount) * 100).toFixed(1) : '0.0';
-
-                  return (
-                    <tr key={pName} style={{ background: matching.length > 0 ? '#faf5ff' : '#fff' }}>
-                      <td style={{ padding: 8, border: '1px solid #e9d5ff', fontWeight: 600, color: pName.includes('Boric') ? '#6b21a8' : 'var(--text-primary)' }}>
-                        {pName}
-                      </td>
-                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', fontWeight: 700 }}>
-                        {totalQ}
-                      </td>
-                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>
-                        ₹{totalA.toFixed(2)}
-                      </td>
-                      <td style={{ padding: 8, border: '1px solid #e9d5ff', textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)' }}>
-                        {pct}%
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr style={{ background: '#f3e8ff', fontWeight: 800 }}>
-                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right' }}>GRID GRAND TOTAL:</td>
-                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center' }}>
-                    {filteredHistory.reduce((s, h) => s + Number(h.qty || 0), 0)}
-                  </td>
-                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8', fontSize: 14 }}>
-                    ₹{grandTotalAmount.toFixed(2)}
-                  </td>
-                  <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center' }}>100%</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
       </div>
+
+      {/* ITEM-WISE COLUMN MATRIX REGISTER TABLE (Item Column-Wise Display with Row & Column Totals) */}
+      {(() => {
+          // Dynamic Pesticide Product Columns
+          const itemColumns = Array.from(new Set([
+            ...filteredHistory.map(h => h.product_name),
+            'Boric Acid',
+            'Chlorpyrifos 20% EC',
+            'Monocrotophos 36% SL',
+            'Mancozeb 75% WP',
+            'Neem Oil 10000 PPM',
+            'Buprofezin 25% SC'
+          ])).filter(Boolean);
+
+          return (
+            <div style={{ background: '#fff', border: '1px solid #d8b4fe', borderRadius: 8, overflow: 'hidden', marginBottom: 24, boxShadow: '0 4px 12px rgba(124, 58, 237, 0.05)' }}>
+              <div style={{ background: '#7c3aed', color: '#fff', padding: '12px 16px', fontWeight: 700, fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>📊 {lang === 'mr' ? 'कीटकनाशके वस्तू-निहाय स्तंभ नोंदवही (Item Column-Wise Register)' : 'Pesticides Item Column-Wise Register Matrix'}</span>
+                <span style={{ fontSize: 11, background: '#6b21a8', padding: '2px 8px', borderRadius: 12 }}>{itemColumns.length} Products</span>
+              </div>
+
+              <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#f3e8ff', borderBottom: '2px solid #d8b4fe' }}>
+                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 90 }}>Date</th>
+                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 140 }}>Customer / Ref</th>
+                      {itemColumns.map(col => (
+                        <th key={col} style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 140, color: '#6b21a8' }}>
+                          <div>{col}</div>
+                          <div style={{ fontSize: 10, color: '#64748b', fontWeight: 400 }}>Qty @ Rate = Total ₹</div>
+                        </th>
+                      ))}
+                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'right', minWidth: 110, color: '#7c3aed' }}>Row Total (₹)</th>
+                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 80 }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={itemColumns.length + 4} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredHistory.map(row => {
+                        const rowAmt = Number(row.amount || 0);
+
+                        return (
+                          <tr key={row.id} style={{ borderBottom: '1px solid #f3e8ff' }}>
+                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', whiteSpace: 'nowrap', fontSize: 11 }}>{row.date}</td>
+                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', fontWeight: 600 }}>{row.customer_name}</td>
+                            {itemColumns.map(col => {
+                              const matches = row.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
+                                row.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0]);
+
+                              return (
+                                <td key={col} style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', background: matches ? '#faf5ff' : 'transparent' }}>
+                                  {matches ? (
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{row.qty} @ ₹{Number(row.rate || 0).toFixed(2)}</div>
+                                      <div style={{ fontWeight: 800, color: '#7c3aed', fontSize: 11 }}>= ₹{rowAmt.toFixed(2)}</div>
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: '#cbd5e1' }}>-</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'right', fontWeight: 800, color: '#7c3aed', fontFamily: 'monospace', fontSize: 13 }}>
+                              ₹{rowAmt.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ padding: '2px 4px', marginRight: 2, background: '#fef3c7', color: '#92400e' }} title="Edit">
+                                <Edit size={12} />
+                              </button>
+                              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '2px 4px' }} title="Delete">
+                                <Trash2 size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                  {filteredHistory.length > 0 && (
+                    <tfoot>
+                      <tr style={{ background: '#f3e8ff', fontWeight: 800 }}>
+                        <td colSpan={2} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8' }}>
+                          COLUMN GRAND TOTALS:
+                        </td>
+                        {itemColumns.map(col => {
+                          const colMatching = filteredHistory.filter(h =>
+                            h.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
+                            h.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0])
+                          );
+                          const totalQ = colMatching.reduce((s, h) => s + Number(h.qty || 0), 0);
+                          const totalA = colMatching.reduce((s, h) => s + Number(h.amount || 0), 0);
+
+                          return (
+                            <td key={col} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center', background: '#e9d5ff' }}>
+                              <div style={{ fontSize: 11, color: '#1e293b' }}>Qty: {totalQ}</div>
+                              <div style={{ fontSize: 12, color: '#6b21a8', fontWeight: 800 }}>₹{totalA.toFixed(2)}</div>
+                            </td>
+                          );
+                        })}
+                        <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8', fontSize: 14, fontFamily: 'monospace' }}>
+                          ₹{grandTotalAmount.toFixed(2)}
+                        </td>
+                        <td style={{ padding: 8, border: '1px solid #d8b4fe' }}></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+          );
+        })()}
 
       {/* History Detailed Register Table */}
       {/* Total Summary Metrics Cards */}
@@ -472,20 +533,20 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)' }}>
         {lang === 'mr' ? 'दैनंदिन हस्ते व ऑटो नोंदवही (Detailed Transactions Log)' : 'Detailed Transactions Log'}
       </h4>
-      <div className="table-responsive">
-        <table className="table" style={{ width: '100%', fontSize: 13 }}>
+      <div className="table-responsive" style={{ overflowX: 'auto' }}>
+        <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#faf5ff' }}>
-              <th>Date</th>
-              <th>Customer Name</th>
-              <th>Product Name</th>
-              <th>Pack Size</th>
-              <th>Batch / Source Ref</th>
-              <th>Qty</th>
-              <th>Rate (₹)</th>
-              <th style={{ textAlign: 'right' }}>Amount (₹)</th>
-              <th>Doc</th>
-              <th style={{ textAlign: 'center' }}>Action</th>
+            <tr style={{ background: '#faf5ff', borderBottom: '2px solid #d8b4fe' }}>
+              <th style={{ textAlign: 'left', padding: '8px 6px', width: 95 }}>Date</th>
+              <th style={{ textAlign: 'left', padding: '8px 6px', width: 140 }}>Customer Name</th>
+              <th style={{ textAlign: 'left', padding: '8px 6px', width: 150 }}>Product Name</th>
+              <th style={{ textAlign: 'center', padding: '8px 6px', width: 85 }}>Pack Size</th>
+              <th style={{ textAlign: 'left', padding: '8px 6px', width: 130 }}>Batch / Source Ref</th>
+              <th style={{ textAlign: 'right', padding: '8px 6px', width: 55 }}>Qty</th>
+              <th style={{ textAlign: 'right', padding: '8px 6px', width: 80 }}>Rate (₹)</th>
+              <th style={{ textAlign: 'right', padding: '8px 6px', width: 100, color: '#7c3aed' }}>Amount (₹)</th>
+              <th style={{ textAlign: 'center', padding: '8px 6px', width: 75 }}>Doc</th>
+              <th style={{ textAlign: 'center', padding: '8px 6px', width: 120 }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -506,20 +567,20 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                 const qty = safeNum(row.qty);
 
                 return (
-                  <tr key={row.id}>
-                    <td>{row.date}</td>
-                    <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
-                    <td>
+                  <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ textAlign: 'left', padding: '8px 6px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                    <td style={{ textAlign: 'left', padding: '8px 6px', fontWeight: 600 }}>{row.customer_name}</td>
+                    <td style={{ textAlign: 'left', padding: '8px 6px' }}>
                       <span className={`badge ${row.product_name.toLowerCase().includes('boric acid') ? 'badge-primary' : 'badge-secondary'}`}>
                         {row.product_name}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
-                    <td>{qty}</td>
-                    <td>₹{rate.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}>₹{amt.toFixed(2)}</td>
-                    <td>
+                    <td style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
+                    <td style={{ textAlign: 'left', padding: '8px 6px', fontSize: 12, color: 'var(--text-secondary)' }}>{row.batch_no || row.remarks || '-'}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 600 }}>{qty}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{rate.toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 700, color: '#7c3aed' }}>₹{amt.toFixed(2)}</td>
+                    <td style={{ textAlign: 'center', padding: '8px 6px' }}>
                       {row.doc_path ? (
                         <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
                           📎 Doc
@@ -528,7 +589,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', padding: '8px 6px', whiteSpace: 'nowrap' }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Entry">
                         <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
                       </button>

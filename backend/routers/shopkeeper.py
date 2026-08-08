@@ -389,6 +389,7 @@ def get_shop_retail_bills(
 @router.post("/retail-bills", response_model=ShopRetailBillOut, status_code=201)
 def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
     b_no = payload.bill_no or generate_shop_retail_bill_no(db, payload.date)
+    tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     record = ShopRetailBill(
         bill_no=b_no,
         date=payload.date,
@@ -397,6 +398,11 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         particulars=payload.particulars,
         rate=payload.rate,
         amount=payload.amount,
+        sgst_rate=payload.sgst_rate or Decimal("9.00"),
+        sgst_amount=payload.sgst_amount or Decimal("0.00"),
+        cgst_rate=payload.cgst_rate or Decimal("9.00"),
+        cgst_amount=payload.cgst_amount or Decimal("0.00"),
+        total_amount=tot_amt,
         seller_signature=payload.seller_signature or "Seller Signed",
         created_by=payload.created_by
     )
@@ -409,7 +415,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         prod_name=payload.particulars,
         qty_val=Decimal("1.0"),
         rate_val=payload.rate,
-        amt_val=payload.amount,
+        amt_val=tot_amt,
         source_ref=f"Retail Bill {b_no}",
         created_by=payload.created_by
     )
@@ -421,7 +427,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         customer_name=payload.customer_name,
         product_name=payload.particulars,
         qty=Decimal("1.0"),
-        total_amount=payload.amount,
+        total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
         created_by=payload.created_by
     )
@@ -438,6 +444,7 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
         raise HTTPException(status_code=404, detail="Retail bill not found")
     
     b_no = payload.bill_no or record.bill_no
+    tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     record.bill_no = b_no
     record.date = payload.date
     record.tin_no = payload.tin_no or "29540268502"
@@ -445,6 +452,11 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
     record.particulars = payload.particulars
     record.rate = payload.rate
     record.amount = payload.amount
+    record.sgst_rate = payload.sgst_rate or Decimal("9.00")
+    record.sgst_amount = payload.sgst_amount or Decimal("0.00")
+    record.cgst_rate = payload.cgst_rate or Decimal("9.00")
+    record.cgst_amount = payload.cgst_amount or Decimal("0.00")
+    record.total_amount = tot_amt
     record.seller_signature = payload.seller_signature or "Seller Signed"
     
     sync_shopkeeper_sale_transaction(
@@ -454,7 +466,7 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
         customer_name=payload.customer_name,
         product_name=payload.particulars,
         qty=Decimal("1.0"),
-        total_amount=payload.amount,
+        total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
         created_by=payload.created_by
     )

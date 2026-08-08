@@ -19,6 +19,11 @@ interface RetailBillRow {
   qty: number;
   rate: number;
   amount: number;
+  sgst_rate: number;
+  sgst_amount: number;
+  cgst_rate: number;
+  cgst_amount: number;
+  total_amount: number;
 }
 
 const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
@@ -54,7 +59,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     }
   };
 
-  // Multi-item addable grid rows
+  // Multi-item addable grid rows with SGST & CGST
   const [items, setItems] = useState<RetailBillRow[]>([
     {
       id: '1',
@@ -62,6 +67,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       qty: 1,
       rate: 0,
       amount: 0,
+      sgst_rate: 9,
+      sgst_amount: 0,
+      cgst_rate: 9,
+      cgst_amount: 0,
+      total_amount: 0,
     }
   ]);
 
@@ -94,7 +104,18 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
     const q = parseFloat(String(row.qty)) || 1;
     const r = parseFloat(String(row.rate)) || 0;
-    row.amount = q * r;
+    const baseAmt = q * r;
+    row.amount = baseAmt;
+
+    const sgstPct = parseFloat(String(row.sgst_rate)) || 0;
+    const cgstPct = parseFloat(String(row.cgst_rate)) || 0;
+
+    const sgstAmt = (baseAmt * sgstPct) / 100;
+    const cgstAmt = (baseAmt * cgstPct) / 100;
+
+    row.sgst_amount = sgstAmt;
+    row.cgst_amount = cgstAmt;
+    row.total_amount = baseAmt + sgstAmt + cgstAmt;
 
     updated[index] = row;
     setItems(updated);
@@ -109,6 +130,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         qty: 1,
         rate: 0,
         amount: 0,
+        sgst_rate: 9,
+        sgst_amount: 0,
+        cgst_rate: 9,
+        cgst_amount: 0,
+        total_amount: 0,
       }
     ]);
   };
@@ -118,7 +144,10 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const grandTotal = items.reduce((s, r) => s + (r.amount || 0), 0);
+  const grandBaseAmount = items.reduce((s, r) => s + (r.amount || 0), 0);
+  const grandSGSTAmount = items.reduce((s, r) => s + (r.sgst_amount || 0), 0);
+  const grandCGSTAmount = items.reduce((s, r) => s + (r.cgst_amount || 0), 0);
+  const grandTotalAmount = items.reduce((s, r) => s + (r.total_amount || (r.amount + (r.sgst_amount || 0) + (r.cgst_amount || 0))), 0);
 
   const handleReset = () => {
     setEditingId(null);
@@ -132,6 +161,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         qty: 1,
         rate: 0,
         amount: 0,
+        sgst_rate: 9,
+        sgst_amount: 0,
+        cgst_rate: 9,
+        cgst_amount: 0,
+        total_amount: 0,
       }
     ]);
     setMsg(null);
@@ -142,13 +176,25 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     setDate(bill.date);
     setBillNo(bill.bill_no);
     setCustomerName(bill.customer_name);
+    const baseAmt = bill.amount;
+    const sgstPct = bill.sgst_rate ?? 9;
+    const cgstPct = bill.cgst_rate ?? 9;
+    const sgstAmt = bill.sgst_amount ?? ((baseAmt * sgstPct) / 100);
+    const cgstAmt = bill.cgst_amount ?? ((baseAmt * cgstPct) / 100);
+    const totAmt = bill.total_amount ?? (baseAmt + sgstAmt + cgstAmt);
+
     setItems([
       {
         id: bill.id.toString(),
         particulars: bill.particulars,
         qty: bill.qty ?? 1,
         rate: bill.rate,
-        amount: bill.amount,
+        amount: baseAmt,
+        sgst_rate: sgstPct,
+        sgst_amount: sgstAmt,
+        cgst_rate: cgstPct,
+        cgst_amount: cgstAmt,
+        total_amount: totAmt,
       }
     ]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,7 +242,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter Customer Name.' });
       return;
     }
-    if (grandTotal <= 0) {
+    if (grandTotalAmount <= 0) {
       setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया प्रमाण व दर प्रविष्ट करा.' : 'Please enter valid Qty and Rate for items.' });
       return;
     }
@@ -214,6 +260,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
           qty: Number(item.qty) || 1,
           rate: Number(item.rate) || 0,
           amount: item.amount,
+          sgst_rate: item.sgst_rate,
+          sgst_amount: item.sgst_amount,
+          cgst_rate: item.cgst_rate,
+          cgst_amount: item.cgst_amount,
+          total_amount: item.total_amount,
           created_by: user?.username || 'shopkeeper',
         });
         setMsg({
@@ -222,7 +273,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         });
       } else {
         for (const item of items) {
-          if (item.amount > 0) {
+          if (item.total_amount > 0 || item.amount > 0) {
             await createShopRetailBill({
               date,
               bill_no: billNo,
@@ -231,6 +282,11 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
               qty: Number(item.qty) || 1,
               rate: Number(item.rate) || 0,
               amount: item.amount,
+              sgst_rate: item.sgst_rate,
+              sgst_amount: item.sgst_amount,
+              cgst_rate: item.cgst_rate,
+              cgst_amount: item.cgst_amount,
+              total_amount: item.total_amount,
               created_by: user?.username || 'shopkeeper',
             });
           }
@@ -390,19 +446,22 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#ffedd5', borderBottom: '2px solid #fdba74' }}>
-                  <th style={{ width: 28, padding: '6px 4px' }}>#</th>
-                  <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील / उत्पादन' : 'Particulars / Product'}</th>
-                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
-                  <th style={{ width: 90, padding: '6px 4px' }}>{lang === 'mr' ? 'दर' : 'Rate (₹)'}</th>
-                  <th style={{ width: 110, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
+                  <th style={{ width: 28, padding: '6px 4px', textAlign: 'center' }}>#</th>
+                  <th style={{ minWidth: 160, padding: '6px 4px', textAlign: 'left' }}>{lang === 'mr' ? 'तपशील / उत्पादन' : 'Particulars / Product'}</th>
+                  <th style={{ width: 65, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ width: 85, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'दर' : 'Rate (₹)'}</th>
+                  <th style={{ width: 95, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'पायाभूत रक्कम' : 'Base Amt (₹)'}</th>
+                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'SGST %' : 'SGST %'}</th>
+                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'CGST %' : 'CGST %'}</th>
+                  <th style={{ width: 110, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण रक्कम' : 'Total (₹)'}</th>
                   <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((row, idx) => (
-                  <tr key={row.id} style={{ background: '#fff' }}>
-                    <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
-                    <td style={{ padding: '6px 4px', minWidth: 220 }}>
+                  <tr key={row.id} style={{ background: '#fff', borderBottom: '1px solid #fed7aa' }}>
+                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ padding: '6px 4px', minWidth: 160 }}>
                       <SearchableCombobox
                         value={row.particulars}
                         onChange={val => updateRow(idx, 'particulars', val)}
@@ -419,7 +478,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                         type="number"
                         step="0.1"
                         className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
+                        style={{ fontSize: 12, padding: '4px 6px', textAlign: 'right', fontFamily: 'monospace' }}
                         value={row.qty}
                         onChange={e => updateRow(idx, 'qty', e.target.value)}
                       />
@@ -429,13 +488,36 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                         type="number"
                         step="0.01"
                         className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
+                        style={{ fontSize: 12, padding: '4px 6px', textAlign: 'right', fontFamily: 'monospace' }}
                         value={row.rate || ''}
                         onChange={e => updateRow(idx, 'rate', e.target.value)}
                       />
                     </td>
-                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 14 }}>
+                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 600, fontFamily: 'monospace' }}>
                       ₹{row.amount.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input
+                        type="number"
+                        step="0.5"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: '4px 6px', textAlign: 'right', fontFamily: 'monospace' }}
+                        value={row.sgst_rate}
+                        onChange={e => updateRow(idx, 'sgst_rate', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input
+                        type="number"
+                        step="0.5"
+                        className="form-input"
+                        style={{ fontSize: 12, padding: '4px 6px', textAlign: 'right', fontFamily: 'monospace' }}
+                        value={row.cgst_rate}
+                        onChange={e => updateRow(idx, 'cgst_rate', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 13, fontFamily: 'monospace' }}>
+                      ₹{(row.total_amount || (row.amount + row.sgst_amount + row.cgst_amount)).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button
@@ -465,8 +547,15 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             </table>
           </div>
 
-          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#c2410c' }}>
-            {lang === 'mr' ? 'सर्व किरकोळ बिलांची एकूण रक्कम:' : 'Grand Total Retail Amount:'} ₹{grandTotal.toFixed(2)}
+          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #fed7aa' }}>
+            <div style={{ fontSize: 12, color: '#9a3412', display: 'flex', gap: 16 }}>
+              <span>Base Amt: <strong>₹{grandBaseAmount.toFixed(2)}</strong></span>
+              <span>SGST: <strong>₹{grandSGSTAmount.toFixed(2)}</strong></span>
+              <span>CGST: <strong>₹{grandCGSTAmount.toFixed(2)}</strong></span>
+            </div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#c2410c' }}>
+              {lang === 'mr' ? 'एकूण बिल रक्कम (सगळे करांसह):' : 'Grand Total (Inc. Taxes):'} ₹{grandTotalAmount.toFixed(2)}
+            </div>
           </div>
         </div>
 
@@ -545,7 +634,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             const n = parseFloat(String(val));
             return isNaN(n) ? 0 : n;
           };
-          const totalRetailSales = filteredHistory.reduce((acc, r) => acc + safeNum(r.amount), 0);
+          const totalRetailSales = filteredHistory.reduce((acc, r) => acc + safeNum(r.total_amount || r.amount), 0);
           const totalRetailCount = filteredHistory.length;
 
           return (
@@ -577,20 +666,23 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
             {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही बिल नोंदी आढळल्या नाहीत.' : 'No retail bills found for selected date range.'}
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 13 }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#fff7ed' }}>
-                  <th>{lang === 'mr' ? 'बिल क्र.' : 'Bill / Invoice No.'}</th>
-                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
-                  <th>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
-                  <th>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
-                  <th>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
-                  <th>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
-                  <th>{lang === 'mr' ? 'दर' : 'Rate'}</th>
-                  <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
-                  <th>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
-                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
+                <tr style={{ background: '#fff7ed', borderBottom: '2px solid #fdba74' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 120 }}>{lang === 'mr' ? 'बिल क्र.' : 'Bill / Invoice No.'}</th>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 95 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 140 }}>{lang === 'mr' ? 'ग्राहकाचे नाव' : 'Customer Name'}</th>
+                  <th style={{ textAlign: 'left', padding: '8px 6px', width: 140 }}>{lang === 'mr' ? 'तपशील' : 'Particulars'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 85 }}>{lang === 'mr' ? 'पॅक आकार' : 'Pack Size'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 55 }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 80 }}>{lang === 'mr' ? 'दर (₹)' : 'Rate (₹)'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 85 }}>{lang === 'mr' ? 'पायाभूत' : 'Base (₹)'}</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 75 }}>SGST</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 75 }}>CGST</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', width: 100, color: '#ea580c' }}>{lang === 'mr' ? 'एकूण (₹)' : 'Total (₹)'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 75 }}>{lang === 'mr' ? 'कागदपत्र' : 'Attachment'}</th>
+                  <th style={{ textAlign: 'center', padding: '8px 6px', width: 120 }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -599,21 +691,28 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                     const n = parseFloat(String(val));
                     return isNaN(n) ? 0 : n;
                   };
-                  const amt = safeNum(row.amount);
+                  const baseAmt = safeNum(row.amount);
                   const rate = safeNum(row.rate);
-                  const qty = safeNum(row.qty || (rate > 0 ? amt / rate : 1));
+                  const qty = safeNum(row.qty || (rate > 0 ? baseAmt / rate : 1));
+
+                  const sgstAmt = safeNum(row.sgst_amount || ((baseAmt * (row.sgst_rate ?? 9)) / 100));
+                  const cgstAmt = safeNum(row.cgst_amount || ((baseAmt * (row.cgst_rate ?? 9)) / 100));
+                  const totAmt = safeNum(row.total_amount || (baseAmt + sgstAmt + cgstAmt));
 
                   return (
-                    <tr key={row.id}>
-                      <td style={{ fontWeight: 600 }}>{row.bill_no}</td>
-                      <td>{row.date}</td>
-                      <td style={{ fontWeight: 600 }}>{row.customer_name}</td>
-                      <td>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
-                      <td style={{ fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
-                      <td>{qty}</td>
-                      <td>₹{rate.toFixed(2)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{amt.toFixed(2)}</td>
-                      <td>
+                    <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ textAlign: 'left', padding: '8px 6px', fontWeight: 600 }}>{row.bill_no}</td>
+                      <td style={{ textAlign: 'left', padding: '8px 6px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                      <td style={{ textAlign: 'left', padding: '8px 6px', fontWeight: 600 }}>{row.customer_name}</td>
+                      <td style={{ textAlign: 'left', padding: '8px 6px' }}>{lang === 'mr' ? getMarathiItem(row.particulars) : row.particulars}</td>
+                      <td style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 600, color: '#475569' }}>{row.pack_size || '1 Ltr / Pkt'}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 600 }}>{qty}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{rate.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{baseAmt.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{sgstAmt.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace' }}>₹{cgstAmt.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', fontFamily: 'monospace', fontWeight: 700, color: '#ea580c' }}>₹{totAmt.toFixed(2)}</td>
+                      <td style={{ textAlign: 'center', padding: '8px 6px' }}>
                         {row.doc_path ? (
                           <a href={`#`} onClick={(e) => { e.preventDefault(); alert(`Downloading attachment: ${row.doc_path}`); }} className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 6px' }}>
                             📎 Doc
@@ -622,7 +721,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <td style={{ textAlign: 'center', padding: '8px 6px', whiteSpace: 'nowrap' }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Bill">
                           <Edit size={13} /> {lang === 'mr' ? 'संपादित' : 'Edit'}
                         </button>
