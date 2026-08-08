@@ -14,6 +14,7 @@ dist/
 
 # Virtual Environments
 venv/
+**/venv/
 env/
 ENV/
 .venv/
@@ -27,7 +28,8 @@ htmlcov/
 
 # Environment Variables
 .env
-.env.*
+*.env
+backend/.env
 !.env.example
 !.env.production
 
