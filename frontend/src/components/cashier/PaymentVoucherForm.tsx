@@ -313,200 +313,157 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #dc2626', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.08)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8, color: '#991b1b' }}>
-            <FileText size={22} />
+    <div>
+      {/* Form Entry Card — Accountant Styled Layout */}
+      <div className="card" style={{ borderTop: '4px solid #b91c1c', boxShadow: '0 4px 16px rgba(185, 28, 28, 0.08)', marginBottom: 28 }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ background: '#fef2f2', padding: 8, borderRadius: 8, color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={20} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                {lang === 'mr' ? '१. रोख पेमेंट व्हाऊचर नोंद (Payment Voucher Entry)' : '1. Cash Payment Voucher Entry'}
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                {lang === 'mr' ? '* चिन्हांकित सर्व रकाने अनिवार्य आहेत (स्क्रोल बुकात नावे/Paid नोंद होईल)' : '* All fields marked with * are required (Auto-posts to Cash Scroll Paid)'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              1. {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर (Payment Voucher)' : 'Cash Payment Voucher (Payment Voucher)'}
-            </h3>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              {lang === 'mr' ? 'रोख/चेक पेमेंट व्हाऊचर नोंदवा (स्क्रोल पुस्तक व चेक बुकमध्ये ऑटो-अपडेट होईल)' : 'Record payment voucher (Auto-posts to Cash Scroll & Cheque Issue Book)'}
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={async () => {
-              if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा कॅशियर चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days cashier test data?')) return;
-              setLoading(true);
-              try {
-                const res = await generate30DaysCashierTestData();
-                setMsg({
-                  type: 'success',
-                  text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
-                });
-                loadHistory();
-              } catch {
-                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <Zap size={14} color="#d97706" />
-            {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा जोडा' : '⚡ Generate 30 Days Test Data'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={async () => {
-              if (!window.confirm(lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवायचा आहे का?' : 'Delete generated cashier test data?')) return;
-              setLoading(true);
-              try {
-                const res = await delete30DaysCashierTestData();
-                setMsg({
-                  type: 'success',
-                  text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
-                });
-                loadHistory();
-              } catch {
-                setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
-          </button>
-          {history.length > 0 && (
-            <button className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
-              <Printer size={14} /> {lang === 'mr' ? 'व्हाऊचर प्रिंट करा' : 'Print Voucher'}
-            </button>
-          )}
-          <button className="btn btn-secondary btn-sm" onClick={handleReset}>
-            <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
-          </button>
-        </div>
-      </div>
 
-      {msg && (
-        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {msg.text}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        {/* Row 1: Voucher No + Date (2-col grid) */}
-        <div className="form-grid-2" style={{ marginBottom: 16 }}>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'व्हाऊचर क्र. (Voucher No.)' : 'Voucher No.'}</label>
-            <input type="text" className="form-input" value={voucherNo} onChange={e => setVoucherNo(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
-            <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
-          </div>
-        </div>
-
-        {/* Row 2: Paid To - full width */}
-        <div className="form-group" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <label className="form-label" style={{ margin: 0 }}>{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'}</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
-              onClick={handleTranslatePaidTo}
-              disabled={translating}
-              style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
+              className="btn btn-secondary btn-sm"
+              style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+              onClick={async () => {
+                if (!window.confirm(lang === 'mr' ? 'मागील ३० दिवसांचा कॅशियर चाचणी डेटा तयार करायचा आहे का?' : 'Generate 30 days cashier test data?')) return;
+                setLoading(true);
+                try {
+                  const res = await generate30DaysCashierTestData();
+                  setMsg({
+                    type: 'success',
+                    text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
+                  });
+                  loadHistory();
+                } catch {
+                  setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
+                } finally {
+                  setLoading(false);
+                }
+              }}
             >
-              {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
-              {translating ? (lang === 'mr' ? 'प्रक्रिया सुरू आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi')}
+              <Zap size={14} color="#d97706" />
+              {lang === 'mr' ? '⚡ ३० दिवसांचा चाचणी डेटा' : '⚡ Generate 30 Days Data'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+              onClick={async () => {
+                if (!window.confirm(lang === 'mr' ? 'सर्व कॅशियर चाचणी डेटा हटवायचा आहे का?' : 'Delete generated cashier test data?')) return;
+                setLoading(true);
+                try {
+                  const res = await delete30DaysCashierTestData();
+                  setMsg({
+                    type: 'success',
+                    text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
+                  });
+                  loadHistory();
+                } catch {
+                  setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
+            </button>
+            {history.length > 0 && (
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => handlePrint(history[0])}>
+                <Printer size={14} /> {lang === 'mr' ? 'व्हाऊचर प्रिंट' : 'Print Voucher'}
+              </button>
+            )}
+            <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
+              <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
             </button>
           </div>
-          <input
-            type="text"
-            className="form-input"
-            placeholder={lang === 'mr' ? 'ज्या व्यक्तीस/संस्थेस रोख दिले त्यांचे नाव' : 'Name of person / entity paid to'}
-            value={paidTo}
-            onChange={e => setPaidTo(e.target.value)}
-            required
-          />
         </div>
 
-        {/* Payment Mode (CASH vs CHEQUE) */}
-        <div style={{ background: '#f1f5f9', padding: 14, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16 }}>
-          <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
-            {lang === 'mr' ? 'पेमेंट प्रकार (Payment Mode):' : 'Payment Mode:'}
-          </label>
-          <div style={{ display: 'flex', gap: 20, marginBottom: paymentMode === 'CHEQUE' ? 12 : 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-              <input
-                type="radio"
-                name="paymentMode"
-                value="CASH"
-                checked={paymentMode === 'CASH'}
-                onChange={() => setPaymentMode('CASH')}
-              />
-              <Banknote size={16} color="#16a34a" />
-              {lang === 'mr' ? 'रोख (Cash) → स्क्रोल बुकात (Paid) नोंद होईल' : 'Cash → Updates Cash Scroll (Paid)'}
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-              <input
-                type="radio"
-                name="paymentMode"
-                value="CHEQUE"
-                checked={paymentMode === 'CHEQUE'}
-                onChange={() => setPaymentMode('CHEQUE')}
-              />
-              <CreditCard size={16} color="#2563eb" />
-              {lang === 'mr' ? 'चेक (Cheque) → स्क्रोल व चेक बुकमध्ये ऑटो-अपडेट' : 'Cheque → Updates Scroll & Cheque Book'}
-            </label>
-          </div>
-
-          {paymentMode === 'CHEQUE' && (
-            <div className="form-grid-3" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. CHQ-48592"
-                  value={chequeNo}
-                  onChange={e => setChequeNo(e.target.value)}
-                  required={paymentMode === 'CHEQUE'}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'चेक दिनांक' : 'Cheque Date'}</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={chequeDate}
-                  onChange={e => setChequeDate(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'बँकेचे नाव' : 'Bank Name'}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. BDCC Bank Belgaum"
-                  value={bankName}
-                  onChange={e => setBankName(e.target.value)}
-                />
-              </div>
+        <div className="card-body">
+          {msg && (
+            <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+              {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              {msg.text}
             </div>
           )}
-        </div>
 
-        <div className="form-group" style={{ marginBottom: 20 }}>
-          <label className="form-label">{lang === 'mr' ? 'हेतू / रिमार्क्स (Purpose / Remarks)' : 'Purpose / Remarks'}</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder={lang === 'mr' ? 'उदा. दैनिक मजुरी, बियाणे खरेदी, विधी फी इ.' : 'e.g. Daily wages, legal fee, seed purchase'}
-            value={purpose}
-            onChange={e => setPurpose(e.target.value)}
-          />
-        </div>
+          <form onSubmit={handleSubmit}>
+            {/* Main Form Fields — Standard Accountant 3-Col Grid */}
+            <div className="form-grid-3" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'व्हाऊचर क्र. (Voucher No.)' : 'Voucher No.'} <span className="required">*</span></label>
+                <input type="text" className="form-input" value={voucherNo} onChange={e => setVoucherNo(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span className="required">*</span></label>
+                <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'पेमेंट प्रकार (Payment Mode)' : 'Payment Mode'} <span className="required">*</span></label>
+                <div style={{ display: 'flex', gap: 12, height: 42, alignItems: 'center', background: '#f8fafc', padding: '0 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-muted)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                    <input type="radio" name="paymentMode" value="CASH" checked={paymentMode === 'CASH'} onChange={() => setPaymentMode('CASH')} />
+                    <Banknote size={14} color="#16a34a" /> {lang === 'mr' ? 'रोख (Cash)' : 'Cash'}
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                    <input type="radio" name="paymentMode" value="CHEQUE" checked={paymentMode === 'CHEQUE'} onChange={() => setPaymentMode('CHEQUE')} />
+                    <CreditCard size={14} color="#2563eb" /> {lang === 'mr' ? 'चेक (Cheque)' : 'Cheque'}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {paymentMode === 'CHEQUE' && (
+              <div className="form-grid-3" style={{ marginBottom: 16, padding: 14, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'चेक क्र. (Cheque No.)' : 'Cheque No.'} <span className="required">*</span></label>
+                  <input type="text" className="form-input" placeholder="e.g. CHQ-48592" value={chequeNo} onChange={e => setChequeNo(e.target.value)} required={paymentMode === 'CHEQUE'} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'चेक दिनांक (Cheque Date)' : 'Cheque Date'}</label>
+                  <input type="date" className="form-input" value={chequeDate} onChange={e => setChequeDate(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{lang === 'mr' ? 'बँकेचे नाव (Bank Name)' : 'Bank Name'}</label>
+                  <input type="text" className="form-input" placeholder="e.g. BDCC Bank Belgaum" value={bankName} onChange={e => setBankName(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            {/* Paid To & Purpose */}
+            <div className="form-grid-2" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="form-label">{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To'} <span className="required">*</span></label>
+                  <button
+                    type="button"
+                    onClick={handleTranslatePaidTo}
+                    disabled={translating}
+                    style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
+                  >
+                    {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                    {translating ? (lang === 'mr' ? 'भाषांतर होत आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर' : 'Translate')}
+                  </button>
+                </div>
+                <input type="text" className="form-input" placeholder={lang === 'mr' ? 'ज्या व्यक्तीस/संस्थेस रोख दिले त्यांचे नाव' : 'Name of person / entity paid to'} value={paidTo} onChange={e => setPaidTo(e.target.value)} required />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'हेतू / रिमार्क्स (Purpose / Remarks)' : 'Purpose / Remarks'}</label>
+                <input type="text" className="form-input" placeholder={lang === 'mr' ? 'उदा. दैनिक मजुरी, बियाणे खरेदी, विधी फी इ.' : 'e.g. Daily wages, seed purchase, legal fee'} value={purpose} onChange={e => setPurpose(e.target.value)} />
+              </div>
+            </div>
 
         {/* Dynamic Expenditure Items Table with Dropdown and CGST/SGST */}
         <div style={{ background: 'var(--surface-subtle)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)', marginBottom: 20 }}>
@@ -719,6 +676,8 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
           </button>
         </div>
       </form>
+    </div>
+  </div>
 
       {/* History Register — General Ledger Styled Container */}
       {(() => {
