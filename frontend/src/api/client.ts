@@ -404,6 +404,17 @@ export const updatePesticideSale = (id: number, payload: import('../types').Pest
 export const deletePesticideSale = (id: number): Promise<void> =>
   api.delete(`/shopkeeper/pesticide-sales/${id}`).then(r => r.data);
 
+export const syncInventoryPurchase = (payload: {
+  memo_no?: string;
+  date?: string;
+  supplier_name?: string;
+  product_name: string;
+  qty: number;
+  total_amount: number;
+  remarks?: string;
+  created_by?: string;
+}): Promise<any> => api.post('/shopkeeper/inventory-purchase-sync', payload).then(r => r.data);
+
 // 5. Shopkeeper Audit Summary
 export const fetchShopkeeperAuditSummary = (startDate: string, endDate: string): Promise<import('../types').ShopkeeperAuditSummary> =>
   api.get('/shopkeeper/audit-summary', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);

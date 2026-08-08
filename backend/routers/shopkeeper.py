@@ -13,6 +13,7 @@ from schemas import (
     PesticideSaleEntryCreate, PesticideSaleEntryOut,
     ShopkeeperAuditSummary, PesticideProductCreate, PesticideProductOut
 )
+from routers.cashier import sync_transaction_for_cashier_voucher, delete_transaction_for_cashier_voucher
 
 router = APIRouter(prefix="/shopkeeper", tags=["shopkeeper"])
 
@@ -22,6 +23,62 @@ PESTICIDE_KEYWORDS = [
     "neem oil", "malathion", "copper oxychloride", "carbendazim", "imidacloprid",
     "cypermethrin", "spray pump", "nozzle", "acid"
 ]
+
+
+def sync_shopkeeper_sale_transaction(
+    db: Session,
+    memo_no: str,
+    v_date: date,
+    customer_name: str,
+    product_name: str,
+    qty: Decimal,
+    total_amount: Decimal,
+    remarks: str,
+    created_by: Optional[str]
+):
+    """Auto-post pesticide / shop sales to main transactions table for Credit Book & General Ledger."""
+    tot_amt = Decimal(str(total_amount or 0))
+    if tot_amt > 0:
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=memo_no,
+            v_date=v_date,
+            customer_name=customer_name or "Shop Customer",
+            particulars=f"Pesticide/Shop Sale: {product_name} (Qty: {qty})",
+            nature="CREDIT",
+            total_amount=tot_amt,
+            remarks=remarks,
+            created_by=created_by or "shopkeeper",
+            target_account_name="Pesticide sales"
+        )
+
+
+def sync_shopkeeper_purchase_transaction(
+    db: Session,
+    memo_no: str,
+    v_date: date,
+    supplier_name: str,
+    product_name: str,
+    qty: Decimal,
+    total_amount: Decimal,
+    remarks: str,
+    created_by: Optional[str]
+):
+    """Auto-post pesticide stock purchases / opening stock to main transactions table for Debit Book & General Ledger."""
+    tot_amt = Decimal(str(total_amount or 0))
+    if tot_amt > 0:
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=memo_no,
+            v_date=v_date,
+            customer_name=supplier_name or "Pesticide Supplier",
+            particulars=f"Pesticide Purchase / Initial Stock: {product_name} (Qty: {qty})",
+            nature="DEBIT",
+            total_amount=tot_amt,
+            remarks=remarks,
+            created_by=created_by or "shopkeeper",
+            target_account_name="Pesticide purchases"
+        )
 
 
 def check_and_auto_post_pesticide(
@@ -120,7 +177,7 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
     )
     db.add(record)
 
-    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
+    # ── Auto-Post to Pesticide Sale Register ─────────────────────────────────
     check_and_auto_post_pesticide(
         db=db,
         date_val=payload.date,
@@ -130,6 +187,20 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
         rate_val=payload.selling_rate or payload.net_rate,
         amt_val=payload.total_amount,
         source_ref="Selling Rate Book",
+        created_by=payload.created_by
+    )
+
+    # ── Auto-Post to Main Transactions Table for General Ledger & Credit Book ──
+    memo_no = payload.stock_book_no or f"SRB-RATE-{record.id or 'NEW'}"
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=memo_no,
+        v_date=payload.date,
+        customer_name=payload.name,
+        product_name=payload.particulars,
+        qty=payload.qty,
+        total_amount=payload.total_amount,
+        remarks=f"Selling Rate Entry ({payload.particulars})",
         created_by=payload.created_by
     )
 
@@ -162,6 +233,19 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
     record.stock_book_no = payload.stock_book_no
     record.sign_status = payload.sign_status or "Signed"
     
+    memo_no = payload.stock_book_no or f"SRB-RATE-{record.id}"
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=memo_no,
+        v_date=payload.date,
+        customer_name=payload.name,
+        product_name=payload.particulars,
+        qty=payload.qty,
+        total_amount=payload.total_amount,
+        remarks=f"Selling Rate Entry #{record.id}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -172,6 +256,8 @@ def delete_selling_rate_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Selling rate entry not found")
+    memo_no = record.stock_book_no or f"SRB-RATE-{record.id}"
+    delete_transaction_for_cashier_voucher(db, memo_no)
     db.delete(record)
     db.commit()
     return {"message": "Selling rate entry deleted successfully"}
@@ -210,7 +296,6 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
     )
     db.add(record)
 
-    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
     check_and_auto_post_pesticide(
         db=db,
         date_val=payload.date,
@@ -220,6 +305,18 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         rate_val=payload.rate,
         amt_val=payload.amount,
         source_ref=f"Tax Invoice {inv_no}",
+        created_by=payload.created_by
+    )
+
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=inv_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.product_name,
+        qty=payload.qty,
+        total_amount=payload.amount,
+        remarks=f"Shop Tax Invoice {inv_no}",
         created_by=payload.created_by
     )
 
@@ -234,7 +331,8 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
     if not record:
         raise HTTPException(status_code=404, detail="Shop tax invoice not found")
     
-    record.invoice_no = payload.invoice_no or record.invoice_no
+    inv_no = payload.invoice_no or record.invoice_no
+    record.invoice_no = inv_no
     record.date = payload.date
     record.customer_name = payload.customer_name
     record.customer_phone = payload.customer_phone
@@ -244,6 +342,18 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
     record.rate = payload.rate
     record.amount = payload.amount
     
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=inv_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.product_name,
+        qty=payload.qty,
+        total_amount=payload.amount,
+        remarks=f"Shop Tax Invoice {inv_no}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -254,6 +364,7 @@ def delete_shop_tax_invoice(id: int, db: Session = Depends(get_db)):
     record = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Shop tax invoice not found")
+    delete_transaction_for_cashier_voucher(db, record.invoice_no)
     db.delete(record)
     db.commit()
     return {"message": "Shop tax invoice deleted successfully"}
@@ -291,7 +402,6 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
     )
     db.add(record)
 
-    # ── Auto-Post to Pesticide Sale Register if Pesticide ──────────────────────
     check_and_auto_post_pesticide(
         db=db,
         date_val=payload.date,
@@ -301,6 +411,18 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         rate_val=payload.rate,
         amt_val=payload.amount,
         source_ref=f"Retail Bill {b_no}",
+        created_by=payload.created_by
+    )
+
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=b_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.particulars,
+        qty=Decimal("1.0"),
+        total_amount=payload.amount,
+        remarks=f"Shop Retail Bill {b_no}",
         created_by=payload.created_by
     )
 
@@ -315,7 +437,8 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
     if not record:
         raise HTTPException(status_code=404, detail="Retail bill not found")
     
-    record.bill_no = payload.bill_no or record.bill_no
+    b_no = payload.bill_no or record.bill_no
+    record.bill_no = b_no
     record.date = payload.date
     record.tin_no = payload.tin_no or "29540268502"
     record.customer_name = payload.customer_name
@@ -324,18 +447,29 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
     record.amount = payload.amount
     record.seller_signature = payload.seller_signature or "Seller Signed"
     
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=b_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.particulars,
+        qty=Decimal("1.0"),
+        total_amount=payload.amount,
+        remarks=f"Shop Retail Bill {b_no}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
 
 
-
 @router.delete("/retail-bills/{id}")
-
 def delete_shop_retail_bill(id: int, db: Session = Depends(get_db)):
     record = db.query(ShopRetailBill).filter(ShopRetailBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Retail bill not found")
+    delete_transaction_for_cashier_voucher(db, record.bill_no)
     db.delete(record)
     db.commit()
     return {"message": "Retail bill deleted successfully"}
@@ -372,6 +506,21 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
         created_by=payload.created_by
     )
     db.add(record)
+    db.flush()
+
+    memo_no = f"PEST-SALE-{record.id}"
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=memo_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.product_name,
+        qty=payload.qty,
+        total_amount=payload.amount,
+        remarks=f"Pesticide Sale Register #{record.id}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -391,6 +540,20 @@ def update_pesticide_sale(id: int, payload: PesticideSaleEntryCreate, db: Sessio
     record.batch_no = payload.batch_no
     record.remarks = payload.remarks
     record.doc_path = payload.doc_path
+
+    memo_no = f"PEST-SALE-{record.id}"
+    sync_shopkeeper_sale_transaction(
+        db=db,
+        memo_no=memo_no,
+        v_date=payload.date,
+        customer_name=payload.customer_name,
+        product_name=payload.product_name,
+        qty=payload.qty,
+        total_amount=payload.amount,
+        remarks=f"Pesticide Sale Register #{record.id}",
+        created_by=payload.created_by
+    )
+
     db.commit()
     db.refresh(record)
     return record
@@ -401,9 +564,41 @@ def delete_pesticide_sale(id: int, db: Session = Depends(get_db)):
     record = db.query(PesticideSaleEntry).filter(PesticideSaleEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Pesticide sale entry not found")
+    memo_no = f"PEST-SALE-{record.id}"
+    delete_transaction_for_cashier_voucher(db, memo_no)
     db.delete(record)
     db.commit()
     return {"message": "Pesticide sale entry deleted successfully"}
+
+
+# ─── Inventory Purchase / Stock Sync Endpoint ───────────────────────────────
+
+@router.post("/inventory-purchase-sync")
+def sync_inventory_purchase_endpoint(payload: dict, db: Session = Depends(get_db)):
+    """API endpoint to sync stock purchase or opening stock into Debit Book & General Ledger."""
+    memo_no = payload.get("memo_no") or f"PEST-PURCHASE-{payload.get('product_id', 'INIT')}"
+    v_date_str = payload.get("date") or date.today().isoformat()
+    v_date = date.fromisoformat(v_date_str)
+    supplier_name = payload.get("supplier_name") or "Pesticide Stock Purchase"
+    product_name = payload.get("product_name") or "Pesticide Stock"
+    qty = Decimal(str(payload.get("qty") or 1))
+    total_amount = Decimal(str(payload.get("total_amount") or 0))
+    remarks = payload.get("remarks") or f"Stock Inward / Opening Stock: {product_name}"
+    created_by = payload.get("created_by") or "shopkeeper"
+
+    sync_shopkeeper_purchase_transaction(
+        db=db,
+        memo_no=memo_no,
+        v_date=v_date,
+        supplier_name=supplier_name,
+        product_name=product_name,
+        qty=qty,
+        total_amount=total_amount,
+        remarks=remarks,
+        created_by=created_by
+    )
+    db.commit()
+    return {"status": "success", "message": f"Inventory purchase synced to Debit Book & General Ledger ({memo_no})"}
 
 
 # ─── 5. Shopkeeper Audit Summary ──────────────────────────────────────────────

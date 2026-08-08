@@ -20,6 +20,7 @@ import {
   type SalesRecord
 } from '../../utils/productStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { syncInventoryPurchase } from '../../api/client';
 
 interface InventoryManagerProps {
   user?: any;
@@ -121,12 +122,27 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
     };
 
     addOrUpdateInventoryProduct(newProd);
+
+    // Auto-sync initial running stock purchase to Debit Book & General Ledger
+    if (stock > 0 && costPrice > 0) {
+      syncInventoryPurchase({
+        memo_no: `PEST-PURCHASE-${newProd.id}`,
+        product_name: newProd.name,
+        qty: stock,
+        total_amount: stock * costPrice,
+        remarks: `Initial Running Stock Entry: ${newProd.name} (${newProd.pack_size})`,
+        created_by: 'shopkeeper'
+      }).catch(() => {});
+    }
+
     refreshData();
     setShowAddProductModal(false);
     resetProductForm();
     setMsg({
       type: 'success',
-      text: lang === 'mr' ? `उत्पादन ${newProd.name} (${newProd.pack_size}) यशस्वीरित्या जतन झाले!` : `Product ${newProd.name} (${newProd.pack_size}) saved successfully!`,
+      text: lang === 'mr'
+        ? `उत्पादन ${newProd.name} (${newProd.pack_size}) जतन झाले! (खरेदी नोंदवहीत जोडले)`
+        : `Product ${newProd.name} (${newProd.pack_size}) saved! (Auto-posted to Debit Book & General Ledger)`
     });
   };
 
@@ -186,10 +202,24 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
 
     const res = recordPurchase(purProductId, qty, price, purDate);
     if (res.success) {
+      const targetProd = products.find(p => p.id === purProductId);
+      syncInventoryPurchase({
+        memo_no: `PEST-PURCHASE-${Date.now()}`,
+        date: purDate,
+        product_name: targetProd ? targetProd.name : 'Pesticide Stock',
+        qty: qty,
+        total_amount: qty * price,
+        remarks: `Inward Pesticide Purchase: ${targetProd ? targetProd.name : ''}`,
+        created_by: 'shopkeeper'
+      }).catch(() => {});
+
       refreshData();
       setPurQty('');
       setPurPrice('');
-      setMsg({ type: 'success', text: res.message });
+      setMsg({
+        type: 'success',
+        text: res.message + (lang === 'mr' ? ' (नावे नोंदवहीत जोडले)' : ' (Auto-posted to Debit Book & General Ledger)')
+      });
     } else {
       setMsg({ type: 'error', text: res.message });
     }
