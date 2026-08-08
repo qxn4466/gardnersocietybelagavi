@@ -81,6 +81,39 @@ def sync_shopkeeper_purchase_transaction(
         )
 
 
+def deduct_stock_in_selling_rate_book(
+    db: Session,
+    prod_name: str,
+    qty_sold: Decimal
+):
+    """Automatically deduct sold quantity from available stock in Selling Rate Book."""
+    if not prod_name or Decimal(str(qty_sold or 0)) <= Decimal("0"):
+        return
+
+    clean_name = prod_name.strip()
+    key_word = clean_name.split()[0] if clean_name else ""
+
+    query = db.query(ShopSellingRateEntry).filter(
+        (ShopSellingRateEntry.particulars.ilike(f"%{clean_name}%")) |
+        (ShopSellingRateEntry.particulars.ilike(f"%{key_word}%"))
+    ).order_by(ShopSellingRateEntry.id.desc())
+
+    records = query.all()
+    remaining_to_deduct = Decimal(str(qty_sold))
+
+    for rec in records:
+        if remaining_to_deduct <= Decimal("0"):
+            break
+        curr_qty = Decimal(str(rec.qty or 0))
+        if curr_qty > Decimal("0"):
+            deduct_amt = min(curr_qty, remaining_to_deduct)
+            rec.qty = curr_qty - deduct_amt
+            remaining_to_deduct -= deduct_amt
+
+            rec.amount = rec.qty * Decimal(str(rec.net_rate or rec.selling_rate or 0))
+            rec.total_amount = rec.amount + Decimal(str(rec.sgst or 0)) + Decimal(str(rec.cgst or 0)) + Decimal(str(rec.hmall or 0)) + Decimal(str(rec.motor_rent or 0))
+
+
 def check_and_auto_post_pesticide(
     db: Session,
     date_val: date,
@@ -92,12 +125,11 @@ def check_and_auto_post_pesticide(
     source_ref: str,
     created_by: Optional[str]
 ):
-    lowered = prod_name.lower()
-    if any(k in lowered for k in PESTICIDE_KEYWORDS):
+    if prod_name and prod_name.strip():
         pest_entry = PesticideSaleEntry(
             date=date_val,
-            customer_name=customer_name,
-            product_name=prod_name,
+            customer_name=customer_name or "Shop Customer",
+            product_name=prod_name.strip(),
             qty=qty_val,
             rate=rate_val,
             amount=amt_val,
@@ -105,6 +137,8 @@ def check_and_auto_post_pesticide(
             created_by=created_by
         )
         db.add(pest_entry)
+
+        deduct_stock_in_selling_rate_book(db, prod_name, qty_val)
 
 
 # ─── Number Generator Helpers ────────────────────────────────────────────────
