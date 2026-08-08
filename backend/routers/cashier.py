@@ -46,10 +46,25 @@ def sync_transaction_for_cashier_voucher(
     """Auto-post or update transaction in main Transactions table so Credit Book, Debit Book & General Ledger update immediately."""
     tt_query = db.query(TransactionTypeMaster)
     tt_match = None
-    if target_account_name:
+
+    search_text = f"{particulars or ''} {customer_name or ''} {remarks or ''}".lower()
+    
+    # 1. Try matching against specific account head names
+    all_tts = tt_query.all()
+    for tt in all_tts:
+        tt_name = (tt.name or "").lower()
+        tt_ledger = (tt.ledger_account or "").lower()
+        if (len(tt_name) > 3 and tt_name in search_text) or (len(tt_ledger) > 3 and tt_ledger in search_text):
+            tt_match = tt
+            break
+
+    # 2. Try target_account_name if specified
+    if not tt_match and target_account_name:
         tt_match = tt_query.filter(TransactionTypeMaster.name.ilike(f"%{target_account_name}%")).first()
+
+    # 3. Fallback to Sundrey A/C
     if not tt_match:
-        tt_match = tt_query.filter(TransactionTypeMaster.name == "Sundrey A/C").first()
+        tt_match = tt_query.filter(TransactionTypeMaster.name.ilike("%Sundrey%")).first()
     if not tt_match:
         tt_match = tt_query.first()
 

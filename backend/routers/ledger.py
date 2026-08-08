@@ -75,10 +75,10 @@ def get_ledger(
 
         label = f"{MONTH_NAMES[mo]} {yr}"
 
-        # For Sundary A/C, distinguish credit vs debit
+        # For Sundrey A/C, distinguish credit vs debit
         account_display = acc
-        if acc == "Sundary a/c":
-            account_display = f"Sundary a/c ({'Credit' if nature == 'CREDIT' else 'Debit'})"
+        if acc and acc.lower() in ("sundary a/c", "sundrey a/c", "sundry a/c"):
+            account_display = f"Sundrey A/C ({'Credit / Receipt' if nature == 'CREDIT' else 'Debit / Payment'})"
 
         receipt    = Decimal("0")
         debit      = Decimal("0")
