@@ -355,7 +355,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              1. {lang === 'mr' ? 'बियाणे, कीटकनाशके, स्प्रेपंप व इतर विक्री दर पुस्तक' : 'Seeds, Pesticides, Spraypump and Other Selling Rate Book'}
+              2. {lang === 'mr' ? 'बियाणे, कीटकनाशके, स्प्रेपंप व इतर विक्री दर पुस्तक' : 'Seeds, Pesticides, Spraypump and Other Selling Rate Book'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
               {lang === 'mr' ? 'दर पुस्तक नोंद तक्ता · कीटकनाशके नोंदवहीत स्वयंचलित नोंद' : 'Selling Rate Book Grid · Auto-posts to Pesticide Register'}

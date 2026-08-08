@@ -325,19 +325,19 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   );
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #ea580c', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.08)' }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #ea580c', boxShadow: '0 4px 16px rgba(234, 88, 12, 0.08)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ background: '#ffedd5', padding: 10, borderRadius: 8, color: '#c2410c' }}>
             <ShoppingCart size={22} />
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              3. {lang === 'mr' ? 'दुकान किरकोळ रोख बिल (Retail Cash Bill)' : 'Shop Retail Cash Bill'}
+              4. {lang === 'mr' ? 'दुकानाचे किरकोळ रोख बिल (Retail Cash Bill)' : 'Shop Retail Cash Bill'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              The Belgaum Gardeners Co-Op Pro Supply and Sale Society Ltd. Belgaum
+              {lang === 'mr' ? 'किरकोळ रोख बिल नोंद · कीटकनाशके नोंदवहीत स्वयंचलित नोंद' : 'Retail Cash Bill Entry · Auto-posts to Pesticide Register & GL'}
             </p>
           </div>
         </div>

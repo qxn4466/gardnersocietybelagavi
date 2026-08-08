@@ -193,7 +193,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              4. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
+              5. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
               {lang === 'mr' ? 'ऑटो-कीटकनाशके तक्ता · विक्री दर पुस्तक, टॅक्स इनव्हॉईस व किरकोळ बिलांमधून नोंद' : 'Auto-populated from Selling Rate Book, Shop Tax Invoices & Retail Bills'}

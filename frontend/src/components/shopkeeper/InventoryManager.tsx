@@ -258,75 +258,52 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
   const outOfStockCount = products.filter(p => p.current_stock <= 0).length;
 
   return (
-    <div style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-
-      {/* Test Data Toolbar */}
-      <div style={{
-        marginBottom: 16, padding: '10px 16px', background: '#f8fafc',
-        borderRadius: 10, border: '1px solid #cbd5e1',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10
-      }}>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
-            {lang === 'mr' ? '🧪 साठा चाचणी डेटा संच (Inventory Test Data Tool)' : '🧪 Inventory Test Dataset Toolbar'}
-          </span>
-          <div style={{ fontSize: 11, color: '#64748b' }}>
-            {lang === 'mr' ? 'चाचणी उत्पादने (In Stock 🟢, Low Stock 🟠, Out of Stock 🔴) जोडा किंवा साफ करा' : 'Seed or clear sample pesticide products covering In Stock 🟢, Low Stock 🟠, and Out of Stock 🔴 statuses'}
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #2563eb', boxShadow: '0 4px 16px rgba(37, 99, 235, 0.08)' }}>
+      {/* Card Header — Accountant / Cashier Form Layout */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: '#dbeafe', padding: 10, borderRadius: 8, color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Package size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              1. {lang === 'mr' ? 'कीटकनाशक दुकानाची साठा व्यवस्थापन प्रणाली (Pesticide Store Inventory)' : 'Pesticide Store Inventory System'}
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              {lang === 'mr' ? 'प्रवाह: उत्पादने (Products) → खरेदी (+साठा वाढतो) → साठा (Stock) → विक्री (-साठा कमी होतो)' : 'Simple Flow: Products → Purchase (+Stock) → Live Stock → Sales (-Stock)'}
+            </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
+            className="btn btn-secondary btn-sm"
             onClick={handleSeedTestData}
-            style={{
-              background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 6,
-              padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6
-            }}
+            style={{ background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <PlusCircle size={14} />
-            {lang === 'mr' ? 'साठा चाचणी डेटा जोडा (Seed Data)' : 'Add Inventory Test Data'}
+            {lang === 'mr' ? 'साठा चाचणी डेटा जोडा (Seed Data)' : 'Add Test Data'}
           </button>
           <button
             type="button"
+            className="btn btn-secondary btn-sm"
             onClick={handleClearTestData}
-            style={{
-              background: '#ffffff', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: 6,
-              padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6
-            }}
+            style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <Trash2 size={14} />
-            {lang === 'mr' ? 'चाचणी डेटा हटवा (Clear Data)' : 'Clear Inventory Test Data'}
+            {lang === 'mr' ? 'चाचणी डेटा हटवा (Clear Data)' : 'Clear Test Data'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => { resetProductForm(); setShowAddProductModal(true); }}
+            style={{ background: '#2563eb', borderColor: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Plus size={16} />
+            {lang === 'mr' ? 'नवीन उत्पादन जोडा (+ New Product)' : 'Add New Product'}
           </button>
         </div>
-      </div>
-
-      {/* Header Banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Package size={22} color="#2563eb" />
-            {lang === 'mr' ? 'कीटकनाशक दुकानाची साठा व्यवस्थापन प्रणाली (Pesticide Store Inventory)' : 'Pesticide Store Inventory System'}
-          </h3>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-            {lang === 'mr' ? 'प्रवाह: उत्पादने (Products) → खरेदी (+साठा वाढतो) → साठा (Stock) → विक्री (-साठा कमी होतो)' : 'Simple Flow: Products → Purchase (+Stock) → Live Stock → Sales (-Stock)'}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => { resetProductForm(); setShowAddProductModal(true); }}
-          style={{
-            background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 8,
-            padding: '9px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
-          }}
-        >
-          <Plus size={16} />
-          {lang === 'mr' ? 'नवीन उत्पादन जोडा (+ New Product)' : 'Add New Product'}
-        </button>
       </div>
 
       {/* Metric Cards Banner */}

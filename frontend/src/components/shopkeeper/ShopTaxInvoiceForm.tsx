@@ -324,19 +324,19 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   );
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #2563eb', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)' }}>
+    <div className="card" style={{ padding: 24, marginBottom: 30, borderTop: '4px solid #4f46e5', boxShadow: '0 4px 16px rgba(79, 70, 229, 0.08)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#dbeafe', padding: 10, borderRadius: 8, color: '#1e40af' }}>
+          <div style={{ background: '#e0e7ff', padding: 10, borderRadius: 8, color: '#4f46e5' }}>
             <Receipt size={22} />
           </div>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              2. {lang === 'mr' ? 'दुकान टॅक्स इनव्हॉईस (Tax Invoice)' : 'Shop Tax Invoice'}
+              3. {lang === 'mr' ? 'दुकानाचे टॅक्स इनव्हॉईस बिल (Shop Tax Invoice)' : 'Shop Tax Invoice'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              The Belgaum Gardeners Co-op. Production Supply and Sale Society Ltd., Belgaum
+              {lang === 'mr' ? 'टॅक्स इनव्हॉईस नोंद · कीटकनाशके नोंदवहीत स्वयंचलित नोंद' : 'Tax Invoice Entry · Auto-posts to Pesticide Register & GL'}
             </p>
           </div>
         </div>
