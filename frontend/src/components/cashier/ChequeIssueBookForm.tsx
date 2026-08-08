@@ -287,76 +287,93 @@ const ChequeIssueBookForm: React.FC<ChequeIssueBookFormProps> = ({ user }) => {
       </form>
 
       {/* Search & Filter Bar */}
-      <div className="filter-bar">
-        <div className="filter-bar-group">
-          <Calendar size={15} color="var(--blue-600)" />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
-          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-          <span style={{ fontSize: 12 }}>to</span>
-          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+      {/* General Ledger Card Table */}
+      <div className="card" style={{ borderTop: '4px solid #ea580c', boxShadow: '0 4px 24px rgba(234, 88, 12, 0.1)', overflow: 'hidden', marginTop: 24 }}>
+        <div style={{ padding: '14px 18px', background: '#fff', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            {lang === 'mr' ? 'चेक देणे नोंद पुस्तक' : 'Cheque Issue Book Register'}
+          </h4>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#ea580c', background: '#fff7ed', padding: '4px 10px', borderRadius: 20, border: '1px solid #ffedd5' }}>
+            {lang === 'mr' ? `एकूण धनादेश: ₹${totalChequeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : `Total Issued: ₹${totalChequeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          </span>
         </div>
-        <div className="filter-bar-group">
-          <Search size={14} color="var(--text-secondary)" />
-          <input
-            type="text"
-            className="form-input"
-            style={{ width: 180, padding: '3px 6px', fontSize: 12 }}
-            placeholder={lang === 'mr' ? 'शोधा...' : 'Search name, cheque...'}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="filter-bar-spacer" />
-        <div style={{ fontSize: 13 }}>Total: <strong style={{ color: '#ea580c' }}>₹{totalChequeAmount.toFixed(2)}</strong></div>
-      </div>
 
-      {/* Cheque Issue Book Table matching Document #468 */}
-      <div className="table-responsive">
-        <table className="table" style={{ width: '100%', fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={{ width: 110 }}>{lang === 'mr' ? 'दिनांक' : 'Date of Issue / Encl.'}</th>
-              <th>{lang === 'mr' ? 'ज्यांच्या नावावर दिला' : 'Name to whom Issued'}</th>
-              <th style={{ width: 130, textAlign: 'center' }}>{lang === 'mr' ? 'चेक क्र. (Ch. No.)' : 'Cheque No. (Ch. No.)'}</th>
-              <th style={{ textAlign: 'right', color: '#ea580c', width: 140 }}>{lang === 'mr' ? 'रक्कम ₹ (Rs.)' : 'Amount (Rs. Ps.)'}</th>
-              <th>{lang === 'mr' ? 'रिमार्क्स' : 'Remarks'}</th>
-              <th style={{ textAlign: 'center', width: 60 }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredHistory.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                  {lang === 'mr' ? 'कोणत्याही चेक नोंदी नाहीत.' : 'No cheque issue entries found.'}
-                </td>
-              </tr>
-            ) : (
-              filteredHistory.map(row => (
-                <tr key={row.id}>
-                  <td>{row.issue_date}</td>
-                  <td style={{ fontWeight: 600 }}>{row.name_to_whom_issued}</td>
-                  <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 700 }}>{row.cheque_no}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>₹{Number(row.amount_rs || 0).toFixed(2)}</td>
-                  <td>{row.remarks || '-'}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 size={12} />
-                    </button>
-                  </td>
+        <div className="filter-bar no-print" style={{ padding: '10px 18px', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="filter-group">
+            <Calendar size={15} color="var(--blue-600)" />
+            <span className="filter-label">{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+            <input type="date" className="filter-select" style={{ width: 'auto' }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+            <span style={{ fontSize: 12 }}>to</span>
+            <input type="date" className="filter-select" style={{ width: 'auto' }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <Search size={14} color="var(--text-secondary)" />
+            <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (नाव, चेक क्र.)...' : 'Search name, cheque...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="table-wrapper">
+          {filteredHistory.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-title">
+                {lang === 'mr' ? 'कोणत्याही चेक नोंदी नाहीत' : 'No cheque issue entries found'}
+              </div>
+            </div>
+          ) : (
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 130 }}>{lang === 'mr' ? 'दिनांक' : 'Date of Issue'}</th>
+                  <th>{lang === 'mr' ? 'ज्यांच्या नावावर दिला (Name Issued)' : 'Name to whom Issued'}</th>
+                  <th style={{ width: 140, textAlign: 'center' }}>{lang === 'mr' ? 'चेक क्र. (Ch. No.)' : 'Cheque No. (Ch. No.)'}</th>
+                  <th style={{ textAlign: 'right', color: '#ea580c', width: 140 }}>{lang === 'mr' ? 'रक्कम ₹ (Rs.)' : 'Amount (Rs. Ps.)'}</th>
+                  <th>{lang === 'mr' ? 'रिमार्क्स' : 'Remarks'}</th>
+                  <th style={{ textAlign: 'center', width: 60 }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-          {filteredHistory.length > 0 && (
-            <tfoot>
-              <tr style={{ background: 'var(--surface-subtle)', fontWeight: 700 }}>
-                <td colSpan={3} style={{ textAlign: 'right' }}>Total Cheques Issued:</td>
-                <td style={{ textAlign: 'right', color: '#ea580c' }}>₹{totalChequeAmount.toFixed(2)}</td>
-                <td colSpan={2}></td>
-              </tr>
-            </tfoot>
+              </thead>
+              <tbody>
+                {filteredHistory.map((row, idx) => (
+                  <tr
+                    key={row.id}
+                    style={{
+                      background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                      borderLeft: '3px solid #ea580c',
+                    }}
+                  >
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.issue_date}</td>
+                    <td style={{ fontWeight: 600 }}>{row.name_to_whom_issued}</td>
+                    <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-brand)' }}>{row.cheque_no}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: '#ea580c', fontSize: 14 }}>
+                      ₹{Number(row.amount_rs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{row.remarks || '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Cheque">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              {filteredHistory.length > 0 && (
+                <tfoot>
+                  <tr style={{
+                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+                    color: '#fff', fontWeight: 800, fontSize: 13,
+                  }}>
+                    <td colSpan={3} style={{ color: '#c7d2fe', padding: '10px 14px', fontWeight: 700 }}>
+                      {lang === 'mr' ? `एकूण धनादेश नोंदी (${filteredHistory.length} नोंदी)` : `TOTAL CHEQUES ISSUED (${filteredHistory.length} entries)`}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#fdba74', fontSize: 14, fontWeight: 800 }}>
+                      ₹{totalChequeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
           )}
-        </table>
+        </div>
       </div>
 
       {/* Printable Cheque Issue Book Modal matching Document #468 */}

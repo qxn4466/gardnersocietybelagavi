@@ -297,81 +297,105 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
       </form>
 
       {/* Date Filter & Totals Bar */}
-      <div className="filter-bar" style={{ marginBottom: 14 }}>
-        <div className="filter-bar-group">
-          <Calendar size={15} color="var(--blue-600)" />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी अनुसार स्क्रोल:' : 'Filter Scroll Period:'}</span>
-          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-          <span style={{ fontSize: 12 }}>to</span>
-          <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+      {/* General Ledger Card Table */}
+      <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 24px rgba(79, 70, 229, 0.1)', overflow: 'hidden', marginTop: 16 }}>
+        <div style={{ padding: '14px 18px', background: '#fff', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            {lang === 'mr' ? 'रोख स्क्रोल पुस्तक नोंदवही' : 'Cash Scroll Book Register'}
+          </h4>
+          <div className="filter-bar-group" style={{ fontSize: 13, gap: 16 }}>
+            <div>Rec: <strong style={{ color: '#16a34a', fontFamily: 'monospace' }}>₹{totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
+            <div>Paid: <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
+            <div>Cheque: <strong style={{ color: '#2563eb', fontFamily: 'monospace' }}>₹{totalCheque.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
+          </div>
         </div>
-        <div className="filter-bar-group">
-          <Search size={14} color="var(--text-secondary)" />
-          <input type="text" className="form-input" style={{ width: 150, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-        </div>
-        <div className="filter-bar-spacer" />
-        <div className="filter-bar-group" style={{ fontSize: 13, gap: 16 }}>
-          <div>Rec: <strong style={{ color: '#16a34a' }}>₹{totalReceived.toFixed(2)}</strong></div>
-          <div>Paid: <strong style={{ color: '#dc2626' }}>₹{totalPaid.toFixed(2)}</strong></div>
-          <div>Cheque: <strong style={{ color: '#2563eb' }}>₹{totalCheque.toFixed(2)}</strong></div>
-        </div>
-      </div>
 
-      {/* Cash Scroll Book Register Table matching Document #662 */}
-      <div className="table-responsive">
-        <table className="table" style={{ width: '100%', fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={{ width: 100 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
-              <th style={{ width: 80 }}>{lang === 'mr' ? 'पान क्र.' : 'Page No.'}</th>
-              <th style={{ width: 110 }}>{lang === 'mr' ? 'व्हाऊचर/B Cash' : 'V. / B Cash No.'}</th>
-              <th>{lang === 'mr' ? 'कोणाकडून आले व दिले' : 'From Received and Paid'}</th>
-              <th style={{ textAlign: 'right', color: '#16a34a' }}>{lang === 'mr' ? 'जमा (Received ₹)' : 'Received Amount (₹)'}</th>
-              <th style={{ textAlign: 'right', color: '#dc2626' }}>{lang === 'mr' ? 'नावे (Paid ₹)' : 'Paid Amount (₹)'}</th>
-              <th style={{ textAlign: 'right', color: '#2563eb' }}>{lang === 'mr' ? 'चेक (Cheque ₹)' : 'Cheque Amount (₹)'}</th>
-              <th style={{ textAlign: 'center', width: 60 }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                  {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत.' : 'No cash scroll entries found for this date.'}
-                </td>
-              </tr>
-            ) : (
-              history
-                .filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()))
-                .map(row => (
-                  <tr key={row.id}>
-                    <td>{row.date}</td>
-                    <td>{row.page_no || '-'}</td>
-                    <td style={{ fontWeight: 600 }}>{row.voucher_no || '-'}</td>
-                    <td>{row.from_received_paid}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)}>
-                        <Trash2 size={12} />
-                      </button>
+        <div className="filter-bar no-print" style={{ padding: '10px 18px', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="filter-group">
+            <Calendar size={15} color="var(--blue-600)" />
+            <span className="filter-label">{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+            <input type="date" className="filter-select" style={{ width: 'auto' }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+            <span style={{ fontSize: 12 }}>to</span>
+            <input type="date" className="filter-select" style={{ width: 'auto' }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <Search size={14} color="var(--text-secondary)" />
+            <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (तपशील)...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="table-wrapper">
+          {history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-title">
+                {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत' : 'No cash scroll entries found for this date'}
+              </div>
+            </div>
+          ) : (
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 100 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                  <th style={{ width: 80 }}>{lang === 'mr' ? 'पान क्र.' : 'Page No.'}</th>
+                  <th style={{ width: 130 }}>{lang === 'mr' ? 'व्हाऊचर/B Cash' : 'V. / B Cash No.'}</th>
+                  <th>{lang === 'mr' ? 'कोणाकडून आले व दिले (Particulars)' : 'From Received and Paid'}</th>
+                  <th style={{ textAlign: 'right', color: '#16a34a', width: 130 }}>{lang === 'mr' ? 'जमा (Received ₹)' : 'Received (₹)'}</th>
+                  <th style={{ textAlign: 'right', color: '#dc2626', width: 130 }}>{lang === 'mr' ? 'नावे (Paid ₹)' : 'Paid (₹)'}</th>
+                  <th style={{ textAlign: 'right', color: '#2563eb', width: 130 }}>{lang === 'mr' ? 'चेक (Cheque ₹)' : 'Cheque (₹)'}</th>
+                  <th style={{ textAlign: 'center', width: 60 }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history
+                  .filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((row, idx) => (
+                    <tr
+                      key={row.id}
+                      style={{
+                        background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                        borderLeft: '3px solid #4f46e5',
+                      }}
+                    >
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{row.page_no || '—'}</td>
+                      <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.voucher_no || '—'}</td>
+                      <td style={{ fontWeight: 600 }}>{row.from_received_paid}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Entry">
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+              {history.length > 0 && (
+                <tfoot>
+                  <tr style={{
+                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+                    color: '#fff', fontWeight: 800, fontSize: 13,
+                  }}>
+                    <td colSpan={4} style={{ color: '#c7d2fe', padding: '10px 14px', fontWeight: 700 }}>
+                      TOTAL DAILY CASH SCROLL:
                     </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#86efac', fontSize: 14, fontWeight: 800 }}>
+                      ₹{totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#fca5a5', fontSize: 14, fontWeight: 800 }}>
+                      ₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#93c5fd', fontSize: 14, fontWeight: 800 }}>
+                      ₹{totalCheque.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td />
                   </tr>
-                ))
-            )}
-          </tbody>
-          {history.length > 0 && (
-            <tfoot>
-              <tr style={{ background: 'var(--surface-subtle)', fontWeight: 700 }}>
-                <td colSpan={4} style={{ textAlign: 'right' }}>Total Daily Cash Scroll:</td>
-                <td style={{ textAlign: 'right', color: '#16a34a' }}>₹{totalReceived.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', color: '#dc2626' }}>₹{totalPaid.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', color: '#2563eb' }}>₹{totalCheque.toFixed(2)}</td>
-                <td></td>
-              </tr>
-            </tfoot>
+                </tfoot>
+              )}
+            </table>
           )}
-        </table>
+        </div>
       </div>
 
       {/* Printable Cash Scroll Book Modal matching Document #662 */}

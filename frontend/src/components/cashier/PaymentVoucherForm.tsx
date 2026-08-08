@@ -720,89 +720,142 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
         </div>
       </form>
 
-      {/* History Register */}
-      <div style={{ marginTop: 30, borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-        <div style={{ marginBottom: 14 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px 0' }}>
-            {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर नोंदवही' : 'Cash Payment Vouchers History'}
-          </h4>
-          <div className="filter-bar">
-            <div className="filter-bar-group">
-              <Calendar size={15} color="var(--blue-600)" />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
-              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-              <span style={{ fontSize: 12 }}>to</span>
-              <input type="date" className="form-input" style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
-            </div>
-            <div className="filter-bar-spacer" />
-            <div className="filter-bar-group">
-              <Search size={14} color="var(--text-secondary)" />
-              <input type="text" className="form-input" style={{ width: 200, padding: '3px 6px', fontSize: 12 }} placeholder={lang === 'mr' ? 'शोधा...' : 'Search paid to, no...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-            </div>
-          </div>
-        </div>
+      {/* History Register — General Ledger Styled Container */}
+      {(() => {
+        const filteredHistory = history.filter(h =>
+          h.paid_to.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          h.voucher_no.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        const totalAmount = filteredHistory.reduce((s, h) => s + (Number(h.amount_rs) || 0), 0);
 
-        {history.filter(h => h.paid_to.toLowerCase().includes(searchTerm.toLowerCase()) || h.voucher_no.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: 16, background: '#f8fafc', borderRadius: 6, textAlign: 'center' }}>
-            {lang === 'mr' ? 'निवडलेल्या कालावधीत कोणत्याही नोंदी आढळल्या नाहीत.' : 'No payment vouchers found for selected date range.'}
+        return (
+          <div style={{ marginTop: 32 }}>
+            {/* Filter Bar */}
+            <div className="filter-bar no-print" style={{ marginBottom: 16 }}>
+              <div className="filter-group">
+                <Calendar size={15} color="var(--blue-600)" />
+                <span className="filter-label">{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+                <input type="date" className="filter-select" style={{ width: 'auto' }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+                <span style={{ fontSize: 12 }}>to</span>
+                <input type="date" className="filter-select" style={{ width: 'auto' }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+              </div>
+              <div className="filter-group">
+                <Search size={14} color="var(--text-secondary)" />
+                <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (नाव, व्हाऊचर)...' : 'Search paid to, voucher...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto', alignSelf: 'center' }}>
+                {lang === 'mr' ? `${filteredHistory.length} नोंदी` : `${filteredHistory.length} entries`}
+              </span>
+            </div>
+
+            {/* General Ledger Card Table */}
+            <div className="card" style={{ borderTop: '4px solid #b91c1c', boxShadow: '0 4px 24px rgba(185, 28, 28, 0.1)', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', background: '#fff', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                  {lang === 'mr' ? 'रोख पेमेंट व्हाऊचर नोंदवही' : 'Cash Payment Vouchers History'}
+                </h4>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c', background: '#fef2f2', padding: '4px 10px', borderRadius: 20, border: '1px solid #fecaca' }}>
+                  {lang === 'mr' ? `एकूण नावे: ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : `Total Paid: ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                </span>
+              </div>
+
+              <div className="table-wrapper">
+                {filteredHistory.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-title">
+                      {lang === 'mr' ? 'निवडलेल्या कालावधीत कोणत्याही नोंदी आढळल्या नाहीत' : 'No payment vouchers found for selected date range'}
+                    </div>
+                  </div>
+                ) : (
+                  <table className="data-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: 140 }}>{lang === 'mr' ? 'व्हाऊचर क्र.' : 'Voucher No.'}</th>
+                        <th style={{ width: 110 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                        <th>{lang === 'mr' ? 'पेमेंट दिले (Paid To)' : 'Paid To / Purpose'}</th>
+                        <th style={{ width: 120 }}>{lang === 'mr' ? 'प्रकार' : 'Mode'}</th>
+                        <th style={{ width: 100 }}>{lang === 'mr' ? 'पावती फाइल' : 'Receipt Doc'}</th>
+                        <th style={{ textAlign: 'right', color: '#b91c1c', width: 140 }}>
+                          {lang === 'mr' ? 'नावे रक्कम (Debit ₹)' : 'Amount (Debit ₹)'}
+                        </th>
+                        <th style={{ textAlign: 'center', width: 130 }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHistory.map((row, idx) => (
+                        <tr
+                          key={row.id}
+                          style={{
+                            background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                            borderLeft: '3px solid #b91c1c',
+                          }}
+                        >
+                          <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.voucher_no}</td>
+                          <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            {row.paid_to}
+                            {row.purpose_remarks && (
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
+                                {row.purpose_remarks}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
+                              {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
+                            </span>
+                          </td>
+                          <td>
+                            {row.receipt_doc_path ? (
+                              <InlineDocViewer
+                                docPath={row.receipt_doc_path}
+                                buttonText="Doc"
+                                title={`Voucher ${row.voucher_no} - Receipt`}
+                              />
+                            ) : (
+                              <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: '#b91c1c', fontSize: 14 }}>
+                            ₹{Number(row.amount_rs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Voucher">
+                              <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
+                            </button>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 4 }} title="Print Voucher">
+                              <Printer size={13} />
+                            </button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Voucher">
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{
+                        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+                        color: '#fff', fontWeight: 800, fontSize: 13,
+                      }}>
+                        <td colSpan={5} style={{ color: '#c7d2fe', padding: '10px 14px', fontWeight: 700 }}>
+                          {lang === 'mr'
+                            ? `एकूण पेमेंट व्हाऊचर्स (${filteredHistory.length} नोंदी)`
+                            : `TOTAL PAYMENT VOUCHERS (${filteredHistory.length} entries)`}
+                        </td>
+                        <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#fca5a5', fontSize: 14, fontWeight: 800 }}>
+                          ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', fontSize: 13 }}>
-              <thead>
-                <tr>
-                  <th>{lang === 'mr' ? 'व्हाऊचर क्र.' : 'Voucher No.'}</th>
-                  <th>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
-                  <th>{lang === 'mr' ? 'पेमेंट दिले' : 'Paid To'}</th>
-                  <th>{lang === 'mr' ? 'प्रकार' : 'Mode'}</th>
-                  <th>{lang === 'mr' ? 'पावती फाइल' : 'Receipt Doc'}</th>
-                  <th style={{ textAlign: 'right' }}>{lang === 'mr' ? 'रक्कम ₹' : 'Amount (₹)'}</th>
-                  <th style={{ textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history
-                  .filter(h => h.paid_to.toLowerCase().includes(searchTerm.toLowerCase()) || h.voucher_no.toLowerCase().includes(searchTerm.toLowerCase()))
-                  .map(row => (
-                    <tr key={row.id}>
-                      <td style={{ fontWeight: 600 }}>{row.voucher_no}</td>
-                      <td>{row.date}</td>
-                      <td>{row.paid_to}</td>
-                      <td>
-                        <span className={`badge ${row.payment_mode === 'CHEQUE' ? 'badge-primary' : 'badge-secondary'}`}>
-                          {row.payment_mode || 'CASH'} {row.cheque_no ? `(${row.cheque_no})` : ''}
-                        </span>
-                      </td>
-                      <td>
-                        {row.receipt_doc_path ? (
-                          <InlineDocViewer
-                            docPath={row.receipt_doc_path}
-                            buttonText="Doc"
-                            title={`Voucher ${row.voucher_no} - Receipt`}
-                          />
-                        ) : (
-                          <span style={{ fontSize: 11, color: '#94a3b8' }}>None</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.amount_rs).toFixed(2)}</td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Voucher">
-                          <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 4 }} title="Print Voucher">
-                          <Printer size={13} /> {lang === 'mr' ? 'व्हाऊचर' : 'Voucher'}
-                        </button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Voucher">
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* Printable Voucher View */}
       {(showPrintModal || selectedVoucher) && selectedVoucher && (
