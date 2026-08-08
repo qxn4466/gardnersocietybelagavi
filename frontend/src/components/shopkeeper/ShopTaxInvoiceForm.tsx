@@ -7,7 +7,7 @@ import type { ShopTaxInvoice, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+import { getStoredProducts, addStoredProduct, recordSale } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
 
 interface ShopTaxInvoiceFormProps {
@@ -271,7 +271,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         });
       } else {
         for (const item of items) {
-          if (item.total_amount > 0) {
+          if (item.total_amount > 0 || item.amount > 0) {
             await createShopTaxInvoice({
               date,
               invoice_no: invoiceNo,
@@ -288,6 +288,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
               total_amount: item.total_amount,
               created_by: user?.username || 'shopkeeper',
             });
+            recordSale(item.product_name, Number(item.qty) || 1, Number(item.rate) || 0, date);
           }
         }
         setMsg({

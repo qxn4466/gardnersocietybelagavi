@@ -5,7 +5,7 @@ import type { ShopRetailBill, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+import { getStoredProducts, addStoredProduct, recordSale } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
 
 interface ShopRetailBillFormProps {
@@ -289,6 +289,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
               total_amount: item.total_amount,
               created_by: user?.username || 'shopkeeper',
             });
+            recordSale(item.particulars, Number(item.qty) || 1, Number(item.rate) || 0, date);
           }
         }
         setMsg({

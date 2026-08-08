@@ -5,7 +5,7 @@ import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
+import { getStoredProducts, addStoredProduct, recordSale } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
 
 interface PesticideSaleRegisterFormProps {
@@ -138,6 +138,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         });
       } else {
         await createPesticideSale(payload);
+        recordSale(productName, Number(qty) || 1, Number(rate) || 0, date);
         setMsg({
           type: 'success',
           text: lang === 'mr' ? 'कीटकनाशक नोंदणी पुस्तक नोंद जतन झाली!' : 'Pesticide sale register entry saved successfully!'

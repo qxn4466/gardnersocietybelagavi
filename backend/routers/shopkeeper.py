@@ -424,12 +424,14 @@ def get_shop_retail_bills(
 def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
     b_no = payload.bill_no or generate_shop_retail_bill_no(db, payload.date)
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
+    q_val = payload.qty or Decimal("1.0")
     record = ShopRetailBill(
         bill_no=b_no,
         date=payload.date,
         tin_no=payload.tin_no or "29540268502",
         customer_name=payload.customer_name,
         particulars=payload.particulars,
+        qty=q_val,
         rate=payload.rate,
         amount=payload.amount,
         sgst_rate=payload.sgst_rate or Decimal("9.00"),
@@ -447,7 +449,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         date_val=payload.date,
         customer_name=payload.customer_name,
         prod_name=payload.particulars,
-        qty_val=Decimal("1.0"),
+        qty_val=q_val,
         rate_val=payload.rate,
         amt_val=tot_amt,
         source_ref=f"Retail Bill {b_no}",
@@ -460,7 +462,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         v_date=payload.date,
         customer_name=payload.customer_name,
         product_name=payload.particulars,
-        qty=Decimal("1.0"),
+        qty=q_val,
         total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
         created_by=payload.created_by
@@ -479,11 +481,13 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
     
     b_no = payload.bill_no or record.bill_no
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
+    q_val = payload.qty or Decimal("1.0")
     record.bill_no = b_no
     record.date = payload.date
     record.tin_no = payload.tin_no or "29540268502"
     record.customer_name = payload.customer_name
     record.particulars = payload.particulars
+    record.qty = q_val
     record.rate = payload.rate
     record.amount = payload.amount
     record.sgst_rate = payload.sgst_rate or Decimal("9.00")
@@ -499,7 +503,7 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
         v_date=payload.date,
         customer_name=payload.customer_name,
         product_name=payload.particulars,
-        qty=Decimal("1.0"),
+        qty=q_val,
         total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
         created_by=payload.created_by
@@ -553,6 +557,8 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
     )
     db.add(record)
     db.flush()
+
+    deduct_stock_in_selling_rate_book(db, payload.product_name, payload.qty)
 
     memo_no = f"PEST-SALE-{record.id}"
     sync_shopkeeper_sale_transaction(

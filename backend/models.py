@@ -271,6 +271,7 @@ class ShopRetailBill(Base):
     tin_no = Column(String(50), nullable=True, default="29540268502")
     customer_name = Column(String(250), nullable=False)
     particulars = Column(Text, nullable=False)
+    qty = Column(Numeric(10, 2), nullable=False, default=1.0)
     rate = Column(Numeric(12, 2), nullable=False, default=0.0)
     amount = Column(Numeric(12, 2), nullable=False, default=0.0)
     sgst_rate = Column(Numeric(5, 2), nullable=True, default=9.0)

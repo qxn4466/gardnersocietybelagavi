@@ -362,6 +362,7 @@ class ShopRetailBillCreate(BaseModel):
     tin_no: Optional[str] = "29540268502"
     customer_name: str
     particulars: str
+    qty: Optional[Decimal] = Decimal("1.00")
     rate: Decimal = Decimal("0.00")
     amount: Decimal = Decimal("0.00")
     sgst_rate: Optional[Decimal] = Decimal("9.00")
