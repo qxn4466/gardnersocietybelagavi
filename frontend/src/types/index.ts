@@ -207,7 +207,7 @@ export const CREDIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = 
 
 export const DEBIT_BOOK_COLUMNS: { key: keyof CashBookRow; label: string }[] = [
   { key: "lakshmi_pigmi_deposit", label: "Sou Lakshmi Pigmy Deposit" },
-  { key: "pesticide_sales", label: "Pesticide sales" },
+  { key: "purchases", label: "Pesticide purchases" },
   { key: "cgst_9", label: "CGST Received (9%)" },
   { key: "sgst_9", label: "SGST Received (9%)" },
   { key: "cgst_2_5", label: "CGST Received (2.5%)" },
