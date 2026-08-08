@@ -101,16 +101,28 @@ def seed():
             ])
         ).delete(synchronize_session=False)
 
-        # Transaction Types
+        # Transaction Types — insert one at a time with flush to avoid batch duplicate errors on PostgreSQL
+        seen_names = set()
         for tt in TRANSACTION_TYPES:
-            existing = db.query(TransactionTypeMaster).filter_by(name=tt["name"]).first()
-            if not existing:
-                db.add(TransactionTypeMaster(**tt))
-            else:
-                existing.cash_book_column = tt["cash_book_column"]
-                existing.ledger_account = tt["ledger_account"]
-                existing.display_order = tt["display_order"]
-                existing.entry_type = tt["entry_type"]
+            name = tt["name"]
+            if name in seen_names:
+                continue  # skip exact duplicates within the list
+            seen_names.add(name)
+            try:
+                existing = db.query(TransactionTypeMaster).filter_by(name=name).first()
+                if not existing:
+                    db.add(TransactionTypeMaster(**tt))
+                    db.flush()   # flush immediately to catch unique violations per row
+                else:
+                    existing.cash_book_column = tt["cash_book_column"]
+                    existing.ledger_account   = tt["ledger_account"]
+                    existing.display_order    = tt["display_order"]
+                    existing.entry_type       = tt["entry_type"]
+            except Exception:
+                db.rollback()
+                # Re-open session after rollback
+                db.close()
+                db = SessionLocal()
         
         # Account Master (mirrors transaction type ledger_account values)
         unique_accounts = {tt["ledger_account"] for tt in TRANSACTION_TYPES}
