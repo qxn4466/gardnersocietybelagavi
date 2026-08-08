@@ -164,10 +164,11 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   };
 
   const filteredHistory = history.filter(row =>
-    row.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (!row.remarks || !row.remarks.includes('Selling Rate Book')) &&
+    (row.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     row.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (row.batch_no && row.batch_no.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (row.remarks && row.remarks.toLowerCase().includes(searchTerm.toLowerCase()))
+    (row.remarks && row.remarks.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   // Key pesticide products for the actual Product-Wise Grid Table columns
@@ -196,7 +197,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               5. {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही (Pesticide Sale Register)' : 'Pesticide Sale Register'}
             </h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              {lang === 'mr' ? 'ऑटो-कीटकनाशके तक्ता · विक्री दर पुस्तक, टॅक्स इनव्हॉईस व किरकोळ बिलांमधून नोंद' : 'Auto-populated from Selling Rate Book, Shop Tax Invoices & Retail Bills'}
+              {lang === 'mr' ? 'ऑटो-कीटकनाशके तक्ता · टॅक्स इनव्हॉईस व किरकोळ रोख बिलांमधून नोंद' : 'Auto-populated from Shop Tax Invoices & Retail Cash Bills'}
             </p>
           </div>
         </div>
