@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical, Languages, Loader2 } from 'lucide-react';
 import { createPesticideSale, updatePesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
@@ -60,16 +60,18 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get('edit');
+  const loadedEditRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadHistory();
   }, [startDate, endDate]);
 
   useEffect(() => {
-    if (editParam && history.length > 0) {
+    if (editParam && history.length > 0 && loadedEditRef.current !== editParam) {
       const numericId = parseInt(editParam);
       const match = history.find(h => h.id === numericId);
       if (match) {
+        loadedEditRef.current = editParam;
         handleEdit(match);
       }
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages, Check, FolderPlus, Loader2 } from 'lucide-react';
 import { createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
@@ -39,10 +39,15 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const [customerName, setCustomerName] = useState('');
   const [docPath, setDocPath] = useState('');
 
-  // Filter & Search states
+  // Search & Filter states
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const safeNum = (val: any): number => {
+    const n = parseFloat(String(val));
+    return isNaN(n) ? 0 : n;
+  };
 
   // Dynamically manageable products list
   const [productList, setProductList] = useState<string[]>(getStoredProducts());
@@ -87,6 +92,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
 
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get('edit');
+  const loadedEditRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -94,7 +100,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   }, [startDate, endDate, editParam]);
 
   useEffect(() => {
-    if (editParam && history.length > 0) {
+    if (editParam && history.length > 0 && loadedEditRef.current !== editParam) {
       const numericId = parseInt(editParam);
       const match = history.find(h =>
         h.id === numericId ||
@@ -103,6 +109,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
         (h.bill_no && h.bill_no.includes(editParam))
       );
       if (match) {
+        loadedEditRef.current = editParam;
         handleEdit(match);
       }
     }

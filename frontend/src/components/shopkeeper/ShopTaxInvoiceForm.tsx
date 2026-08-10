@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus, Zap, Loader2 } from 'lucide-react';
 import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice, generate30DaysTestData } from '../../api/client';
@@ -42,10 +42,15 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [customerName, setCustomerName] = useState('');
   const [docPath, setDocPath] = useState('');
 
-  // Filter & Search states
+  // Search & Filter states
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const safeNum = (val: any): number => {
+    const n = parseFloat(String(val));
+    return isNaN(n) ? 0 : n;
+  };
 
   // Dynamically manageable products list
   const [productList, setProductList] = useState<string[]>(getStoredProducts());
@@ -91,6 +96,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get('edit');
+  const loadedEditRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -98,7 +104,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   }, [startDate, endDate, editParam]);
 
   useEffect(() => {
-    if (editParam && history.length > 0) {
+    if (editParam && history.length > 0 && loadedEditRef.current !== editParam) {
       const numericId = parseInt(editParam);
       const match = history.find(h =>
         h.id === numericId ||
@@ -107,6 +113,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         (h.invoice_no && h.invoice_no.includes(editParam))
       );
       if (match) {
+        loadedEditRef.current = editParam;
         handleEdit(match);
       }
     }
