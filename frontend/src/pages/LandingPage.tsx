@@ -262,11 +262,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               border: '4px solid rgba(255, 255, 255, 0.25)',
               background: '#ffffff'
             }}>
-              <img
-                src="/belgaum_hq.png"
-                alt="Belgaum Gardeners Society Pesticide Shop Front Signboard"
-                style={{ width: '100%', height: 'auto', display: 'block', background: '#ffffff' }}
-              />
+              <picture>
+                <source srcSet="/belgaum_hq.webp" type="image/webp" />
+                <img
+                  src="/belgaum_hq.jpg"
+                  alt="Belgaum Gardeners Society Pesticide Shop Front Signboard"
+                  loading="eager"
+                  style={{ width: '100%', height: 'auto', display: 'block', background: '#ffffff' }}
+                />
+              </picture>
               <div style={{
                 background: '#0f172a',
                 padding: '16px 20px', color: '#ffffff', borderTop: '2px solid #059669'
@@ -509,17 +513,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           display: 'grid', gridTemplateColumns: '1.2fr 0.8fr'
         }} className="map-grid-responsive">
 
-          {/* Embedded Interactive Google Map */}
-          <div style={{ width: '100%', minHeight: 400, position: 'relative' }}>
+          {/* Embedded Interactive Location Map */}
+          <div style={{ width: '100%', minHeight: 420, position: 'relative', background: '#e2e8f0' }}>
             <iframe
-              title="Belgaum Gardeners Society Google Location"
-              src="https://maps.google.com/maps?q=Zanda+Chowk+Market+Belgaum+590002&t=&z=16&ie=UTF8&iwloc=&output=embed"
+              title="Belgaum Gardeners Society Google Location Map"
+              src="https://maps.google.com/maps?q=Zanda+Chowk+Market,+Belgaum,+Karnataka+590002&t=&z=16&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="100%"
-              style={{ border: 0, minHeight: 400, display: 'block' }}
+              style={{ border: 0, width: '100%', height: '100%', minHeight: 420, display: 'block' }}
               allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
+              loading="eager"
             />
           </div>
 
