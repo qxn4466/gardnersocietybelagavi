@@ -105,26 +105,27 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
     const memo = (row.cash_memo_no || '').toUpperCase();
     const part = (row.particulars || '').toLowerCase();
     const type = (row.transaction_type || '').toLowerCase();
+    const editKey = encodeURIComponent(row.cash_memo_no || String(row.id));
 
     // 1. Shopkeeper Forms
     if (memo.startsWith('SB-') || memo.startsWith('SRB-RATE-') || part.includes('selling rate') || type.includes('pesticide purchases')) {
-      window.location.href = `/shopkeeper?tab=selling-rate&edit=${row.id}`;
+      window.location.href = `/shopkeeper?tab=selling-rate&edit=${editKey}`;
     } else if (memo.startsWith('STX-') || part.includes('tax invoice')) {
-      window.location.href = `/shopkeeper?tab=tax-invoice&edit=${row.id}`;
+      window.location.href = `/shopkeeper?tab=tax-invoice&edit=${editKey}`;
     } else if (memo.startsWith('SRB-') || memo.startsWith('RET-') || part.includes('retail bill')) {
-      window.location.href = `/shopkeeper?tab=retail-bill&edit=${row.id}`;
+      window.location.href = `/shopkeeper?tab=retail-bill&edit=${editKey}`;
     } 
     // 2. Cashier Dashboard Forms
     else if (memo.startsWith('CPV-') || type.includes('payment') || part.includes('payment voucher')) {
-      window.location.href = `/cashier?tab=payment-voucher&edit=${row.id}`;
+      window.location.href = `/cashier?tab=payment-voucher&edit=${editKey}`;
     } else if (memo.startsWith('CRV-') || type.includes('receipt') || part.includes('receipt voucher')) {
-      window.location.href = `/cashier?tab=receipt-voucher&edit=${row.id}`;
+      window.location.href = `/cashier?tab=receipt-voucher&edit=${editKey}`;
     } else if (memo.startsWith('RENT-') || type.includes('rent') || part.includes('rent bill')) {
-      window.location.href = `/cashier?tab=rent-bill&edit=${row.id}`;
+      window.location.href = `/cashier?tab=rent-bill&edit=${editKey}`;
     } 
     // 3. Fallback to main Cash Memo Form
     else {
-      window.location.href = `/?edit=${row.id}`;
+      window.location.href = `/?edit=${editKey}`;
     }
   };
 

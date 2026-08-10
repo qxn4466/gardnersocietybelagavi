@@ -93,19 +93,29 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const editParam = searchParams.get('edit');
 
   useEffect(() => {
-    loadHistory();
-    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-  }, [startDate, endDate]);
-
-  useEffect(() => {
-    if (editParam && history.length > 0) {
-      const numericId = parseInt(editParam);
-      const match = history.find(h => h.id === numericId);
-      if (match) {
-        handleEdit(match);
+    const init = async () => {
+      try {
+        const data = await fetchShopTaxInvoices(startDate, endDate);
+        setHistory(data);
+        if (editParam) {
+          const numericId = parseInt(editParam);
+          const match = data.find(h =>
+            h.id === numericId ||
+            h.invoice_no === editParam ||
+            (h.invoice_no && editParam.includes(h.invoice_no)) ||
+            (h.invoice_no && h.invoice_no.includes(editParam))
+          );
+          if (match) {
+            handleEdit(match);
+          }
+        }
+      } catch {
+        // ignore
       }
-    }
-  }, [editParam, history]);
+    };
+    init();
+    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, [editParam, startDate, endDate]);
 
   const loadHistory = async () => {
     try {

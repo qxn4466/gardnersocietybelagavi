@@ -89,19 +89,29 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const editParam = searchParams.get('edit');
 
   useEffect(() => {
-    loadHistory();
-    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-  }, [startDate, endDate]);
-
-  useEffect(() => {
-    if (editParam && history.length > 0) {
-      const numericId = parseInt(editParam);
-      const match = history.find(h => h.id === numericId);
-      if (match) {
-        handleEdit(match);
+    const init = async () => {
+      try {
+        const data = await fetchShopRetailBills(startDate, endDate);
+        setHistory(data);
+        if (editParam) {
+          const numericId = parseInt(editParam);
+          const match = data.find(h =>
+            h.id === numericId ||
+            h.bill_no === editParam ||
+            (h.bill_no && editParam.includes(h.bill_no)) ||
+            (h.bill_no && h.bill_no.includes(editParam))
+          );
+          if (match) {
+            handleEdit(match);
+          }
+        }
+      } catch {
+        // ignore
       }
-    }
-  }, [editParam, history]);
+    };
+    init();
+    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, [editParam, startDate, endDate]);
 
   const loadHistory = async () => {
     try {

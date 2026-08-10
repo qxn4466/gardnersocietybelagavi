@@ -100,18 +100,29 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const editParam = searchParams.get('edit');
 
   useEffect(() => {
-    loadHistory();
-  }, [startDate, endDate]);
-
-  useEffect(() => {
-    if (editParam && history.length > 0) {
-      const numericId = parseInt(editParam);
-      const match = history.find(h => h.id === numericId);
-      if (match) {
-        handleEdit(match);
+    const init = async () => {
+      try {
+        const data = await fetchSellingRateEntries(startDate, endDate);
+        setHistory(data);
+        if (editParam) {
+          const numericId = parseInt(editParam);
+          const match = data.find(h =>
+            h.id === numericId ||
+            h.stock_book_no === editParam ||
+            `SRB-RATE-${h.id}` === editParam ||
+            (h.stock_book_no && editParam.includes(h.stock_book_no)) ||
+            (editParam.includes('SRB-RATE-') && h.id === parseInt(editParam.replace('SRB-RATE-', '')))
+          );
+          if (match) {
+            handleEdit(match);
+          }
+        }
+      } catch {
+        // ignore
       }
-    }
-  }, [editParam, history]);
+    };
+    init();
+  }, [editParam, startDate, endDate]);
 
   const loadHistory = async () => {
     try {
