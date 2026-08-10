@@ -71,9 +71,17 @@ export const DailyBalanceBar: React.FC<DailyBalanceBarProps> = ({ selectedDate, 
       });
       if (onBalanceUpdate) onBalanceUpdate(updated);
     } catch (err: any) {
+      let errText = lang === 'mr' ? 'प्रारंभिक शिल्लक जतन करताना त्रुटी.' : 'Error saving Initial Opening Balance.';
+      if (typeof err?.response?.data?.detail === 'string') {
+        errText = err.response.data.detail;
+      } else if (Array.isArray(err?.response?.data?.detail)) {
+        errText = err.response.data.detail.map((e: any) => typeof e === 'object' ? (e.msg || JSON.stringify(e)) : String(e)).join(', ');
+      } else if (err?.message) {
+        errText = String(err.message);
+      }
       setMsg({
         type: 'error',
-        text: err?.response?.data?.detail || (lang === 'mr' ? 'प्रारंभिक शिल्लक जतन करताना त्रुटी.' : 'Error saving Initial Opening Balance.')
+        text: errText
       });
     } finally {
       setSaving(false);

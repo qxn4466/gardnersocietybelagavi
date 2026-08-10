@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─── Auth / User ──────────────────────────────────────────────────────────────
@@ -470,7 +470,7 @@ class MeetingNoticeOut(MeetingNoticeCreate):
 # System Opening Balance & Daily Roll-Forward Schemas
 class SystemBalanceSettingCreate(BaseModel):
     initial_opening_balance: Decimal = Decimal("0.00")
-    date: Optional[date] = None
+    balance_date: Optional[date] = Field(default=None, alias="date")
 
 
 class SystemBalanceSettingOut(BaseModel):

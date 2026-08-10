@@ -3,10 +3,11 @@ import { RefreshCw, BookMarked, TrendingUp, TrendingDown, ArrowRightLeft, Wallet
 import Header from '../components/Header';
 import PrintButton from '../components/PrintButton';
 import PrintHeader from '../components/PrintHeader';
-import { fetchLedger, fetchAccounts } from '../api/client';
-import type { LedgerRow, AccountMaster, User } from '../types';
+import { fetchLedger, fetchAccounts, fetchDailyBalance } from '../api/client';
+import type { LedgerRow, AccountMaster, User, DailyBalanceSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { getTxnHeadMarathi } from '../utils/translator';
+import DailyBalanceBar from '../components/DailyBalanceBar';
 
 const MONTH_NAMES = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -54,6 +55,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
     fetchAccounts().then(setAccounts).catch(() => {});
   }, []);
 
+  const [dailyBal, setDailyBal] = useState<DailyBalanceSummary | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -64,6 +67,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         account || undefined
       );
       setRows(data);
+      fetchDailyBalance().then(setDailyBal).catch(() => {});
     } catch {
       setError(lang === 'mr'
         ? 'खातेवही डेटा लोड होऊ शकला नाही. बॅकएंड कनेक्शन तपासा.'
@@ -134,6 +138,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
       />
 
       <div className="page-content">
+        <DailyBalanceBar onBalanceUpdate={setDailyBal} />
+
         {/* Stats */}
         <div className="stat-row no-print">
           <div className="stat-card">
@@ -157,21 +163,19 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
           <div className="stat-card">
             <div className="stat-label" style={{ color: netBalance >= 0 ? '#1d4ed8' : '#b91c1c' }}>
               <ArrowRightLeft size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {lang === 'mr' ? 'निव्वळ शिल्लक' : 'Net Balance'}
+              {lang === 'mr' ? 'निव्वळ व्यवहार बदल' : 'Net Txn Change'}
             </div>
             <div className="stat-value" style={{ color: netBalance >= 0 ? '#1d4ed8' : '#b91c1c' }}>
               {netBalance >= 0 ? '+' : '-'}{fmtPos(netBalance)}
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">
+          <div className="stat-card" style={{ borderColor: '#c084fc', background: '#faf5ff' }}>
+            <div className="stat-label" style={{ color: '#7e22ce', fontWeight: 700 }}>
               <Wallet size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {lang === 'mr' ? 'देणे / घेणे' : 'Payable / Receivable'}
+              {lang === 'mr' ? 'अंतिम शिल्लक (Closing Balance)' : 'Closing Balance'}
             </div>
-            <div className="stat-value" style={{ fontSize: 14 }}>
-              <span style={{ color: '#f59e0b' }}>₹{totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-              {' / '}
-              <span style={{ color: '#0284c7' }}>₹{totalRcv.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+            <div className="stat-value" style={{ color: '#6b21a8', fontWeight: 800 }}>
+              ₹{dailyBal ? Number(dailyBal.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (netBalance >= 0 ? '+' : '-') + fmtPos(netBalance)}
             </div>
           </div>
         </div>
@@ -384,6 +388,25 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                       color: netBalance >= 0 ? '#86efac' : '#fca5a5'
                     }}>
                       {netBalance >= 0 ? '+' : '-'}{fmtPos(netBalance)}
+                    </td>
+                  </tr>
+
+                  {/* Closing Balance Row */}
+                  <tr style={{
+                    background: '#faf5ff',
+                    borderTop: '2px solid #c084fc',
+                    fontWeight: 800,
+                    fontSize: 14,
+                  }}>
+                    <td />
+                    <td style={{ color: '#6b21a8', padding: '10px 8px', fontWeight: 800 }}>
+                      💰 {lang === 'mr' ? 'अंतिम शिल्लक (Closing Balance)' : 'CLOSING BALANCE'}
+                    </td>
+                    <td colSpan={4} style={{ textAlign: 'right', color: '#7e22ce', fontSize: 12 }}>
+                      {lang === 'mr' ? '(प्रारंभिक शिल्लक + एकूण जमा - एकूण नावे)' : '(Opening Balance + Total Receipts - Total Payments)'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#6b21a8' }}>
+                      ₹{dailyBal ? Number(dailyBal.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (netBalance >= 0 ? '+' : '-') + fmtPos(netBalance)}
                     </td>
                   </tr>
                 </tfoot>

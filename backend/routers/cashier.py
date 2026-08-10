@@ -1123,7 +1123,7 @@ def set_initial_opening_balance(payload: SystemBalanceSettingCreate, db: Session
             detail="Initial Opening Balance is locked. Set ALLOW_OPENING_BALANCE_EDIT=true in .env to allow editing."
         )
 
-    b_date = payload.date or date.today()
+    b_date = payload.balance_date or date.today()
     if setting:
         setting.initial_opening_balance = payload.initial_opening_balance
         setting.initial_balance_date = b_date
