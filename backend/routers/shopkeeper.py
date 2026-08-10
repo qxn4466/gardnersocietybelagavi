@@ -314,6 +314,8 @@ def get_shop_tax_invoices(
 @router.post("/tax-invoices", response_model=ShopTaxInvoiceOut, status_code=201)
 def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db)):
     inv_no = payload.invoice_no or generate_shop_invoice_no(db, payload.date)
+    tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
+    
     record = ShopTaxInvoice(
         invoice_no=inv_no,
         date=payload.date,
@@ -324,6 +326,11 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         qty=payload.qty,
         rate=payload.rate,
         amount=payload.amount,
+        sgst_rate=payload.sgst_rate or Decimal("9.00"),
+        sgst_amount=payload.sgst_amount or Decimal("0.00"),
+        cgst_rate=payload.cgst_rate or Decimal("9.00"),
+        cgst_amount=payload.cgst_amount or Decimal("0.00"),
+        total_amount=tot_amt,
         created_by=payload.created_by
     )
     db.add(record)
@@ -335,7 +342,7 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         prod_name=payload.product_name,
         qty_val=payload.qty,
         rate_val=payload.rate,
-        amt_val=payload.amount,
+        amt_val=tot_amt,
         source_ref=f"Tax Invoice {inv_no}",
         created_by=payload.created_by
     )
@@ -347,7 +354,7 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         customer_name=payload.customer_name,
         product_name=payload.product_name,
         qty=payload.qty,
-        total_amount=payload.amount,
+        total_amount=tot_amt,
         remarks=f"Shop Tax Invoice {inv_no}",
         created_by=payload.created_by
     )
@@ -364,6 +371,8 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
         raise HTTPException(status_code=404, detail="Shop tax invoice not found")
     
     inv_no = payload.invoice_no or record.invoice_no
+    tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
+    
     record.invoice_no = inv_no
     record.date = payload.date
     record.customer_name = payload.customer_name
@@ -373,6 +382,11 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
     record.qty = payload.qty
     record.rate = payload.rate
     record.amount = payload.amount
+    record.sgst_rate = payload.sgst_rate or Decimal("9.00")
+    record.sgst_amount = payload.sgst_amount or Decimal("0.00")
+    record.cgst_rate = payload.cgst_rate or Decimal("9.00")
+    record.cgst_amount = payload.cgst_amount or Decimal("0.00")
+    record.total_amount = tot_amt
     
     sync_shopkeeper_sale_transaction(
         db=db,
@@ -381,7 +395,7 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
         customer_name=payload.customer_name,
         product_name=payload.product_name,
         qty=payload.qty,
-        total_amount=payload.amount,
+        total_amount=tot_amt,
         remarks=f"Shop Tax Invoice {inv_no}",
         created_by=payload.created_by
     )

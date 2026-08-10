@@ -85,33 +85,42 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const [showRangePrintModal, setShowRangePrintModal] = useState(false);
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<ShopRetailBill | null>(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const editParam = searchParams.get('edit');
 
   useEffect(() => {
-    const init = async () => {
+    loadHistory();
+    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (!editParam) return;
+    const loadForEdit = async () => {
       try {
-        const data = await fetchShopRetailBills(startDate, endDate);
-        setHistory(data);
-        if (editParam) {
-          const numericId = parseInt(editParam);
-          const match = data.find(h =>
-            h.id === numericId ||
-            h.bill_no === editParam ||
-            (h.bill_no && editParam.includes(h.bill_no)) ||
-            (h.bill_no && h.bill_no.includes(editParam))
-          );
-          if (match) {
-            handleEdit(match);
+        const allData = await fetchShopRetailBills();
+        const numericId = parseInt(editParam);
+        const match = allData.find(h =>
+          h.id === numericId ||
+          h.bill_no === editParam ||
+          (h.bill_no && editParam.includes(h.bill_no)) ||
+          (h.bill_no && h.bill_no.includes(editParam))
+        );
+        if (match) {
+          handleEdit(match);
+          if (match.date) {
+            setStartDate(match.date);
+            setEndDate(match.date);
           }
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('edit');
+          setSearchParams(newParams, { replace: true });
         }
       } catch {
         // ignore
       }
     };
-    init();
-    setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-  }, [editParam, startDate, endDate]);
+    loadForEdit();
+  }, [editParam]);
 
   const loadHistory = async () => {
     try {

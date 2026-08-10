@@ -89,33 +89,42 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [showRangePrintModal, setShowRangePrintModal] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<ShopTaxInvoice | null>(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const editParam = searchParams.get('edit');
 
   useEffect(() => {
-    const init = async () => {
+    loadHistory();
+    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (!editParam) return;
+    const loadForEdit = async () => {
       try {
-        const data = await fetchShopTaxInvoices(startDate, endDate);
-        setHistory(data);
-        if (editParam) {
-          const numericId = parseInt(editParam);
-          const match = data.find(h =>
-            h.id === numericId ||
-            h.invoice_no === editParam ||
-            (h.invoice_no && editParam.includes(h.invoice_no)) ||
-            (h.invoice_no && h.invoice_no.includes(editParam))
-          );
-          if (match) {
-            handleEdit(match);
+        const allData = await fetchShopTaxInvoices();
+        const numericId = parseInt(editParam);
+        const match = allData.find(h =>
+          h.id === numericId ||
+          h.invoice_no === editParam ||
+          (h.invoice_no && editParam.includes(h.invoice_no)) ||
+          (h.invoice_no && h.invoice_no.includes(editParam))
+        );
+        if (match) {
+          handleEdit(match);
+          if (match.date) {
+            setStartDate(match.date);
+            setEndDate(match.date);
           }
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('edit');
+          setSearchParams(newParams, { replace: true });
         }
       } catch {
         // ignore
       }
     };
-    init();
-    setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-  }, [editParam, startDate, endDate]);
+    loadForEdit();
+  }, [editParam]);
 
   const loadHistory = async () => {
     try {
