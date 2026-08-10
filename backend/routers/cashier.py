@@ -1036,10 +1036,16 @@ def delete_cashier_test_data(db: Session = Depends(get_db)):
 
 # ─── Daily Balance Roll-Forward & Initial Opening Balance ────────────────────
 
+def is_opening_balance_edit_allowed() -> bool:
+    env_val = os.getenv("ALLOW_OPENING_BALANCE_EDIT", "true").strip().lower()
+    return env_val in ("true", "1", "yes", "enabled")
+
+
 @router.get("/daily-balance", response_model=DailyBalanceSummary)
 def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db)):
     target_date = date.fromisoformat(v_date) if v_date else date.today()
     setting = db.query(SystemBalanceSetting).order_by(SystemBalanceSetting.id.asc()).first()
+    allow_edit = is_opening_balance_edit_allowed()
 
     if not setting:
         return DailyBalanceSummary(
@@ -1056,7 +1062,7 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
 
     init_bal = setting.initial_opening_balance or Decimal("0.00")
     init_date = setting.initial_balance_date or target_date
-    is_locked = setting.is_locked
+    effective_locked = setting.is_locked if not allow_edit else False
 
     # Calculate prior accumulated net (from init_date up to target_date - 1)
     if target_date > init_date:
@@ -1097,7 +1103,7 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
         selected_date=target_date,
         initial_opening_balance=init_bal,
         initial_balance_date=init_date,
-        is_locked=is_locked,
+        is_locked=effective_locked,
         opening_balance=opening_balance,
         today_receipts=today_rec,
         today_payments=today_paid,
@@ -1109,23 +1115,24 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
 @router.post("/set-initial-opening-balance", response_model=DailyBalanceSummary)
 def set_initial_opening_balance(payload: SystemBalanceSettingCreate, db: Session = Depends(get_db)):
     setting = db.query(SystemBalanceSetting).order_by(SystemBalanceSetting.id.asc()).first()
+    allow_edit = is_opening_balance_edit_allowed()
 
-    if setting and setting.is_locked:
+    if setting and setting.is_locked and not allow_edit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Initial Opening Balance is permanently locked and cannot be edited."
+            detail="Initial Opening Balance is locked. Set ALLOW_OPENING_BALANCE_EDIT=true in .env to allow editing."
         )
 
     b_date = payload.date or date.today()
     if setting:
         setting.initial_opening_balance = payload.initial_opening_balance
         setting.initial_balance_date = b_date
-        setting.is_locked = True
+        setting.is_locked = not allow_edit
     else:
         setting = SystemBalanceSetting(
             initial_opening_balance=payload.initial_opening_balance,
             initial_balance_date=b_date,
-            is_locked=True
+            is_locked=not allow_edit
         )
         db.add(setting)
 

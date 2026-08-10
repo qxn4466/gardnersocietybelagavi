@@ -80,10 +80,16 @@ export const DailyBalanceBar: React.FC<DailyBalanceBarProps> = ({ selectedDate, 
     }
   };
 
-  if (!summary) return null;
+  if (!summary) {
+    return (
+      <div className="no-print" style={{ background: '#f8fafc', padding: '14px 20px', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10, color: '#64748b', fontSize: 13 }}>
+        <Loader2 size={16} className="spinner" /> {lang === 'mr' ? 'आरंभिक शिल्लक लोड होत आहे...' : 'Loading Daily Opening Balance...'}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+    <div className="no-print" style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
       {msg && (
         <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 14, fontSize: 13 }}>
           {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
