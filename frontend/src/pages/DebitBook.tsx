@@ -101,8 +101,17 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
     }
   };
 
-  const handleEdit = (id: number) => {
-    window.location.href = `/?edit=${id}`;
+  const handleEdit = (row: CashBookRow) => {
+    const memo = row.cash_memo_no || '';
+    if (memo.startsWith('SB-') || memo.startsWith('SRB-RATE-') || (row.particulars || '').includes('Selling Rate') || (row.transaction_type || '').includes('Pesticide purchases')) {
+      window.location.href = `/shopkeeper?tab=selling-rate&edit=${row.id}`;
+    } else if (memo.startsWith('STX-')) {
+      window.location.href = `/shopkeeper?tab=tax-invoice&edit=${row.id}`;
+    } else if (memo.startsWith('SRB-') || memo.startsWith('RET-')) {
+      window.location.href = `/shopkeeper?tab=retail-bill&edit=${row.id}`;
+    } else {
+      window.location.href = `/?edit=${row.id}`;
+    }
   };
 
   const handlePrintReceipt = async (id: number) => {
@@ -383,7 +392,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleEdit(row.id)}
+                          onClick={() => handleEdit(row)}
                           style={{ background: 'none', border: 'none', color: 'var(--blue-600)', cursor: 'pointer', padding: 4, marginRight: 6 }}
                           title="Edit Transaction"
                         >

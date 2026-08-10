@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X, Languages, Check, FolderPlus, Zap, Loader2 } from 'lucide-react';
 
 import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry, generate30DaysTestData, delete30DaysTestData } from '../../api/client';
@@ -95,10 +96,22 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
 
   const [history, setHistory] = useState<ShopSellingRateEntry[]>([]);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
 
   useEffect(() => {
     loadHistory();
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   const loadHistory = async () => {
     try {

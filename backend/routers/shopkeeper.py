@@ -215,6 +215,10 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
 
     # ── Selling Rate Book = Purchase / Inward Stock Register ─────────────────
     # Auto-Post to Debit Book & General Ledger under "Pesticide purchases"
+    tot_purchase_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else payload.amount
+    if not tot_purchase_amt or tot_purchase_amt <= Decimal("0"):
+        tot_purchase_amt = Decimal(str(payload.qty or 1)) * Decimal(str(payload.net_rate or payload.selling_rate or 0))
+
     memo_no = payload.stock_book_no or f"SRB-RATE-{record.id}"
     sync_shopkeeper_purchase_transaction(
         db=db,
@@ -223,7 +227,7 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
         supplier_name=payload.name,
         product_name=payload.particulars,
         qty=payload.qty,
-        total_amount=payload.total_amount,
+        total_amount=tot_purchase_amt,
         remarks=f"Selling Rate Book Purchase ({payload.particulars})",
         created_by=payload.created_by
     )
@@ -257,6 +261,10 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
     record.stock_book_no = payload.stock_book_no
     record.sign_status = payload.sign_status or "Signed"
     
+    tot_purchase_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else payload.amount
+    if not tot_purchase_amt or tot_purchase_amt <= Decimal("0"):
+        tot_purchase_amt = Decimal(str(payload.qty or 1)) * Decimal(str(payload.net_rate or payload.selling_rate or 0))
+
     memo_no = payload.stock_book_no or f"SRB-RATE-{record.id}"
     sync_shopkeeper_purchase_transaction(
         db=db,
@@ -265,7 +273,7 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
         supplier_name=payload.name,
         product_name=payload.particulars,
         qty=payload.qty,
-        total_amount=payload.total_amount,
+        total_amount=tot_purchase_amt,
         remarks=f"Selling Rate Entry #{record.id}",
         created_by=payload.created_by
     )
@@ -891,6 +899,8 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         base_amt = qty_val * rate_val
 
         # 1. Selling Rate Entry
+        tot_sr_amt = base_amt * Decimal("1.18") + Decimal("70.00")
+        sb_no = f"SB-{entry_date.strftime('%Y%m')}-{i+1:03d}"
         sr_entry = ShopSellingRateEntry(
             date=entry_date,
             name=cust,
@@ -901,14 +911,26 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
             cgst=base_amt * Decimal("0.09"),
             hmall=Decimal("20.00"),
             motor_rent=Decimal("50.00"),
-            total_amount=base_amt * Decimal("1.18") + Decimal("70.00"),
+            total_amount=tot_sr_amt,
             net_rate=rate_val,
             selling_rate=rate_val * Decimal("1.2"),
-            stock_book_no=f"SB-{entry_date.strftime('%Y%m')}-{i+1:03d}",
+            stock_book_no=sb_no,
             created_by="Test Generator"
         )
         db.add(sr_entry)
         selling_count += 1
+
+        sync_shopkeeper_purchase_transaction(
+            db=db,
+            memo_no=sb_no,
+            v_date=entry_date,
+            supplier_name=cust,
+            product_name=prod,
+            qty=qty_val,
+            total_amount=tot_sr_amt,
+            remarks=f"Selling Rate Book Purchase ({prod})",
+            created_by="Test Generator"
+        )
 
         # 2. Shop Tax Invoice
         rnd_tag = random.randint(10000, 99999)
@@ -927,6 +949,18 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         db.add(tax_inv)
         tax_count += 1
 
+        sync_shopkeeper_sale_transaction(
+            db=db,
+            memo_no=inv_no,
+            v_date=entry_date,
+            customer_name=cust,
+            product_name=prod,
+            qty=qty_val,
+            total_amount=base_amt * Decimal("1.18"),
+            remarks=f"Shop Tax Invoice {inv_no}",
+            created_by="Test Generator"
+        )
+
         # 3. Shop Retail Bill
         bill_no = f"RET-{entry_date.strftime('%Y%m%d')}-{i+1:02d}-{rnd_tag}"
         ret_bill = ShopRetailBill(
@@ -940,6 +974,18 @@ def generate_30_days_test_data(db: Session = Depends(get_db)):
         )
         db.add(ret_bill)
         retail_count += 1
+
+        sync_shopkeeper_sale_transaction(
+            db=db,
+            memo_no=bill_no,
+            v_date=entry_date,
+            customer_name=cust,
+            product_name=prod,
+            qty=qty_val,
+            total_amount=base_amt,
+            remarks=f"Shop Retail Bill {bill_no}",
+            created_by="Test Generator"
+        )
 
         # 4. Pesticide Sale Entry
         pest_entry = PesticideSaleEntry(
@@ -973,6 +1019,7 @@ def delete_test_data(db: Session = Depends(get_db)):
     stx_deleted = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.created_by == "Test Generator").delete()
     srb_deleted = db.query(ShopRetailBill).filter(ShopRetailBill.created_by == "Test Generator").delete()
     pest_deleted = db.query(PesticideSaleEntry).filter(PesticideSaleEntry.created_by == "Test Generator").delete()
+    txn_deleted = db.query(Transaction).filter(Transaction.created_by == "Test Generator").delete()
 
     db.commit()
 
@@ -981,7 +1028,8 @@ def delete_test_data(db: Session = Depends(get_db)):
         "selling_rate_deleted": sr_deleted,
         "tax_invoices_deleted": stx_deleted,
         "retail_bills_deleted": srb_deleted,
-        "pesticide_sales_deleted": pest_deleted
+        "pesticide_sales_deleted": pest_deleted,
+        "transactions_deleted": txn_deleted
     }
 
 
