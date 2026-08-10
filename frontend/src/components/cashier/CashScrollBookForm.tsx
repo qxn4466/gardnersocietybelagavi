@@ -4,6 +4,7 @@ import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, f
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi } from '../../utils/translator';
+import DailyBalanceBar from '../DailyBalanceBar';
 
 interface CashScrollBookFormProps {
   user?: User | null;
@@ -150,6 +151,8 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
 
   return (
     <div>
+      <DailyBalanceBar selectedDate={date} />
+
       {/* Form Entry Card — Accountant Styled Layout */}
       <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 16px rgba(79, 70, 229, 0.08)', marginBottom: 28 }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>

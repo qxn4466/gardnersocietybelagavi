@@ -1,6 +1,6 @@
 import os
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date
@@ -15,7 +15,8 @@ from models import (
     CashScrollBookEntry,
     ChequeIssueBookEntry,
     Transaction,
-    TransactionTypeMaster
+    TransactionTypeMaster,
+    SystemBalanceSetting
 )
 from schemas import (
     CashPaymentVoucherCreate, CashPaymentVoucherOut,
@@ -23,6 +24,7 @@ from schemas import (
     RentBillCreate, RentBillOut,
     CashScrollBookCreate, CashScrollBookOut,
     ChequeIssueBookCreate, ChequeIssueBookOut,
+    SystemBalanceSettingCreate, SystemBalanceSettingOut, DailyBalanceSummary,
     CashierAuditSummary
 )
 
@@ -1030,4 +1032,105 @@ def delete_cashier_test_data(db: Session = Depends(get_db)):
         "cash_scroll_entries_deleted": cs_del,
         "cheque_issues_deleted": ci_del
     }
+
+
+# ─── Daily Balance Roll-Forward & Initial Opening Balance ────────────────────
+
+@router.get("/daily-balance", response_model=DailyBalanceSummary)
+def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db)):
+    target_date = date.fromisoformat(v_date) if v_date else date.today()
+    setting = db.query(SystemBalanceSetting).order_by(SystemBalanceSetting.id.asc()).first()
+
+    if not setting:
+        return DailyBalanceSummary(
+            selected_date=target_date,
+            initial_opening_balance=Decimal("0.00"),
+            initial_balance_date=target_date,
+            is_locked=False,
+            opening_balance=Decimal("0.00"),
+            today_receipts=Decimal("0.00"),
+            today_payments=Decimal("0.00"),
+            net_change=Decimal("0.00"),
+            closing_balance=Decimal("0.00")
+        )
+
+    init_bal = setting.initial_opening_balance or Decimal("0.00")
+    init_date = setting.initial_balance_date or target_date
+    is_locked = setting.is_locked
+
+    # Calculate prior accumulated net (from init_date up to target_date - 1)
+    if target_date > init_date:
+        prior_cs_rec = db.query(func.coalesce(func.sum(CashScrollBookEntry.received_amount), 0))\
+                         .filter(CashScrollBookEntry.date >= init_date, CashScrollBookEntry.date < target_date).scalar() or Decimal("0")
+        prior_cs_paid = db.query(func.coalesce(func.sum(CashScrollBookEntry.paid_amount), 0))\
+                          .filter(CashScrollBookEntry.date >= init_date, CashScrollBookEntry.date < target_date).scalar() or Decimal("0")
+
+        prior_txn_cred = db.query(func.coalesce(func.sum(Transaction.amount_rs + Transaction.amount_ps / 100), 0))\
+                           .filter(Transaction.entry_nature == 'CREDIT', Transaction.date >= init_date, Transaction.date < target_date).scalar() or Decimal("0")
+        prior_txn_deb = db.query(func.coalesce(func.sum(Transaction.amount_rs + Transaction.amount_ps / 100), 0))\
+                          .filter(Transaction.entry_nature == 'DEBIT', Transaction.date >= init_date, Transaction.date < target_date).scalar() or Decimal("0")
+
+        prior_cs_net = prior_cs_rec - prior_cs_paid
+        prior_txn_net = prior_txn_cred - prior_txn_deb
+
+        prior_net = prior_cs_net if (prior_cs_rec > 0 or prior_cs_paid > 0) else prior_txn_net
+        opening_balance = init_bal + prior_net
+    else:
+        opening_balance = init_bal
+
+    # Calculate today's receipts and payments
+    today_rec = db.query(func.coalesce(func.sum(CashScrollBookEntry.received_amount), 0))\
+                  .filter(CashScrollBookEntry.date == target_date).scalar() or Decimal("0")
+    today_paid = db.query(func.coalesce(func.sum(CashScrollBookEntry.paid_amount), 0))\
+                   .filter(CashScrollBookEntry.date == target_date).scalar() or Decimal("0")
+
+    if today_rec == Decimal("0") and today_paid == Decimal("0"):
+        today_rec = db.query(func.coalesce(func.sum(Transaction.amount_rs + Transaction.amount_ps / 100), 0))\
+                      .filter(Transaction.entry_nature == 'CREDIT', Transaction.date == target_date).scalar() or Decimal("0")
+        today_paid = db.query(func.coalesce(func.sum(Transaction.amount_rs + Transaction.amount_ps / 100), 0))\
+                       .filter(Transaction.entry_nature == 'DEBIT', Transaction.date == target_date).scalar() or Decimal("0")
+
+    net_change = today_rec - today_paid
+    closing_balance = opening_balance + net_change
+
+    return DailyBalanceSummary(
+        selected_date=target_date,
+        initial_opening_balance=init_bal,
+        initial_balance_date=init_date,
+        is_locked=is_locked,
+        opening_balance=opening_balance,
+        today_receipts=today_rec,
+        today_payments=today_paid,
+        net_change=net_change,
+        closing_balance=closing_balance
+    )
+
+
+@router.post("/set-initial-opening-balance", response_model=DailyBalanceSummary)
+def set_initial_opening_balance(payload: SystemBalanceSettingCreate, db: Session = Depends(get_db)):
+    setting = db.query(SystemBalanceSetting).order_by(SystemBalanceSetting.id.asc()).first()
+
+    if setting and setting.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Initial Opening Balance is permanently locked and cannot be edited."
+        )
+
+    b_date = payload.date or date.today()
+    if setting:
+        setting.initial_opening_balance = payload.initial_opening_balance
+        setting.initial_balance_date = b_date
+        setting.is_locked = True
+    else:
+        setting = SystemBalanceSetting(
+            initial_opening_balance=payload.initial_opening_balance,
+            initial_balance_date=b_date,
+            is_locked=True
+        )
+        db.add(setting)
+
+    db.commit()
+    db.refresh(setting)
+
+    return get_daily_balance(v_date=b_date.isoformat(), db=db)
 

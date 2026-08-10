@@ -467,5 +467,31 @@ class MeetingNoticeOut(MeetingNoticeCreate):
     created_at: Optional[datetime] = None
 
 
+# System Opening Balance & Daily Roll-Forward Schemas
+class SystemBalanceSettingCreate(BaseModel):
+    initial_opening_balance: Decimal = Decimal("0.00")
+    date: Optional[date] = None
+
+
+class SystemBalanceSettingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    initial_opening_balance: Decimal
+    initial_balance_date: date
+    is_locked: bool
+
+
+class DailyBalanceSummary(BaseModel):
+    selected_date: date
+    initial_opening_balance: Decimal
+    initial_balance_date: date
+    is_locked: bool
+    opening_balance: Decimal
+    today_receipts: Decimal
+    today_payments: Decimal
+    net_change: Decimal
+    closing_balance: Decimal
+
+
 
 

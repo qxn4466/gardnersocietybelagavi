@@ -462,6 +462,13 @@ export const generate30DaysMeetingNoticesTestData = (): Promise<{ message: strin
 export const delete30DaysMeetingNoticesTestData = (): Promise<{ message: string; deleted_count: number }> =>
   api.delete('/accountant/meeting-notices/delete-test-data').then(r => r.data);
 
+// ─── Daily Balance & One-Time Initial Opening Balance API ────────────────────
+export const fetchDailyBalance = (date?: string): Promise<import('../types').DailyBalanceSummary> =>
+  api.get('/cashier/daily-balance', { params: { v_date: date } }).then(r => r.data);
+
+export const setInitialOpeningBalance = (payload: import('../types').SystemBalanceSettingCreate): Promise<import('../types').DailyBalanceSummary> =>
+  api.post('/cashier/set-initial-opening-balance', payload).then(r => r.data);
+
 
 
 

@@ -11,6 +11,8 @@ import { CREDIT_BOOK_COLUMNS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslateData } from '../hooks/useTranslateData';
 
+import DailyBalanceBar from '../components/DailyBalanceBar';
+
 const fmt = (v: any) => {
   const num = parseFloat(String(v));
   if (isNaN(num) || num === 0) {
@@ -227,6 +229,8 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
       />
 
       <div className="page-content">
+        <DailyBalanceBar selectedDate={endDate} />
+
         {/* Stats */}
         <div className="stat-row no-print">
           <div className="stat-card">

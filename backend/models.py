@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy import (
-    Column, Integer, String, Text, Date, Numeric,
+    Column, Integer, String, Text, Date, Numeric, Boolean,
     ForeignKey, DateTime, func, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
@@ -212,6 +212,18 @@ class ChequeIssueBookEntry(Base):
     remarks = Column(Text, nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class SystemBalanceSetting(Base):
+    """System-wide Initial Opening Balance Setting & One-time Permanent Lock"""
+    __tablename__ = "system_balance_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    initial_opening_balance = Column(Numeric(12, 2), nullable=False, default=0)
+    initial_balance_date = Column(Date, nullable=False, default=date.today)
+    is_locked = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 # ─── SHOP KEEPER MODELS ──────────────────────────────────────────────────────

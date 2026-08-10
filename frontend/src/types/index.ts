@@ -803,5 +803,22 @@ export interface MeetingNoticeCreate {
   created_by?: string;
 }
 
+export interface DailyBalanceSummary {
+  selected_date: string;
+  initial_opening_balance: number;
+  initial_balance_date: string;
+  is_locked: boolean;
+  opening_balance: number;
+  today_receipts: number;
+  today_payments: number;
+  net_change: number;
+  closing_balance: number;
+}
+
+export interface SystemBalanceSettingCreate {
+  initial_opening_balance: number;
+  date?: string;
+}
+
 
 
