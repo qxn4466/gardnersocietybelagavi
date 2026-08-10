@@ -344,6 +344,11 @@ class ShopTaxInvoiceCreate(BaseModel):
     qty: Decimal = Decimal("1.00")
     rate: Decimal = Decimal("0.00")
     amount: Decimal = Decimal("0.00")
+    sgst_rate: Optional[Decimal] = Decimal("9.00")
+    sgst_amount: Optional[Decimal] = Decimal("0.00")
+    cgst_rate: Optional[Decimal] = Decimal("9.00")
+    cgst_amount: Optional[Decimal] = Decimal("0.00")
+    total_amount: Optional[Decimal] = Decimal("0.00")
     doc_path: Optional[str] = None
     created_by: Optional[str] = None
 
