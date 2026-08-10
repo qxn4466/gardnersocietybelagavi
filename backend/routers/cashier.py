@@ -1037,8 +1037,8 @@ def delete_cashier_test_data(db: Session = Depends(get_db)):
 # ─── Daily Balance Roll-Forward & Initial Opening Balance ────────────────────
 
 def is_opening_balance_edit_allowed() -> bool:
-    env_val = os.getenv("ALLOW_OPENING_BALANCE_EDIT", "true").strip().lower()
-    return env_val in ("true", "1", "yes", "enabled")
+    env_val = os.getenv("ALLOW_OPENING_BALANCE_EDIT", "disable").strip().lower()
+    return env_val in ("enable", "enabled", "true", "1", "yes")
 
 
 @router.get("/daily-balance", response_model=DailyBalanceSummary)
@@ -1120,19 +1120,19 @@ def set_initial_opening_balance(payload: SystemBalanceSettingCreate, db: Session
     if setting and setting.is_locked and not allow_edit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Initial Opening Balance is locked. Set ALLOW_OPENING_BALANCE_EDIT=true in .env to allow editing."
+            detail="Initial Opening Balance is locked. Set ALLOW_OPENING_BALANCE_EDIT=enable in .env to allow re-editing."
         )
 
     b_date = payload.balance_date or date.today()
     if setting:
         setting.initial_opening_balance = payload.initial_opening_balance
         setting.initial_balance_date = b_date
-        setting.is_locked = not allow_edit
+        setting.is_locked = True
     else:
         setting = SystemBalanceSetting(
             initial_opening_balance=payload.initial_opening_balance,
             initial_balance_date=b_date,
-            is_locked=not allow_edit
+            is_locked=True
         )
         db.add(setting)
 
