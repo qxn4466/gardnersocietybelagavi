@@ -218,17 +218,17 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
     setItems([
       {
         id: entry.id.toString(),
-        particulars: entry.particulars,
-        qty: entry.qty,
+        particulars: entry.particulars || PESTICIDE_PRODUCT_LIST[0],
+        qty: safeNum(entry.qty) || 1,
         unit: entry.unit || entry.pack_size || 'kg',
-        amount: entry.amount,
-        sgst: entry.sgst,
-        cgst: entry.cgst,
-        hmall: entry.hmall,
-        motor_rent: entry.motor_rent,
-        total_amount: entry.total_amount,
-        net_rate: entry.net_rate,
-        selling_rate: entry.selling_rate,
+        amount: safeNum(entry.amount),
+        sgst: safeNum(entry.sgst),
+        cgst: safeNum(entry.cgst),
+        hmall: safeNum(entry.hmall),
+        motor_rent: safeNum(entry.motor_rent),
+        total_amount: safeNum(entry.total_amount),
+        net_rate: safeNum(entry.net_rate),
+        selling_rate: safeNum(entry.selling_rate),
       }
     ]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -669,10 +669,10 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                       />
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: 14 }}>
-                      ₹{row.total_amount.toFixed(2)}
+                      ₹{safeNum(row.total_amount).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      ₹{row.net_rate.toFixed(2)}
+                      ₹{safeNum(row.net_rate).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input

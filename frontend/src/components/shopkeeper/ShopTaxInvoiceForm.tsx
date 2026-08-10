@@ -207,19 +207,26 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
     setDate(inv.date);
     setInvoiceNo(inv.invoice_no);
     setCustomerName(inv.customer_name);
+    const baseAmt = safeNum(inv.amount);
+    const sgstPct = safeNum(inv.sgst_rate) || 9;
+    const sgstAmt = safeNum(inv.sgst_amount) || ((baseAmt * sgstPct) / 100);
+    const cgstPct = safeNum(inv.cgst_rate) || 9;
+    const cgstAmt = safeNum(inv.cgst_amount) || ((baseAmt * cgstPct) / 100);
+    const totAmt = safeNum(inv.total_amount) || (baseAmt + sgstAmt + cgstAmt);
+
     setItems([
       {
         id: inv.id.toString(),
-        product_name: inv.product_name,
+        product_name: inv.product_name || PESTICIDE_PRODUCT_LIST[0],
         hsn_code: inv.hsn_code || '3808',
-        qty: inv.qty,
-        rate: inv.rate,
-        amount: inv.amount,
-        sgst_rate: inv.sgst_rate ?? 9,
-        sgst_amount: inv.sgst_amount ?? 0,
-        cgst_rate: inv.cgst_rate ?? 9,
-        cgst_amount: inv.cgst_amount ?? 0,
-        total_amount: inv.total_amount ?? inv.amount,
+        qty: safeNum(inv.qty) || 1,
+        rate: safeNum(inv.rate),
+        amount: baseAmt,
+        sgst_rate: sgstPct,
+        sgst_amount: sgstAmt,
+        cgst_rate: cgstPct,
+        cgst_amount: cgstAmt,
+        total_amount: totAmt,
       }
     ]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -558,7 +565,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                       />
                     </td>
                     <td style={{ padding: '6px 4px', fontWeight: 600 }}>
-                      ₹{row.amount.toFixed(2)}
+                      ₹{safeNum(row.amount).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <select
@@ -589,7 +596,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                       </select>
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#2563eb', fontSize: 14 }}>
-                      ₹{row.total_amount.toFixed(2)}
+                      ₹{safeNum(row.total_amount).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button

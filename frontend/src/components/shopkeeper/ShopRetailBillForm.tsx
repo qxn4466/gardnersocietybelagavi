@@ -204,19 +204,19 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
     setDate(bill.date);
     setBillNo(bill.bill_no);
     setCustomerName(bill.customer_name);
-    const baseAmt = bill.amount;
-    const sgstPct = bill.sgst_rate ?? 9;
-    const cgstPct = bill.cgst_rate ?? 9;
-    const sgstAmt = bill.sgst_amount ?? ((baseAmt * sgstPct) / 100);
-    const cgstAmt = bill.cgst_amount ?? ((baseAmt * cgstPct) / 100);
-    const totAmt = bill.total_amount ?? (baseAmt + sgstAmt + cgstAmt);
+    const baseAmt = safeNum(bill.amount);
+    const sgstPct = safeNum(bill.sgst_rate) || 9;
+    const sgstAmt = safeNum(bill.sgst_amount) || ((baseAmt * sgstPct) / 100);
+    const cgstPct = safeNum(bill.cgst_rate) || 9;
+    const cgstAmt = safeNum(bill.cgst_amount) || ((baseAmt * cgstPct) / 100);
+    const totAmt = safeNum(bill.total_amount) || (baseAmt + sgstAmt + cgstAmt);
 
     setItems([
       {
         id: bill.id.toString(),
-        particulars: bill.particulars,
-        qty: bill.qty ?? 1,
-        rate: bill.rate,
+        particulars: bill.particulars || PESTICIDE_PRODUCT_LIST[0],
+        qty: safeNum(bill.qty) || 1,
+        rate: safeNum(bill.rate),
         amount: baseAmt,
         sgst_rate: sgstPct,
         sgst_amount: sgstAmt,
@@ -523,7 +523,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                       />
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 600, fontFamily: 'monospace' }}>
-                      ₹{row.amount.toFixed(2)}
+                      ₹{safeNum(row.amount).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px' }}>
                       <input
@@ -546,7 +546,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                       />
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 13, fontFamily: 'monospace' }}>
-                      ₹{(row.total_amount || (row.amount + row.sgst_amount + row.cgst_amount)).toFixed(2)}
+                      ₹{safeNum(row.total_amount || (row.amount + row.sgst_amount + row.cgst_amount)).toFixed(2)}
                     </td>
                     <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button
