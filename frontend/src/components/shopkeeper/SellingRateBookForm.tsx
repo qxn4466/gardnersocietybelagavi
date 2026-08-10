@@ -622,7 +622,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         step="0.01"
                         className="form-input"
                         style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.amount || ''}
+                        value={row.amount !== undefined && row.amount !== null ? row.amount : ''}
                         onChange={e => updateRow(idx, 'amount', e.target.value)}
                       />
                     </td>
@@ -632,7 +632,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         step="0.01"
                         className="form-input"
                         style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.sgst || ''}
+                        value={row.sgst !== undefined && row.sgst !== null ? row.sgst : ''}
                         onChange={e => updateRow(idx, 'sgst', e.target.value)}
                       />
                     </td>
@@ -642,7 +642,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                         step="0.01"
                         className="form-input"
                         style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.cgst || ''}
+                        value={row.cgst !== undefined && row.cgst !== null ? row.cgst : ''}
                         onChange={e => updateRow(idx, 'cgst', e.target.value)}
                       />
                     </td>

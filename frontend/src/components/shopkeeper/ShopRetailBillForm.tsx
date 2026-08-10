@@ -511,7 +511,7 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
                         step="0.01"
                         className="form-input"
                         style={{ fontSize: 12, padding: '4px 6px', textAlign: 'right', fontFamily: 'monospace' }}
-                        value={row.rate || ''}
+                        value={row.rate !== undefined && row.rate !== null ? row.rate : ''}
                         onChange={e => updateRow(idx, 'rate', e.target.value)}
                       />
                     </td>
