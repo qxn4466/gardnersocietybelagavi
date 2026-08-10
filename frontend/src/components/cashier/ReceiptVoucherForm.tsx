@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages, FileText, Receipt, Loader2 } from 'lucide-react';
 import { fetchNextReceiptBillNo, createReceiptVoucher, updateReceiptVoucher, fetchReceiptVouchers, deleteReceiptVoucher, fetchOffice, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import InlineDocViewer from '../InlineDocViewer';
@@ -52,11 +53,24 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<CashReceiptVoucher | null>(null);
 
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   useEffect(() => {
     if (!editingId) loadNextBillNo(date);
     loadHistory();
     loadOfficeDetails();
   }, [date, startDateFilter, endDateFilter]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   useEffect(() => {
     const l = parseFloat(loanAmount) || 0;

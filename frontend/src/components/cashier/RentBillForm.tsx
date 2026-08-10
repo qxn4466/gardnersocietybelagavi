@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages, Landmark, Loader2 } from 'lucide-react';
 import { fetchNextRentInvoiceNo, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { RentBill, User } from '../../types';
@@ -83,10 +84,23 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState<RentBill | null>(null);
 
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   useEffect(() => {
     if (!editingId) loadNextInvoiceNo(date);
     loadHistory();
   }, [date, startDateFilter, endDateFilter]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   useEffect(() => {
     const q = parseFloat(qty) || 0;

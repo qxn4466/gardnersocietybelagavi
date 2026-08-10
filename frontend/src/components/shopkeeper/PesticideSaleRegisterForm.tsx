@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical, Languages, Loader2 } from 'lucide-react';
 import { createPesticideSale, updatePesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
@@ -57,10 +58,22 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
   const [history, setHistory] = useState<PesticideSaleEntry[]>([]);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
 
   useEffect(() => {
     loadHistory();
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   useEffect(() => {
     const q = parseFloat(qty) || 0;

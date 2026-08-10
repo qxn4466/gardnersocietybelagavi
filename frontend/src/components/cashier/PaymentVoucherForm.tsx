@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Upload, Eye, Download, CreditCard, Banknote, Zap, Calendar, Search, Languages, FileText, Loader2 } from 'lucide-react';
 import { fetchNextPaymentVoucherNo, createPaymentVoucher, updatePaymentVoucher, fetchPaymentVouchers, deletePaymentVoucher, uploadCashierReceipt, getFileUrl, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import InlineDocViewer from '../InlineDocViewer';
@@ -76,10 +77,23 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<CashPaymentVoucher | null>(null);
 
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   useEffect(() => {
     if (!editingId) loadNextVoucherNo(date);
     loadHistory();
   }, [date, startDateFilter, endDateFilter]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   const loadNextVoucherNo = async (d: string) => {
     try {

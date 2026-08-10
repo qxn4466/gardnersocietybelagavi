@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, ShoppingCart, X, Languages, Check, FolderPlus, Loader2 } from 'lucide-react';
 import { createShopRetailBill, updateShopRetailBill, fetchShopRetailBills, deleteShopRetailBill } from '../../api/client';
 import type { ShopRetailBill, User } from '../../types';
@@ -84,10 +85,23 @@ const ShopRetailBillForm: React.FC<ShopRetailBillFormProps> = ({ user }) => {
   const [showRangePrintModal, setShowRangePrintModal] = useState(false);
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<ShopRetailBill | null>(null);
 
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   useEffect(() => {
     loadHistory();
     setBillNo(`SRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   const loadHistory = async () => {
     try {

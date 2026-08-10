@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus, Zap, Loader2 } from 'lucide-react';
 import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice, generate30DaysTestData } from '../../api/client';
 
@@ -88,10 +89,23 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [showRangePrintModal, setShowRangePrintModal] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<ShopTaxInvoice | null>(null);
 
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   useEffect(() => {
     loadHistory();
     setInvoiceNo(`STX-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   const loadHistory = async () => {
     try {

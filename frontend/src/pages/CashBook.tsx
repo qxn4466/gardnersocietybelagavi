@@ -107,14 +107,28 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
   };
 
   const handleEdit = (row: CashBookRow) => {
-    const memo = row.cash_memo_no || '';
-    if (memo.startsWith('SB-') || memo.startsWith('SRB-RATE-') || (row.particulars || '').includes('Selling Rate')) {
+    const memo = (row.cash_memo_no || '').toUpperCase();
+    const part = (row.particulars || '').toLowerCase();
+    const type = (row.transaction_type || '').toLowerCase();
+
+    // 1. Shopkeeper Forms
+    if (memo.startsWith('SB-') || memo.startsWith('SRB-RATE-') || part.includes('selling rate') || type.includes('pesticide purchases')) {
       window.location.href = `/shopkeeper?tab=selling-rate&edit=${row.id}`;
-    } else if (memo.startsWith('STX-')) {
+    } else if (memo.startsWith('STX-') || part.includes('tax invoice')) {
       window.location.href = `/shopkeeper?tab=tax-invoice&edit=${row.id}`;
-    } else if (memo.startsWith('SRB-') || memo.startsWith('RET-')) {
+    } else if (memo.startsWith('SRB-') || memo.startsWith('RET-') || part.includes('retail bill')) {
       window.location.href = `/shopkeeper?tab=retail-bill&edit=${row.id}`;
-    } else {
+    } 
+    // 2. Cashier Dashboard Forms
+    else if (memo.startsWith('CPV-') || type.includes('payment') || part.includes('payment voucher')) {
+      window.location.href = `/cashier?tab=payment-voucher&edit=${row.id}`;
+    } else if (memo.startsWith('CRV-') || type.includes('receipt') || part.includes('receipt voucher')) {
+      window.location.href = `/cashier?tab=receipt-voucher&edit=${row.id}`;
+    } else if (memo.startsWith('RENT-') || type.includes('rent') || part.includes('rent bill')) {
+      window.location.href = `/cashier?tab=rent-bill&edit=${row.id}`;
+    } 
+    // 3. Fallback to main Cash Memo Form
+    else {
       window.location.href = `/?edit=${row.id}`;
     }
   };

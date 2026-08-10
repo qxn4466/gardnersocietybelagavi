@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Trash2, Edit, Calendar, Search, FileText, Languages, Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import InlineDocViewer from '../InlineDocViewer';
 import {
@@ -51,11 +52,23 @@ const MeetingNoticeForm: React.FC<MeetingNoticeFormProps> = ({ user }) => {
 
   const [history, setHistory] = useState<MeetingNotice[]>([]);
   const [selectedNoticeForPrint, setSelectedNoticeForPrint] = useState<MeetingNotice | null>(null);
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
 
   useEffect(() => {
     loadHistory();
     loadNextNoticeNo();
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (editParam && history.length > 0) {
+      const numericId = parseInt(editParam);
+      const match = history.find(h => h.id === numericId);
+      if (match) {
+        handleEdit(match);
+      }
+    }
+  }, [editParam, history]);
 
   const loadNextNoticeNo = async () => {
     try {
