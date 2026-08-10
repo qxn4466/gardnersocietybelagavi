@@ -517,7 +517,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           <div style={{ width: '100%', minHeight: 420, position: 'relative', background: '#e2e8f0' }}>
             <iframe
               title="Belgaum Gardeners Society Google Location Map"
-              src="https://maps.google.com/maps?q=Zanda+Chowk+Market,+Belgaum,+Karnataka+590002&t=&z=16&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=930%2F1A+Zanda+Chowk+Market%2C+Belgaum+590002%2C+Karnataka%2C+India&t=&z=17&ie=UTF8&iwloc=B&output=embed"
               width="100%"
               height="100%"
               style={{ border: 0, width: '100%', height: '100%', minHeight: 420, display: 'block' }}
@@ -565,7 +565,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
             </div>
 
             <a
-              href="https://maps.google.com/?q=Zanda+Chowk+Market+Belgaum+590002"
+              href="https://www.google.com/maps/search/?api=1&query=930%2F1A+Zanda+Chowk+Market%2C+Belgaum+590002%2C+Karnataka%2C+India"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -575,7 +575,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
               }}
             >
               <ExternalLink size={16} />
-              <span>{lang === 'mr' ? 'झेंडा चौक मार्केट गूगल मॅप उघडा' : 'Open Zanda Chowk Market in Google Maps'}</span>
+              <span>{lang === 'mr' ? 'गूगल मॅपवर थेट मार्ग उघडा (Zanda Chowk)' : 'Open Exact Location in Google Maps'}</span>
             </a>
 
           </div>
