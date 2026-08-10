@@ -13,6 +13,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
   const { lang, setLang } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mapProvider, setMapProvider] = useState<'osm' | 'google'>('osm');
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -513,17 +514,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin }) => {
           display: 'grid', gridTemplateColumns: '1.2fr 0.8fr'
         }} className="map-grid-responsive">
 
-          {/* Embedded Interactive Location Map */}
-          <div style={{ width: '100%', minHeight: 420, position: 'relative', background: '#e2e8f0' }}>
-            <iframe
-              title="Belgaum Gardeners Society Google Location Map"
-              src="https://maps.google.com/maps?q=930%2F1A+Zanda+Chowk+Market%2C+Belgaum+590002%2C+Karnataka%2C+India&t=&z=17&ie=UTF8&iwloc=B&output=embed"
-              width="100%"
-              height="100%"
-              style={{ border: 0, width: '100%', height: '100%', minHeight: 420, display: 'block' }}
-              allowFullScreen={true}
-              loading="eager"
-            />
+          {/* Embedded Interactive Location Map with Dual Provider Switcher */}
+          <div style={{ width: '100%', minHeight: 450, position: 'relative', background: '#e2e8f0' }}>
+            {/* Toggle bar on top of map */}
+            <div style={{
+              position: 'absolute', top: 12, left: 12, zIndex: 10,
+              display: 'flex', gap: 6, background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)', padding: 4, borderRadius: 10,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.18)', border: '1px solid #cbd5e1'
+            }}>
+              <button
+                onClick={() => setMapProvider('osm')}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: 'none',
+                  background: mapProvider === 'osm' ? '#059669' : 'transparent',
+                  color: mapProvider === 'osm' ? '#ffffff' : '#475569',
+                  fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                🗺️ {lang === 'mr' ? 'इंटरॲक्टिव्ह नकाशा (OpenMap)' : 'Interactive Street Map'}
+              </button>
+              <button
+                onClick={() => setMapProvider('google')}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: 'none',
+                  background: mapProvider === 'google' ? '#1d4ed8' : 'transparent',
+                  color: mapProvider === 'google' ? '#ffffff' : '#475569',
+                  fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                📍 Google Maps
+              </button>
+            </div>
+
+            {mapProvider === 'osm' ? (
+              <iframe
+                title="Belgaum Gardeners Society Interactive Location Map"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=74.4980%2C15.8420%2C74.5180%2C15.8620&amp;layer=mapnik&amp;marker=15.8522%2C74.5078"
+                width="100%"
+                height="100%"
+                style={{ border: 0, width: '100%', height: '100%', minHeight: 450, display: 'block' }}
+                allowFullScreen={true}
+              />
+            ) : (
+              <iframe
+                title="Belgaum Gardeners Society Google Location Map"
+                src="https://maps.google.com/maps?q=930%2F1A+Zanda+Chowk+Market%2C+Belgaum+590002%2C+Karnataka%2C+India&t=&z=17&ie=UTF8&iwloc=B&output=embed"
+                width="100%"
+                height="100%"
+                style={{ border: 0, width: '100%', height: '100%', minHeight: 450, display: 'block' }}
+                allowFullScreen={true}
+              />
+            )}
           </div>
 
           {/* Location & Opening Hours Info Panel */}
