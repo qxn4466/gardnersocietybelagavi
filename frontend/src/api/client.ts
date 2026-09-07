@@ -469,6 +469,40 @@ export const fetchDailyBalance = (date?: string): Promise<import('../types').Dai
 export const setInitialOpeningBalance = (payload: import('../types').SystemBalanceSettingCreate): Promise<import('../types').DailyBalanceSummary> =>
   api.post('/cashier/set-initial-opening-balance', payload).then(r => r.data);
 
+// ─── Yearly Audit Reports API ────────────────────────────────────────────────
+export interface SavedAuditReport {
+  id: number;
+  report_type: string; // "RECEIPT_PAYMENT", "TRADING", "PROFIT_LOSS", "BALANCE_SHEET"
+  financial_year: string;
+  from_date: string;
+  to_date: string;
+  header_title_en?: string;
+  header_title_mr?: string;
+  header_period_text?: string;
+  data_json: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const saveAuditReport = (payload: {
+  report_type: string;
+  financial_year: string;
+  from_date: string;
+  to_date: string;
+  header_title_en?: string;
+  header_title_mr?: string;
+  header_period_text?: string;
+  data_json: string;
+  created_by?: string;
+}): Promise<SavedAuditReport> => api.post('/audit-reports/save', payload).then(r => r.data);
+
+export const listAuditReports = (reportType?: string): Promise<SavedAuditReport[]> =>
+  api.get('/audit-reports/list', { params: { report_type: reportType } }).then(r => r.data);
+
+export const getAuditReport = (reportType: string, financialYear: string): Promise<SavedAuditReport> =>
+  api.get('/audit-reports/get', { params: { report_type: reportType, financial_year: financialYear } }).then(r => r.data);
+
 
 
 

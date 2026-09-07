@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, ClipboardCheck, X, Receipt,
-  Landmark, BookOpen, CreditCard, ShieldCheck, Tag, ShoppingCart, FlaskConical, BarChart3
+  Landmark, BookOpen, CreditCard, ShieldCheck, Tag, ShoppingCart, FlaskConical, BarChart3, FileBarChart2
 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 import type { User } from '../types';
@@ -327,6 +327,74 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               <span>{t('nav_audit_package')}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? '३ डॅशबोर्ड लेखापरीक्षक बाइंडर' : '3-DASHBOARD AUDITOR BINDER'}
+              </span>
+            </div>
+          </NavLink>
+
+          {/* SECTION 5: RECEIPT & PAYMENT ACCOUNT */}
+          <div style={{
+            fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#fb923c',
+            padding: '18px 12px 6px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(251, 146, 60, 0.2)',
+            marginTop: 4, marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <span>{lang === 'mr' ? 'जमा-खर्च खाते' : 'Audit Reports'}</span>
+            <span style={{ fontSize: 9, padding: '1px 6px', background: 'rgba(251, 146, 60, 0.15)', borderRadius: 4, color: '#fb923c' }}>
+              {lang === 'mr' ? 'वार्षिक अहवाल' : 'Annual Report'}
+            </span>
+          </div>
+
+          <NavLink
+            to="/receipt-payment"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+          >
+            <FileBarChart2 size={18} className="nav-icon" />
+            <div className="nav-label-group">
+              <span>{lang === 'mr' ? 'जमा व खर्च खाते' : 'Receipt & Payment A/c'}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'वार्षिक लेखापरीक्षण अहवाल' : 'ANNUAL AUDIT ACCOUNT'}
+              </span>
+            </div>
+          </NavLink>
+
+          <NavLink
+            to="/trading-account"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+          >
+            <BarChart3 size={18} className="nav-icon" />
+            <div className="nav-label-group">
+              <span>{lang === 'mr' ? 'व्यापार खाते' : 'Trading Account'}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'खरेदी, विक्री व नफा/तोटा' : 'TRADING, SALES & PROFIT'}
+              </span>
+            </div>
+          </NavLink>
+
+          <NavLink
+            to="/profit-loss"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+          >
+            <TrendingUp size={18} className="nav-icon" />
+            <div className="nav-label-group">
+              <span>{lang === 'mr' ? 'नफा आणि तोटा खाते' : 'Profit & Loss A/c'}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'वार्षिक नफा-तोटा पत्रक' : 'P&L AUDIT STATEMENT'}
+              </span>
+            </div>
+          </NavLink>
+
+          <NavLink
+            to="/balance-sheet"
+            onClick={onClose}
+            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+          >
+            <Landmark size={18} className="nav-icon" />
+            <div className="nav-label-group">
+              <span>{lang === 'mr' ? 'ताळेबंद पत्रक' : 'Balance Sheet'}</span>
+              <span className="nav-level-badge">
+                {lang === 'mr' ? 'देणी व मालमत्ता पत्रक' : 'ASSETS & LIABILITIES'}
               </span>
             </div>
           </NavLink>

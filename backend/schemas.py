@@ -1,7 +1,9 @@
+import json
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ─── Auth / User ──────────────────────────────────────────────────────────────
@@ -493,5 +495,52 @@ class DailyBalanceSummary(BaseModel):
     closing_balance: Decimal
 
 
+# Yearly Audit Reports (Receipt & Payment, Trading Account, Profit & Loss, Balance Sheet)
+class AuditReportCreate(BaseModel):
+    report_type: str  # "RECEIPT_PAYMENT", "TRADING", "PROFIT_LOSS", "BALANCE_SHEET"
+    financial_year: str
+    from_date: date
+    to_date: date
+    header_title_en: Optional[str] = None
+    header_title_mr: Optional[str] = None
+    header_period_text: Optional[str] = None
+    data_json: str
+    created_by: Optional[str] = "Accountant"
+
+    @field_validator("report_type")
+    @classmethod
+    def validate_report_type(cls, value: str) -> str:
+        allowed = {"RECEIPT_PAYMENT", "TRADING", "PROFIT_LOSS", "BALANCE_SHEET"}
+        if value not in allowed:
+            raise ValueError("Unsupported audit report type")
+        return value
+
+    @field_validator("financial_year")
+    @classmethod
+    def validate_financial_year(cls, value: str) -> str:
+        value = value.strip()
+        if not re.fullmatch(r"\d{4}-\d{2}", value):
+            raise ValueError("Financial year must use YYYY-YY format, for example 2025-26")
+        return value
+
+    @field_validator("data_json")
+    @classmethod
+    def validate_report_data(cls, value: str) -> str:
+        try:
+            json.loads(value)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ValueError("Report data must be valid JSON") from exc
+        return value
+
+    @model_validator(mode="after")
+    def validate_date_range(self):
+        if self.from_date > self.to_date:
+            raise ValueError("From date must be on or before To date")
+        return self
 
 
+class AuditReportOut(AuditReportCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

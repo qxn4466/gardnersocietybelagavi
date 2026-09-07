@@ -343,5 +343,20 @@ class MeetingNotice(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class YearlyAuditReport(Base):
+    """Yearly Audit Reports (RECEIPT_PAYMENT, TRADING, PROFIT_LOSS, BALANCE_SHEET)"""
+    __tablename__ = "yearly_audit_reports"
+    __table_args__ = (UniqueConstraint("report_type", "financial_year", name="uq_report_year"),)
 
-
+    id = Column(Integer, primary_key=True, index=True)
+    report_type = Column(String(50), nullable=False, index=True)  # "RECEIPT_PAYMENT", "TRADING", "PROFIT_LOSS", "BALANCE_SHEET"
+    financial_year = Column(String(50), nullable=False, index=True)  # e.g. "2025-26"
+    from_date = Column(Date, nullable=False, default=date.today)
+    to_date = Column(Date, nullable=False, default=date.today)
+    header_title_en = Column(Text, nullable=True)
+    header_title_mr = Column(Text, nullable=True)
+    header_period_text = Column(Text, nullable=True)
+    data_json = Column(Text, nullable=False)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

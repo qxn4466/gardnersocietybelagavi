@@ -7,6 +7,10 @@ import DebitBook from './pages/DebitBook';
 import GeneralLedger from './pages/GeneralLedger';
 import SavingsAccounts from './pages/SavingsAccounts';
 import AuditPackage from './pages/AuditPackage';
+import ReceiptPaymentAccount from './pages/ReceiptPaymentAccount';
+import TradingAccount from './pages/TradingAccount';
+import ProfitLossAccount from './pages/ProfitLossAccount';
+import BalanceSheet from './pages/BalanceSheet';
 import MeetingNoticePage from './pages/MeetingNoticePage';
 import CashierDashboard from './pages/CashierDashboard';
 import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
@@ -98,6 +102,22 @@ const AppContent: React.FC = () => {
           <Route
             path="/audit-package"
             element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+          />
+          <Route
+            path="/receipt-payment"
+            element={<ReceiptPaymentAccount user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+          />
+          <Route
+            path="/trading-account"
+            element={<TradingAccount user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+          />
+          <Route
+            path="/profit-loss"
+            element={<ProfitLossAccount user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
+          />
+          <Route
+            path="/balance-sheet"
+            element={<BalanceSheet user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
           />
           <Route
             path="/meeting-notice"

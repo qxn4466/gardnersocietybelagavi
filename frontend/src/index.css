@@ -1235,6 +1235,10 @@ body {
 
 /* ─── Mobile, Tablet & Desktop Responsive Layout System ─────────────────────── */
 @media (max-width: 900px) {
+  .audit-report-page {
+    padding-top: 20px !important;
+  }
+
   .app-layout {
     flex-direction: column !important;
     overflow-x: hidden !important;

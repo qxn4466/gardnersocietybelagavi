@@ -1,0 +1,18 @@
+[Unit]
+Description=Gardner Society Frontend — Build and deploy to Nginx
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/gardnersocietybelagavi/frontend
+ExecStart=/usr/bin/npm install --include=dev --no-audit --no-fund
+ExecStart=/usr/bin/npm run build
+ExecStart=/usr/bin/cp -a /root/gardnersocietybelagavi/frontend/dist/. /var/www/gardnersociety/
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gardner-frontend
+
+[Install]
+WantedBy=multi-user.target
