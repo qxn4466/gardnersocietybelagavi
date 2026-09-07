@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, ClipboardCheck, X, Receipt,
+  FileText, BookMarked, Leaf, Users, TrendingUp, TrendingDown, X, Receipt,
   Landmark, BookOpen, CreditCard, ShieldCheck, Tag, ShoppingCart, FlaskConical, BarChart3, FileBarChart2
 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
@@ -305,7 +305,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
             </div>
           </NavLink>
 
-          {/* SECTION 4: MASTER AUDIT BINDER (AT THE VERY END) */}
+          {/* MASTER AUDIT PACKAGE DISABLED
           <div style={{
             fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#f59e0b',
             padding: '18px 12px 6px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(245, 158, 11, 0.2)',
@@ -330,6 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
               </span>
             </div>
           </NavLink>
+          */}
 
           {/* SECTION 5: RECEIPT & PAYMENT ACCOUNT */}
           <div style={{

@@ -6,7 +6,8 @@ import CashBook from './pages/CashBook';
 import DebitBook from './pages/DebitBook';
 import GeneralLedger from './pages/GeneralLedger';
 import SavingsAccounts from './pages/SavingsAccounts';
-import AuditPackage from './pages/AuditPackage';
+// Master Audit Package is currently disabled.
+// import AuditPackage from './pages/AuditPackage';
 import ReceiptPaymentAccount from './pages/ReceiptPaymentAccount';
 import TradingAccount from './pages/TradingAccount';
 import ProfitLossAccount from './pages/ProfitLossAccount';
@@ -99,10 +100,12 @@ const AppContent: React.FC = () => {
             path="/ledger"
             element={<GeneralLedger user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
           />
+          {/* Master Audit Package route is currently disabled.
           <Route
             path="/audit-package"
             element={<AuditPackage user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
           />
+          */}
           <Route
             path="/receipt-payment"
             element={<ReceiptPaymentAccount user={user} onLogout={handleLogout} onToggleMobileMenu={toggleSidebar} />}
