@@ -30,9 +30,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
       const user = await loginUser(username.trim(), password);
       onLoginSuccess(user);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (lang === 'mr' ? 'लॉगिन अपयशी. अमान्य वापरकर्ता आयडी किंवा पासवर्ड.' : 'Login failed. Invalid User ID or Password.');
+      const resp = (err as { response?: { data?: { detail?: string } } })?.response;
+      let msg = resp?.data?.detail;
+      if (!msg) {
+        if (!resp) {
+          msg = lang === 'mr'
+            ? 'सर्व्हरशी संपर्क होऊ शकला नाही. कृपया बॅकएंड (port 8000) चालू असल्याची खात्री करा.'
+            : 'Cannot connect to backend server. Please verify the backend is running on port 8000.';
+        } else {
+          msg = lang === 'mr' ? 'लॉगिन अपयशी. अमान्य वापरकर्ता आयडी किंवा पासवर्ड.' : 'Login failed. Invalid User ID or Password.';
+        }
+      }
       setError(msg);
     } finally {
       setLoading(false);

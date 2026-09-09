@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   UserPlus, Search, CheckCircle, XCircle, Hash, Phone, MapPin,
   Upload, Eye, ShieldCheck, RefreshCw, ArrowRight, X, Image as ImageIcon,
-  Camera, FileText, User as UserIcon, Wallet, CreditCard, Sparkles, Languages, Loader2
+  Camera, FileText, User as UserIcon, Wallet, CreditCard, Sparkles, Languages, Loader2,
+  Table, List
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -76,6 +77,15 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
     customer?: Customer;
     docType?: 'aadhaar_front' | 'aadhaar_back' | 'pan';
   } | null>(null);
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_savings_form_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleViewModeChange = (mode: 'excel' | 'vertical') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_savings_form_view_mode', mode);
+  };
 
   // Fetch unique 10-digit random customer ID
   const loadNextId = useCallback(async () => {
@@ -480,415 +490,980 @@ const SavingsAccounts: React.FC<SavingsAccountsProps> = ({ user, onLogout, onTog
               </div>
             </div>
 
-            {editingId && (
-              <button className="btn btn-secondary btn-sm" onClick={handleReset} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
-                + {lang === 'mr' ? 'रीसेट आणि नवीन खाते नोंदवा' : 'Reset & Register New Account'}
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {/* View Mode Switcher */}
+              <div style={{
+                display: 'inline-flex',
+                background: 'rgba(255, 255, 255, 0.12)',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('excel')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: viewMode === 'excel' ? '#059669' : 'transparent',
+                    color: '#ffffff',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="excel-grid-view-btn"
+                >
+                  <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड मांडणी' : 'Excel Grid View'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('vertical')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+                    color: '#ffffff',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="vertical-stack-view-btn"
+                >
+                  <List size={14} /> {lang === 'mr' ? 'उभी मांडणी (एकखाली एक)' : 'Vertical Stack View'}
+                </button>
+              </div>
+
+              {editingId && (
+                <button className="btn btn-secondary btn-sm" onClick={handleReset} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
+                  + {lang === 'mr' ? 'रीसेट आणि नवीन खाते नोंदवा' : 'Reset & Register New Account'}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="card-body" style={{ padding: '24px' }}>
             <form onSubmit={handleSubmit}>
               
-              {/* ── Section 1: Account Identity & Deposit ── */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Hash size={18} color="var(--blue-700)" />
-                  <span>{lang === 'mr' ? '१. खाते ओळख आणि प्राथमिक ठेव' : '1. Account Identity & Initial Deposit'}</span>
-                </div>
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {/* MODE 1: EXCEL SPREADSHEET GRID VIEW                           */}
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {viewMode === 'excel' && (
+                <div className="excel-form-container">
+                  <div className="excel-toolbar">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Table size={16} color="#059669" />
+                      <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                        {lang === 'mr' ? 'बचत खाते तपशील नोंदवही (एक्सेल ग्रिड)' : 'SAVINGS_ACCOUNT_LEDGER_SHEET (Excel Grid)'}
+                      </span>
+                      <span style={{ fontSize: 10, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                        {lang === 'mr' ? '११ रकाने' : '11 Data Rows'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>
+                      {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+                    </div>
+                  </div>
 
-                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                  
-                  {/* Customer ID */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700 }}>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी' : '10-Digit Customer ID'} <span className="required">*</span></span>
+                  <div className="excel-form-table-wrapper">
+                    <table className="excel-form-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                          <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                          <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                          <th style={{ width: 300 }}>{lang === 'mr' ? 'पडताळणी आणि साधने' : 'Validation & Quick Tools'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Section 1 Header */}
+                        <tr>
+                          <td colSpan={4} className="excel-section-row">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <Hash size={15} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? '१. खाते ओळख आणि प्राथमिक ठेव' : '1. Account Identity & Initial Deposit'}</span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 1: Customer ID */}
+                        <tr>
+                          <td className="excel-row-idx">1</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Hash size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी' : '10-Digit Customer ID'}</span>
+                              <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'अनन्य खाते क्रमांक' : 'Unique Account Identifier'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="text"
+                              className="form-input"
+                              style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: 'var(--blue-800)', letterSpacing: '0.08em', background: '#ffffff', height: 38 }}
+                              value={form.customer_id || ''}
+                              onChange={e => handleInputChange('customer_id', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                              placeholder={lang === 'mr' ? 'उदा. 5839204192' : 'e.g. 5839204192'}
+                              required
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                              <button
+                                type="button"
+                                onClick={loadNextId}
+                                style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: 'var(--blue-700)', borderRadius: 4, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                              >
+                                <Sparkles size={12} /> {lang === 'mr' ? 'आपोआप तयार करा' : 'Auto-Generate'}
+                              </button>
+                              <span style={{ fontSize: 11, color: form.customer_id && form.customer_id.length === 10 ? '#15803d' : '#64748b', fontWeight: 700 }}>
+                                {form.customer_id ? `${form.customer_id.length}/10` : '10 Digits'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 2: Mobile Number */}
+                        <tr>
+                          <td className="excel-row-idx">2</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Phone size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? 'मोबाईल नंबर' : 'Mobile Number'}</span>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? '१०-अंकी संपर्क क्रमांक' : '10-Digit Contact No.'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="tel"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? '१०-अंकी मोबाईल नंबर' : '10-digit mobile number'}
+                              value={form.mobile_no || ''}
+                              onChange={e => handleMobileChange(e.target.value)}
+                              maxLength={10}
+                              style={{ background: '#ffffff', height: 38 }}
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: form.mobile_no && form.mobile_no.length !== 10 ? '#b91c1c' : form.mobile_no?.length === 10 ? '#15803d' : '#64748b', fontWeight: 700 }}>
+                              {form.mobile_no ? (lang === 'mr' ? `${form.mobile_no.length}/१० अंक` : `${form.mobile_no.length}/10 digits`) : (lang === 'mr' ? 'नेमके १० अंक आवश्यक' : 'Exactly 10 digits')}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Row 3: Opening Balance */}
+                        <tr>
+                          <td className="excel-row-idx">3</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Wallet size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? 'प्रारंभिक बचत ठेव (₹)' : 'Opening Savings Deposit (₹)'}</span>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'सुरुवातीची जमा रक्कम' : 'Initial Credited Balance'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="form-input"
+                              placeholder="0.00"
+                              value={form.opening_balance || ''}
+                              onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
+                              style={{ background: '#ffffff', height: 38 }}
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: '#047857', fontWeight: 700, background: '#ecfdf5', padding: '3px 8px', borderRadius: 4, border: '1px solid #a7f3d0' }}>
+                              ₹ {Number(form.opening_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Section 2 Header */}
+                        <tr>
+                          <td colSpan={4} className="excel-section-row">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <UserIcon size={15} color="var(--blue-700)" />
+                                <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={translateAllMemberFields}
+                                disabled={translating}
+                                style={{ background: translating ? '#cbd5e1' : '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 4, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: translating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                              >
+                                {translating ? (
+                                  <>
+                                    <Loader2 size={12} className="spinner" />
+                                    {lang === 'mr' ? 'भाषांतर करत आहे...' : 'Translating...'}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Languages size={12} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 4: Salutation */}
+                        <tr>
+                          <td className="excel-row-idx">4</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'संबोधन' : 'Salutation'}</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <select
+                              className="form-select"
+                              value={form.salutation || 'Mr.'}
+                              onChange={e => handleInputChange('salutation', e.target.value)}
+                              style={{ background: '#ffffff', height: 38 }}
+                            >
+                              <option value="Mr.">Mr.</option>
+                              <option value="Smt.">Smt.</option>
+                              <option value="Sri.">Sri.</option>
+                              <option value="Dr.">Dr.</option>
+                              <option value="M/s.">M/s.</option>
+                            </select>
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Title: {form.salutation || 'Mr.'}</span>
+                          </td>
+                        </tr>
+
+                        {/* Row 5: First Name */}
+                        <tr>
+                          <td className="excel-row-idx">5</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'पहिले नाव' : 'First Name'}</span>
+                            <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
+                              value={form.first_name || ''}
+                              onChange={e => handleInputChange('first_name', e.target.value)}
+                              style={{ background: '#ffffff', height: 38 }}
+                              required
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: form.first_name ? '#15803d' : '#dc2626', fontWeight: 700 }}>
+                              {form.first_name ? '✓ ' + (lang === 'mr' ? 'नोंदवले' : 'Entered') : '* ' + (lang === 'mr' ? 'आवश्यक' : 'Required')}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Row 6: Middle Name */}
+                        <tr>
+                          <td className="excel-row-idx">6</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'मधले नाव' : 'Middle Name'}</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
+                              value={form.middle_name || ''}
+                              onChange={e => handleInputChange('middle_name', e.target.value)}
+                              style={{ background: '#ffffff', height: 38 }}
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: '#64748b' }}>{lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Father/Husband Name'}</span>
+                          </td>
+                        </tr>
+
+                        {/* Row 7: Last Name */}
+                        <tr>
+                          <td className="excel-row-idx">7</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'आडनाव' : 'Last Name'}</span>
+                            <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
+                              value={form.last_name || ''}
+                              onChange={e => handleInputChange('last_name', e.target.value)}
+                              style={{ background: '#ffffff', height: 38 }}
+                              required
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: form.last_name ? '#15803d' : '#dc2626', fontWeight: 700 }}>
+                              {form.last_name ? '✓ ' + (lang === 'mr' ? 'नोंदवले' : 'Entered') : '* ' + (lang === 'mr' ? 'आवश्यक' : 'Required')}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Row: Live Name Preview */}
+                        {composedFullName && (
+                          <tr style={{ background: '#eff6ff' }}>
+                            <td className="excel-row-idx" style={{ background: '#dbeafe', color: '#1d4ed8' }}>Σ</td>
+                            <td className="excel-col-label" style={{ background: '#eff6ff', color: '#1e40af', fontWeight: 700 }}>
+                              {lang === 'mr' ? 'पूर्ण नाव (थेट पूर्वावलोकन)' : 'Full Name (Live Preview)'}
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px' }}>
+                              <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 15 }}>{composedFullName}</span>
+                            </td>
+                          </tr>
+                        )}
+
+                        {/* Section 3 Header */}
+                        <tr>
+                          <td colSpan={4} className="excel-section-row">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <MapPin size={15} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 8: Address */}
+                        <tr>
+                          <td className="excel-row-idx">8</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <MapPin size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? 'रहिवासी पत्ता' : 'Residential Address'}</span>
+                            </div>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belgaum District, Pin Code'}
+                              value={form.address || ''}
+                              onChange={e => handleInputChange('address', e.target.value)}
+                              style={{ background: '#ffffff', height: 38 }}
+                            />
+                          </td>
+                        </tr>
+
+                        {/* Section 4 Header */}
+                        <tr>
+                          <td colSpan={4} className="excel-section-row">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <ShieldCheck size={15} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? '४. ३-कागदपत्रे KYC पडताळणी (कॅमेरा स्कॅन आणि फाईल अपलोड)' : '4. 3-Document KYC Verification (Camera Scan & File Upload)'}</span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 9: Aadhaar Front */}
+                        <tr>
+                          <td className="excel-row-idx">9</td>
+                          <td className="excel-col-label">
+                            <div style={{ fontWeight: 700 }}>{lang === 'mr' ? '१. आधार कार्ड (समोरील)' : '1. Aadhaar Card (Front)'}</div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? '१२-अंकी आधार क्रमांक' : '12-Digit UIDAI No.'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={lang === 'mr' ? '१२-अंकी आधार क्रमांक' : '12-digit Aadhaar Number'}
+                                value={form.aadhaar_no || ''}
+                                onChange={e => handleAadhaarChange(e.target.value)}
+                                maxLength={12}
+                                style={{ fontSize: 13, fontFamily: 'monospace', fontWeight: 700, height: 38 }}
+                              />
+                              <span style={{ fontSize: 10, color: form.aadhaar_no && form.aadhaar_no.length !== 12 ? '#b91c1c' : '#64748b', fontWeight: form.aadhaar_no && form.aadhaar_no.length !== 12 ? 700 : 400 }}>
+                                {form.aadhaar_no ? `${form.aadhaar_no.length}/12` : '12 Digits'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="excel-col-tools">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Camera size={12} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                                  />
+                                </label>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Upload size={12} /> {lang === 'mr' ? 'अपलोड' : 'Upload'}
+                                  <input
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                                  />
+                                </label>
+                                {form.aadhaar_doc_path && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: lang === 'mr' ? 'आधार कार्ड (समोरील स्कॅन)' : 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
+                                    style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '4px 8px' }}
+                                  >
+                                    <Eye size={12} /> {lang === 'mr' ? 'पहा' : 'View'}
+                                  </button>
+                                )}
+                              </div>
+                              {form.aadhaar_doc_path && (
+                                <div style={{ fontSize: 10, color: '#15803d', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <CheckCircle size={11} color="#16a34a" />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                    {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 10: Aadhaar Back */}
+                        <tr>
+                          <td className="excel-row-idx">10</td>
+                          <td className="excel-col-label">
+                            <div style={{ fontWeight: 700 }}>{lang === 'mr' ? '२. आधार कार्ड (मागील)' : '2. Aadhaar Card (Back)'}</div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'पत्ता आणि QR कोड बाजू' : 'Address & QR Code Side'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <div style={{ fontSize: 12, color: '#475569' }}>
+                              {form.aadhaar_back_doc_path ? (
+                                <span style={{ color: '#15803d', fontWeight: 700 }}>✓ {lang === 'mr' ? 'मागील बाजू स्कॅन संलग्न आहे' : 'Back side scan attached'}</span>
+                              ) : (
+                                <span style={{ color: '#64748b' }}>{lang === 'mr' ? 'आधार मागील बाजू स्कॅन जोडा' : 'Attach Aadhaar reverse side scan'}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="excel-col-tools">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Camera size={12} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                                  />
+                                </label>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Upload size={12} /> {lang === 'mr' ? 'अपलोड' : 'Upload'}
+                                  <input
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                                  />
+                                </label>
+                                {form.aadhaar_back_doc_path && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: lang === 'mr' ? 'आधार कार्ड (मागील स्कॅन)' : 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
+                                    style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '4px 8px' }}
+                                  >
+                                    <Eye size={12} /> {lang === 'mr' ? 'पहा' : 'View'}
+                                  </button>
+                                )}
+                              </div>
+                              {form.aadhaar_back_doc_path && (
+                                <div style={{ fontSize: 10, color: '#15803d', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <CheckCircle size={11} color="#16a34a" />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                    {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 11: PAN Card */}
+                        <tr>
+                          <td className="excel-row-idx">11</td>
+                          <td className="excel-col-label">
+                            <div style={{ fontWeight: 700 }}>{lang === 'mr' ? '३. पॅन कार्ड स्कॅन' : '3. PAN Card Scan'}</div>
+                            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? '१०-अक्षरी पॅन क्रमांक' : '10-Character PAN Number'}</div>
+                          </td>
+                          <td className="excel-col-input">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={lang === 'mr' ? 'उदा. ABCDE1234F' : 'e.g. ABCDE1234F'}
+                                value={form.pan_no || ''}
+                                onChange={e => handlePanChange(e.target.value)}
+                                maxLength={10}
+                                style={{ fontSize: 13, fontFamily: 'monospace', fontWeight: 700, textTransform: 'uppercase', height: 38 }}
+                              />
+                              <span style={{ fontSize: 10, color: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? '#b91c1c' : '#64748b', fontWeight: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? 700 : 400 }}>
+                                {form.pan_no ? (lang === 'mr' ? 'स्वरूप: ५ अक्षरे + ४ अंक + १ अक्षर' : 'Format: 5 Letters + 4 Digits + 1 Letter') : 'ABCDE1234F'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="excel-col-tools">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Camera size={12} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'pan')}
+                                  />
+                                </label>
+                                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }}>
+                                  <Upload size={12} /> {lang === 'mr' ? 'अपलोड' : 'Upload'}
+                                  <input
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFileUpload(e, 'pan')}
+                                  />
+                                </label>
+                                {form.pan_doc_path && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: lang === 'mr' ? 'पॅन कार्ड स्कॅन' : 'PAN Card Scan', docType: 'pan' })}
+                                    style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '4px 8px' }}
+                                  >
+                                    <Eye size={12} /> {lang === 'mr' ? 'पहा' : 'View'}
+                                  </button>
+                                )}
+                              </div>
+                              {form.pan_doc_path && (
+                                <div style={{ fontSize: 10, color: '#15803d', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <CheckCircle size={11} color="#16a34a" />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                    {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {/* MODE 2: VERTICAL STACK VIEW (FIELDS ONE BELOW ANOTHER)        */}
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {viewMode === 'vertical' && (
+                <>
+                  {/* ── Section 1: Account Identity & Deposit (Vertical) ── */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Hash size={18} color="var(--blue-700)" />
+                      <span>{lang === 'mr' ? '१. खाते ओळख आणि प्राथमिक ठेव' : '1. Account Identity & Initial Deposit'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Customer ID */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700 }}>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी' : '10-Digit Customer ID'} <span className="required">*</span></span>
+                          <button
+                            type="button"
+                            onClick={loadNextId}
+                            style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: 'var(--blue-700)', borderRadius: 4, padding: '3px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                          >
+                            <Sparkles size={12} /> {lang === 'mr' ? 'आपोआप तयार करा' : 'Auto-Generate'}
+                          </button>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em', background: '#ffffff', maxWidth: '100%' }}
+                          value={form.customer_id || ''}
+                          onChange={e => handleInputChange('customer_id', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          placeholder={lang === 'mr' ? 'उदा. 5839204192' : 'e.g. 5839204192'}
+                          required
+                        />
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'अनन्य १०-अंकी खाते ओळख क्रमांक' : 'Unique 10-digit random account identifier'}</div>
+                      </div>
+
+                      {/* Mobile Number */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>
+                          <Phone size={13} style={{ display: 'inline', marginRight: 4 }} />
+                          {lang === 'mr' ? 'मोबाईल नंबर (१० अंकी)' : 'Mobile Number (10 Digits)'}
+                        </label>
+                        <input
+                          type="tel"
+                          className="form-input"
+                          placeholder={lang === 'mr' ? '१०-अंकी मोबाईल नंबर' : '10-digit mobile number'}
+                          value={form.mobile_no || ''}
+                          onChange={e => handleMobileChange(e.target.value)}
+                          maxLength={10}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                        />
+                        <div style={{ fontSize: 11, color: form.mobile_no && form.mobile_no.length !== 10 ? '#b91c1c' : '#64748b', marginTop: 2, fontWeight: form.mobile_no && form.mobile_no.length !== 10 ? 700 : 400 }}>
+                          {form.mobile_no ? (lang === 'mr' ? `${form.mobile_no.length}/१० अंक प्रविष्ट केले` : `${form.mobile_no.length}/10 digits entered`) : (lang === 'mr' ? 'नेमके १० अंक आवश्यक' : 'Exactly 10 digits required')}
+                        </div>
+                      </div>
+
+                      {/* Opening Savings Balance */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>
+                          <Wallet size={13} style={{ display: 'inline', marginRight: 4 }} />
+                          {lang === 'mr' ? 'प्रारंभिक बचत ठेव (₹)' : 'Opening Savings Deposit (₹)'}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          placeholder="0.00"
+                          value={form.opening_balance || ''}
+                          onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                        />
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'खात्यात जमा केलेली सुरुवातीची बचत रक्कम' : 'Initial savings balance credited'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Section 2: Member Personal Profile (Vertical) ── */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <UserIcon size={18} color="var(--blue-700)" />
+                      <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
                       <button
                         type="button"
-                        onClick={loadNextId}
-                        style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: 'var(--blue-700)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                        onClick={translateAllMemberFields}
+                        disabled={translating}
+                        style={{ background: translating ? '#cbd5e1' : '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: translating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
                       >
-                        <Sparkles size={11} /> {lang === 'mr' ? 'आपोआप तयार करा' : 'Auto-Generate'}
+                        {translating ? (
+                          <>
+                            <Loader2 size={14} className="spinner" />
+                            {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
+                          </>
+                        ) : (
+                          <>
+                            <Languages size={14} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                          </>
+                        )}
                       </button>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'var(--blue-800)', letterSpacing: '0.08em', background: '#ffffff' }}
-                      value={form.customer_id || ''}
-                      onChange={e => handleInputChange('customer_id', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder={lang === 'mr' ? 'उदा. 5839204192' : 'e.g. 5839204192'}
-                      required
-                    />
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>{lang === 'mr' ? 'अनन्य १०-अंकी खाते ओळख क्रमांक' : 'Unique 10-digit random account identifier'}</div>
-                  </div>
+                    </div>
 
-                  {/* Mobile Number */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>
-                      <Phone size={13} style={{ display: 'inline', marginRight: 4 }} />
-                      {lang === 'mr' ? 'मोबाईल नंबर (१० अंकी)' : 'Mobile Number (10 Digits)'}
-                    </label>
-                    <input
-                      type="tel"
-                      className="form-input"
-                      placeholder={lang === 'mr' ? '१०-अंकी मोबाईल नंबर' : '10-digit mobile number'}
-                      value={form.mobile_no || ''}
-                      onChange={e => handleMobileChange(e.target.value)}
-                      maxLength={10}
-                      style={{ background: '#ffffff' }}
-                    />
-                    <div style={{ fontSize: 10, color: form.mobile_no && form.mobile_no.length !== 10 ? '#b91c1c' : '#64748b', marginTop: 4, fontWeight: form.mobile_no && form.mobile_no.length !== 10 ? 700 : 400 }}>
-                      {form.mobile_no ? (lang === 'mr' ? `${form.mobile_no.length}/१० अंक प्रविष्ट केले` : `${form.mobile_no.length}/10 digits entered`) : (lang === 'mr' ? 'नेमके १० अंक आवश्यक' : 'Exactly 10 digits required')}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Salutation */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'संबोधन' : 'Salutation'}</label>
+                        <select
+                          className="form-select"
+                          value={form.salutation || 'Mr.'}
+                          onChange={e => handleInputChange('salutation', e.target.value)}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                        >
+                          <option value="Mr.">Mr.</option>
+                          <option value="Smt.">Smt.</option>
+                          <option value="Sri.">Sri.</option>
+                          <option value="Dr.">Dr.</option>
+                          <option value="M/s.">M/s.</option>
+                        </select>
+                      </div>
+
+                      {/* First Name */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'पहिले नाव' : 'First Name'} <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
+                          value={form.first_name || ''}
+                          onChange={e => handleInputChange('first_name', e.target.value)}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                          required
+                        />
+                      </div>
+
+                      {/* Middle Name */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'मधले नाव' : 'Middle Name'}</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
+                          value={form.middle_name || ''}
+                          onChange={e => handleInputChange('middle_name', e.target.value)}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                        />
+                      </div>
+
+                      {/* Last Name */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'आडनाव' : 'Last Name'} <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
+                          value={form.last_name || ''}
+                          onChange={e => handleInputChange('last_name', e.target.value)}
+                          style={{ background: '#ffffff', maxWidth: '100%' }}
+                          required
+                        />
+                      </div>
+
+                      {/* Full Name Preview Banner */}
+                      {composedFullName && (
+                        <div style={{
+                          padding: '12px 18px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                          borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10
+                        }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'mr' ? 'पूर्ण नाव:' : 'FULL NAME:'}</span>
+                          <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>{composedFullName}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Opening Savings Balance */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>
-                      <Wallet size={13} style={{ display: 'inline', marginRight: 4 }} />
-                      {lang === 'mr' ? 'प्रारंभिक बचत ठेव (₹)' : 'Opening Savings Deposit (₹)'}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      placeholder="0.00"
-                      value={form.opening_balance || ''}
-                      onChange={e => handleInputChange('opening_balance', parseFloat(e.target.value) || 0)}
-                      style={{ background: '#ffffff' }}
-                    />
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>{lang === 'mr' ? 'खात्यात जमा केलेली सुरुवातीची बचत रक्कम' : 'Initial savings balance credited'}</div>
-                  </div>
+                  {/* ── Section 3: Residential Address (Vertical) ── */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <MapPin size={18} color="var(--blue-700)" />
+                      <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
+                    </div>
 
-                </div>
-              </div>
-
-              {/* ── Section 2: Member Personal Profile ── */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <UserIcon size={18} color="var(--blue-700)" />
-                  <span>{lang === 'mr' ? '२. सदस्याचे वैयक्तिक प्रोफाइल' : '2. Member Personal Profile'}</span>
-                  <button
-                    type="button"
-                    onClick={translateAllMemberFields}
-                    disabled={translating}
-                    style={{ background: translating ? '#cbd5e1' : '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: translating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}
-                  >
-                    {translating ? (
-                      <>
-                        <Loader2 size={14} className="spinner" />
-                        {lang === 'mr' ? 'मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : 'Translating to Marathi, please wait...'}
-                      </>
-                    ) : (
-                      <>
-                        <Languages size={14} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="form-grid" style={{ gridTemplateColumns: '120px 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                  
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'संबोधन' : 'Salutation'}</label>
-                    <select
-                      className="form-select"
-                      value={form.salutation || 'Mr.'}
-                      onChange={e => handleInputChange('salutation', e.target.value)}
-                      style={{ background: '#ffffff' }}
-                    >
-                      <option value="Mr.">Mr.</option>
-                      <option value="Smt.">Smt.</option>
-                      <option value="Sri.">Sri.</option>
-                      <option value="Dr.">Dr.</option>
-                      <option value="M/s.">M/s.</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'पहिले नाव' : 'First Name'} <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={lang === 'mr' ? 'पहिले नाव' : 'First name'}
-                      value={form.first_name || ''}
-                      onChange={e => handleInputChange('first_name', e.target.value)}
-                      style={{ background: '#ffffff' }}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'मधले नाव' : 'Middle Name'}</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={lang === 'mr' ? 'वडिलांचे/पतीचे नाव' : 'Middle name'}
-                      value={form.middle_name || ''}
-                      onChange={e => handleInputChange('middle_name', e.target.value)}
-                      style={{ background: '#ffffff' }}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>{lang === 'mr' ? 'आडनाव' : 'Last Name'} <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={lang === 'mr' ? 'आडनाव' : 'Last / Surname'}
-                      value={form.last_name || ''}
-                      onChange={e => handleInputChange('last_name', e.target.value)}
-                      style={{ background: '#ffffff' }}
-                      required
-                    />
-                  </div>
-
-                </div>
-
-                {/* Full Name Preview Banner */}
-                {composedFullName && (
-                  <div style={{
-                    padding: '10px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
-                    borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10
-                  }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--blue-800)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'mr' ? 'पूर्ण नाव:' : 'FULL NAME:'}</span>
-                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 15 }}>{composedFullName}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* ── Section 3: Residential Address ── */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <MapPin size={18} color="var(--blue-700)" />
-                  <span>{lang === 'mr' ? '३. रहिवासी पत्ता' : '3. Residential Address'}</span>
-                </div>
-
-                <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belgaum District, Pin Code'}
-                    value={form.address || ''}
-                    onChange={e => handleInputChange('address', e.target.value)}
-                    style={{ background: '#ffffff' }}
-                  />
-                </div>
-              </div>
-
-              {/* ── Section 4: 3-Document KYC Verification ── */}
-              <div style={{
-                background: '#f8fafc', border: '1px solid #e2e8f0',
-                borderRadius: 12, padding: 18, marginBottom: 24
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <ShieldCheck size={18} color="var(--blue-700)" />
-                  <span>{lang === 'mr' ? '४. ३-कागदपत्रे KYC पडताळणी (कॅमेरा स्कॅन आणि फाईल अपलोड)' : '4. 3-Document KYC Verification (Camera Scan & File Upload)'}</span>
-                </div>
-
-                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                  
-                  {/* Doc 1: Aadhaar Front Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{lang === 'mr' ? '१. आधार कार्ड (समोरील)' : '1. Aadhaar Card (Front)'}</span>
-                        <span style={{ fontSize: 10, color: '#64748b' }}>{lang === 'mr' ? '१२ अंक' : '12 Digits'}</span>
-                      </div>
-                      
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 700 }}>
+                        {lang === 'mr' ? 'संपूर्ण पत्ता (गाव / शहर / तालुका / जिल्हा)' : 'Full Residential Address (Village / Town / Taluka / District)'}
+                      </label>
                       <input
                         type="text"
                         className="form-input"
-                        placeholder={lang === 'mr' ? '१२-अंकी आधार क्रमांक' : '12-digit Aadhaar Number'}
-                        value={form.aadhaar_no || ''}
-                        onChange={e => handleAadhaarChange(e.target.value)}
-                        maxLength={12}
-                        style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700 }}
+                        placeholder={lang === 'mr' ? 'घर क्र., गाव / शहर, तालुका, बेळगाव जिल्हा, पिन कोड' : 'House/Plot No., Village / Town, Taluka, Belgaum District, Pin Code'}
+                        value={form.address || ''}
+                        onChange={e => handleInputChange('address', e.target.value)}
+                        style={{ background: '#ffffff', maxWidth: '100%' }}
                       />
-                      <div style={{ fontSize: 10, color: form.aadhaar_no && form.aadhaar_no.length !== 12 ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.aadhaar_no && form.aadhaar_no.length !== 12 ? 700 : 400 }}>
-                        {form.aadhaar_no ? `${form.aadhaar_no.length}/12` : (lang === 'mr' ? '१२-अंकी क्रमांक' : '12-digit number')}
-                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Section 4: 3-Document KYC Verification (Vertical) ── */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ShieldCheck size={18} color="var(--blue-700)" />
+                      <span>{lang === 'mr' ? '४. ३-कागदपत्रे KYC पडताळणी (कॅमेरा स्कॅन आणि फाईल अपलोड)' : '4. 3-Document KYC Verification (Camera Scan & File Upload)'}</span>
                     </div>
 
-                    <div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'aadhaar_front')}
-                          />
-                        </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Doc 1: Aadhaar Front */}
+                      <div style={{ background: '#ffffff', padding: 18, border: '1px solid #cbd5e1', borderRadius: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>
+                            {lang === 'mr' ? '१. आधार कार्ड (समोरील बाजू)' : '1. Aadhaar Card (Front Scan)'}
+                          </div>
+                          <span style={{ fontSize: 11, color: form.aadhaar_no && form.aadhaar_no.length !== 12 ? '#b91c1c' : '#64748b', fontWeight: form.aadhaar_no && form.aadhaar_no.length !== 12 ? 700 : 500 }}>
+                            {form.aadhaar_no ? `${form.aadhaar_no.length}/12 digits` : (lang === 'mr' ? '१२-अंकी क्रमांक' : '12-digit number')}
+                          </span>
+                        </div>
 
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'center' }}>
                           <input
-                            type="file"
-                            accept="image/*,.pdf,.doc,.docx"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                            type="text"
+                            className="form-input"
+                            placeholder={lang === 'mr' ? '१२-अंकी आधार क्रमांक' : '12-digit Aadhaar Number'}
+                            value={form.aadhaar_no || ''}
+                            onChange={e => handleAadhaarChange(e.target.value)}
+                            maxLength={12}
+                            style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700 }}
                           />
-                        </label>
+
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Camera size={14} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                              />
+                            </label>
+
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Upload size={14} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
+                              <input
+                                type="file"
+                                accept="image/*,.pdf,.doc,.docx"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'aadhaar_front')}
+                              />
+                            </label>
+
+                            {form.aadhaar_doc_path && (
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: lang === 'mr' ? 'आधार कार्ड (समोरील स्कॅन)' : 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
+                                style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '7px 12px' }}
+                              >
+                                <Eye size={14} /> {lang === 'mr' ? 'पहा' : 'View'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
 
                         {form.aadhaar_doc_path && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_doc_path), title: lang === 'mr' ? 'आधार कार्ड (समोरील स्कॅन)' : 'Aadhaar Card (Front Scan)', docType: 'aadhaar_front' })}
-                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
-                          >
-                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
-                          </button>
+                          <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', padding: '6px 12px', borderRadius: 6, border: '1px solid #bbf7d0' }}>
+                            <CheckCircle size={14} color="#16a34a" />
+                            <span>{lang === 'mr' ? 'समोरील बाजू जोडली:' : 'Front Scan attached:'}</span>
+                            <span style={{ color: '#334155', fontWeight: 600 }}>{docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}</span>
+                          </div>
                         )}
                       </div>
 
-                      {form.aadhaar_doc_path && (
-                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'समोरील बाजू जोडली' : 'Front Scan attached'}
+                      {/* Doc 2: Aadhaar Back */}
+                      <div style={{ background: '#ffffff', padding: 18, border: '1px solid #cbd5e1', borderRadius: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>{lang === 'mr' ? '२. आधार कार्ड (मागील बाजू)' : '2. Aadhaar Card (Back Scan)'}</div>
+                            <div style={{ fontSize: 11, color: '#64748b' }}>{lang === 'mr' ? 'पत्ता आणि QR कोड बाजू स्कॅन' : 'Address & QR Code Side Scan'}</div>
                           </div>
-                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            📄 {docFileNames.aadhaar_front || getDocFileName(form.aadhaar_doc_path, 'Aadhaar_Front_Scan')}
+
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Camera size={14} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                              />
+                            </label>
+
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Upload size={14} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
+                              <input
+                                type="file"
+                                accept="image/*,.pdf,.doc,.docx"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'aadhaar_back')}
+                              />
+                            </label>
+
+                            {form.aadhaar_back_doc_path && (
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: lang === 'mr' ? 'आधार कार्ड (मागील स्कॅन)' : 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
+                                style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '7px 12px' }}
+                              >
+                                <Eye size={14} /> {lang === 'mr' ? 'पहा' : 'View'}
+                              </button>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Doc 2: Aadhaar Back Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>{lang === 'mr' ? '२. आधार कार्ड (मागील)' : '2. Aadhaar Card (Back)'}</div>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>{lang === 'mr' ? 'पत्ता आणि QR कोड बाजू स्कॅन' : 'Address & QR Code Side Scan'}</div>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'aadhaar_back')}
-                          />
-                        </label>
-
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
-                          <input
-                            type="file"
-                            accept="image/*,.pdf,.doc,.docx"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'aadhaar_back')}
-                          />
-                        </label>
 
                         {form.aadhaar_back_doc_path && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.aadhaar_back_doc_path), title: lang === 'mr' ? 'आधार कार्ड (मागील स्कॅन)' : 'Aadhaar Card (Back Scan)', docType: 'aadhaar_back' })}
-                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
-                          >
-                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
-                          </button>
+                          <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', padding: '6px 12px', borderRadius: 6, border: '1px solid #bbf7d0' }}>
+                            <CheckCircle size={14} color="#16a34a" />
+                            <span>{lang === 'mr' ? 'मागील बाजू जोडली:' : 'Back Scan attached:'}</span>
+                            <span style={{ color: '#334155', fontWeight: 600 }}>{docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}</span>
+                          </div>
                         )}
                       </div>
 
-                      {form.aadhaar_back_doc_path && (
-                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'मागील बाजू जोडली' : 'Back Scan attached'}
+                      {/* Doc 3: PAN Card */}
+                      <div style={{ background: '#ffffff', padding: 18, border: '1px solid #cbd5e1', borderRadius: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>
+                            {lang === 'mr' ? '३. पॅन कार्ड स्कॅन' : '3. PAN Card Scan'}
                           </div>
-                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            📄 {docFileNames.aadhaar_back || getDocFileName(form.aadhaar_back_doc_path, 'Aadhaar_Back_Scan')}
+                          <span style={{ fontSize: 11, color: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? '#b91c1c' : '#64748b', fontWeight: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? 700 : 500 }}>
+                            {form.pan_no ? (lang === 'mr' ? 'स्वरूप: ५ अक्षरे + ४ अंक + १ अक्षर' : 'Format: 5 Letters + 4 Digits + 1 Letter') : 'ABCDE1234F'}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder={lang === 'mr' ? 'उदा. ABCDE1234F' : 'e.g. ABCDE1234F'}
+                            value={form.pan_no || ''}
+                            onChange={e => handlePanChange(e.target.value)}
+                            maxLength={10}
+                            style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700, textTransform: 'uppercase' }}
+                          />
+
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Camera size={14} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'pan')}
+                              />
+                            </label>
+
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 12, padding: '7px 12px' }}>
+                              <Upload size={14} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
+                              <input
+                                type="file"
+                                accept="image/*,.pdf,.doc,.docx"
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, 'pan')}
+                              />
+                            </label>
+
+                            {form.pan_doc_path && (
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: lang === 'mr' ? 'पॅन कार्ड स्कॅन' : 'PAN Card Scan', docType: 'pan' })}
+                                style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 12, padding: '7px 12px' }}
+                              >
+                                <Eye size={14} /> {lang === 'mr' ? 'पहा' : 'View'}
+                              </button>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Doc 3: PAN Card Upload Box */}
-                  <div style={{ background: '#ffffff', padding: 16, border: '1px solid #cbd5e1', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{lang === 'mr' ? '३. पॅन कार्ड स्कॅन' : '3. PAN Card Scan'}</span>
-                        <span style={{ fontSize: 10, color: '#64748b' }}>ABCDE1234F</span>
-                      </div>
-                      
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder={lang === 'mr' ? 'उदा. ABCDE1234F' : 'e.g. ABCDE1234F'}
-                        value={form.pan_no || ''}
-                        onChange={e => handlePanChange(e.target.value)}
-                        maxLength={10}
-                        style={{ marginBottom: 10, fontSize: 13, fontFamily: 'monospace', fontWeight: 700, textTransform: 'uppercase' }}
-                      />
-                      <div style={{ fontSize: 10, color: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? '#b91c1c' : '#64748b', marginBottom: 10, fontWeight: form.pan_no && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_no) ? 700 : 400 }}>
-                        {form.pan_no ? (lang === 'mr' ? 'स्वरूप: ५ अक्षरे + ४ अंक + १ अक्षर' : 'Format: 5 Letters + 4 Digits + 1 Letter') : (lang === 'mr' ? '१०-अक्षरी पॅन' : '10-character PAN')}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Camera size={13} color="#2563eb" /> {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'pan')}
-                          />
-                        </label>
-
-                        <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '5px 8px', flex: 1, justifyContent: 'center' }}>
-                          <Upload size={13} /> {lang === 'mr' ? 'अपलोड' : 'Upload File'}
-                          <input
-                            type="file"
-                            accept="image/*,.pdf,.doc,.docx"
-                            style={{ display: 'none' }}
-                            onChange={e => handleFileUpload(e, 'pan')}
-                          />
-                        </label>
 
                         {form.pan_doc_path && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => setPreviewDocUrl({ url: getFileUrl(form.pan_doc_path), title: lang === 'mr' ? 'पॅन कार्ड स्कॅन' : 'PAN Card Scan', docType: 'pan' })}
-                            style={{ color: 'var(--blue-700)', borderColor: '#bfdbfe', fontSize: 11, padding: '5px 8px' }}
-                          >
-                            <Eye size={13} /> {lang === 'mr' ? 'पहा' : 'View'}
-                          </button>
+                          <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', padding: '6px 12px', borderRadius: 6, border: '1px solid #bbf7d0' }}>
+                            <CheckCircle size={14} color="#16a34a" />
+                            <span>{lang === 'mr' ? 'पॅन कार्ड जोडले:' : 'PAN Card scan attached:'}</span>
+                            <span style={{ color: '#334155', fontWeight: 600 }}>{docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}</span>
+                          </div>
                         )}
                       </div>
-
-                      {form.pan_doc_path && (
-                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} color="#16a34a" /> {lang === 'mr' ? 'पॅन कार्ड जोडले' : 'PAN Card scan attached'}
-                          </div>
-                          <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            📄 {docFileNames.pan || getDocFileName(form.pan_doc_path, 'PAN_Card_Scan')}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
-
-                </div>
-              </div>
+                </>
+              )}
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center', marginTop: 16 }}>
                 <button
                   type="button"
                   className="btn btn-secondary btn-lg"

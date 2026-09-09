@@ -3,7 +3,8 @@ import {
   Save, RotateCcw, CheckCircle, XCircle,
   Hash, Phone, Building2, CreditCard,
   PlusCircle, Trash2, FileEdit, FolderOpen,
-  RefreshCw, Edit3, Filter, Table, Printer, User as UserIcon, Sparkles, Languages, Loader2
+  RefreshCw, Edit3, Filter, Table, List, Printer, User as UserIcon, Sparkles, Languages, Loader2,
+  Calendar, BookOpen, FileText
 } from 'lucide-react';
 import Header from '../components/Header';
 import ReceiptModal from '../components/ReceiptModal';
@@ -161,6 +162,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
+
+  const [viewMode, setViewMode] = useState<'vertical' | 'excel'>(() => {
+    return (localStorage.getItem('bgs_credit_form_view_mode') as 'vertical' | 'excel') || 'vertical';
+  });
+
+  const handleViewModeChange = (mode: 'vertical' | 'excel') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_credit_form_view_mode', mode);
+  };
+
+  const [searchViewMode, setSearchViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_credit_search_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleSearchViewModeChange = (mode: 'excel' | 'vertical') => {
+    setSearchViewMode(mode);
+    localStorage.setItem('bgs_credit_search_view_mode', mode);
+  };
 
   const [translatingForm, setTranslatingForm] = useState(false);
 
@@ -754,7 +773,59 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               <div className="card-subtitle">{lang === 'mr' ? '* चिन्हांकित सर्व रकाने अनिवार्य आहेत' : 'All fields marked with * are required'}</div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {/* View Mode Switcher */}
+              <div style={{
+                display: 'inline-flex',
+                background: '#f1f5f9',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('vertical')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+                    color: viewMode === 'vertical' ? '#ffffff' : '#475569',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="credit-vertical-view-btn"
+                >
+                  <List size={14} /> {lang === 'mr' ? 'उभी मांडणी (एकखाली एक)' : 'Vertical Stack View'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('excel')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: viewMode === 'excel' ? '#059669' : 'transparent',
+                    color: viewMode === 'excel' ? '#ffffff' : '#475569',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="credit-excel-grid-view-btn"
+                >
+                  <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड मांडणी' : 'Excel Grid View'}
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={translateFormToMarathi}
@@ -816,240 +887,560 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
           <div className="card-body">
             <form onSubmit={(e) => { e.preventDefault(); handleSave(false); }} id="credit-form">
-              <div className="form-grid">
+              
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {/* MODE 1: VERTICAL STACK VIEW (BALANCED 2-COLUMN ALIGNMENT)     */}
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {viewMode === 'vertical' && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '20px 28px',
+                  marginBottom: 20,
+                  width: '100%',
+                }}>
 
-                {/* Date */}
-                <div className="form-group">
-                  <label className="form-label">{t('lbl_date')} <span className="required">*</span></label>
-                  <input id="txn-date" type="date" className="form-input"
-                    value={form.date} onChange={handleChange('date')} required />
-                </div>
+                  {/* ── Left Column: Date, Customer ID, Customer Name ── */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* 1. Date */}
+                    <div className="form-group">
+                      <label className="form-label">{t('lbl_date')} <span className="required">*</span></label>
+                      <input id="txn-date" type="date" className="form-input"
+                        value={form.date} onChange={handleChange('date')} required style={{ width: '100%' }} />
+                    </div>
 
-                {/* Customer ID */}
-                <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'} <span className="required">*</span></label>
-                    {form.customer_id.trim().length > 0 && form.customer_id.trim().length !== 10 && (
-                      <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
-                        {lang === 'mr' ? `(${form.customer_id.trim().length}/१० अंक)` : `(${form.customer_id.trim().length}/10 digits)`}
-                      </span>
-                    )}
+                    {/* 2. Customer ID */}
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'} <span className="required">*</span></label>
+                        {form.customer_id.trim().length > 0 && form.customer_id.trim().length !== 10 && (
+                          <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
+                            {lang === 'mr' ? `(${form.customer_id.trim().length}/१० अंक)` : `(${form.customer_id.trim().length}/10 digits)`}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        id="customer-id"
+                        type="text"
+                        maxLength={10}
+                        list="saved-customers-list"
+                        className="form-input"
+                        placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. (e.g. 1000000001)' : 'Enter 10-Digit ID (e.g. 1000000001)'}
+                        value={form.customer_id}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setForm(prev => ({ ...prev, customer_id: val }));
+                          const match = customerList.find(c => c.customer_id === val || c.full_name === val);
+                          if (match) {
+                            setForm(prev => ({
+                              ...prev,
+                              customer_id: match.customer_id,
+                              salutation: match.salutation || 'Mr.',
+                              customer_name: `${match.first_name}${match.middle_name ? ' ' + match.middle_name : ''} ${match.last_name}`.trim(),
+                            }));
+                            setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
+                          }
+                        }}
+                        required
+                        style={{ width: '100%' }}
+                      />
+                      <datalist id="saved-customers-list">
+                        {customerList.map(c => (
+                          <option key={c.id} value={c.customer_id}>
+                            {c.full_name} ({c.mobile_no || (lang === 'mr' ? 'मोबाइल नाही' : 'No Mobile')})
+                          </option>
+                        ))}
+                      </datalist>
+                    </div>
+
+                    {/* 3. Customer Name */}
+                    <div className="form-group">
+                      <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
+                      <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                        <select id="salutation" className="form-select"
+                          style={{ width: 110, flexShrink: 0 }}
+                          value={form.salutation} onChange={handleChange('salutation')}>
+                          <option value="Mr.">{lang === 'mr' ? 'श्री. (Mr.)' : 'Mr.'}</option>
+                          <option value="Mrs.">{lang === 'mr' ? 'सौ. (Mrs.)' : 'Mrs.'}</option>
+                          <option value="Ms.">{lang === 'mr' ? 'कु. (Ms.)' : 'Ms.'}</option>
+                          <option value="Dr.">{lang === 'mr' ? 'डॉ. (Dr.)' : 'Dr.'}</option>
+                          <option value="Sri.">{lang === 'mr' ? 'श्री. (Sri.)' : 'Sri.'}</option>
+                          <option value="Smt.">{lang === 'mr' ? 'श्रीमती (Smt.)' : 'Smt.'}</option>
+                        </select>
+                        <input id="customer-name" type="text" className="form-input"
+                          placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
+                          value={form.customer_name} onChange={handleChange('customer_name')} required style={{ flex: 1 }} />
+                      </div>
+                    </div>
                   </div>
-                  <input
-                    id="customer-id"
-                    type="text"
-                    maxLength={10}
-                    list="saved-customers-list"
-                    className="form-input"
-                    placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. (e.g. 1000000001)' : 'Enter 10-Digit ID (e.g. 1000000001)'}
-                    value={form.customer_id}
-                    onChange={e => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setForm(prev => ({ ...prev, customer_id: val }));
-                      const match = customerList.find(c => c.customer_id === val || c.full_name === val);
-                      if (match) {
-                        setForm(prev => ({
-                          ...prev,
-                          customer_id: match.customer_id,
-                          salutation: match.salutation || 'Mr.',
-                          customer_name: `${match.first_name}${match.middle_name ? ' ' + match.middle_name : ''} ${match.last_name}`.trim(),
-                        }));
-                        setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
-                      }
-                    }}
-                    required
-                  />
-                  <datalist id="saved-customers-list">
-                    {customerList.map(c => (
-                      <option key={c.id} value={c.customer_id}>
-                        {c.full_name} ({c.mobile_no || (lang === 'mr' ? 'मोबाइल नाही' : 'No Mobile')})
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
 
-                {/* Accountant */}
-                <div className="form-group">
-                  <label className="form-label">{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</label>
-                  <input id="created-by" type="text" className="form-input"
-                    placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
-                    value={form.created_by} onChange={handleChange('created_by')} />
-                </div>
+                  {/* ── Right Column: Accountant, Entry Nature, Account Head ── */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* 4. Accountant */}
+                    <div className="form-group">
+                      <label className="form-label">{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</label>
+                      <input id="created-by" type="text" className="form-input"
+                        placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
+                        value={form.created_by} onChange={handleChange('created_by')} style={{ width: '100%' }} />
+                    </div>
 
-                {/* Customer Name */}
-                <div className="form-group full-width">
-                  <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <select id="salutation" className="form-select"
-                      style={{ width: 110, flexShrink: 0 }}
-                      value={form.salutation} onChange={handleChange('salutation')}>
-                      <option value="Mr.">{lang === 'mr' ? 'श्री. (Mr.)' : 'Mr.'}</option>
-                      <option value="Mrs.">{lang === 'mr' ? 'सौ. (Mrs.)' : 'Mrs.'}</option>
-                      <option value="Ms.">{lang === 'mr' ? 'कु. (Ms.)' : 'Ms.'}</option>
-                      <option value="Dr.">{lang === 'mr' ? 'डॉ. (Dr.)' : 'Dr.'}</option>
-                      <option value="Sri.">{lang === 'mr' ? 'श्री. (Sri.)' : 'Sri.'}</option>
-                      <option value="Smt.">{lang === 'mr' ? 'श्रीमती (Smt.)' : 'Smt.'}</option>
-                    </select>
-                    <input id="customer-name" type="text" className="form-input"
-                      placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
-                      value={form.customer_name} onChange={handleChange('customer_name')} required />
-                  </div>
-                </div>
+                    {/* 5. Entry Nature Toggle Switcher */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>{lang === 'mr' ? 'व्यवहाराचे स्वरूप / वही प्रकार' : 'Transaction Nature / Book Type Entry'} <span className="required">*</span></span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          {lang === 'mr' ? 'नोंदीचे स्वरूप निवडा' : 'Select entry nature'}
+                        </span>
+                      </label>
+                      <div className="nature-pill-container" style={{ width: '100%', display: 'flex' }}>
+                        <button
+                          type="button"
+                          className={`nature-pill-btn ${form.entry_nature === 'CREDIT' ? 'credit-active' : ''}`}
+                          style={{ flex: 1, textAlign: 'center' }}
+                          onClick={() => {
+                            const newNature = 'CREDIT';
+                            const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                            const isStillValid = currentType && (currentType.entry_type === 'CREDIT' || currentType.entry_type === 'BOTH');
+                            setForm(prev => ({
+                              ...prev,
+                              entry_nature: newNature,
+                              transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                            }));
+                          }}
+                        >
+                          {lang === 'mr' ? '१. जमा नोंद (आवक)' : 'CREDIT ENTRY (Receipt Inflow)'}
+                        </button>
+                        <button
+                          type="button"
+                          className={`nature-pill-btn ${form.entry_nature === 'DEBIT' ? 'debit-active' : ''}`}
+                          style={{ flex: 1, textAlign: 'center' }}
+                          onClick={() => {
+                            const newNature = 'DEBIT';
+                            const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                            const isStillValid = currentType && (currentType.entry_type === 'DEBIT' || currentType.entry_type === 'BOTH');
+                            setForm(prev => ({
+                              ...prev,
+                              entry_nature: newNature,
+                              transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                            }));
+                          }}
+                        >
+                          {lang === 'mr' ? '२. नावे नोंद (जावक)' : 'DEBIT ENTRY (Payment Outflow)'}
+                        </button>
+                      </div>
+                    </div>
 
-                {/* Entry Nature Toggle Switcher */}
-                <div className="form-group full-width" style={{ marginTop: 6, marginBottom: 6 }}>
-                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{lang === 'mr' ? 'व्यवहाराचे स्वरूप / वही प्रकार' : 'Transaction Nature / Book Type Entry'} <span className="required">*</span></span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      {lang === 'mr' ? 'नोंदीचे स्वरूप निवडा' : 'Select entry nature to filter matching heads'}
-                    </span>
-                  </label>
-                  <div className="nature-pill-container">
-                    <button
-                      type="button"
-                      className={`nature-pill-btn ${form.entry_nature === 'CREDIT' ? 'credit-active' : ''}`}
-                      onClick={() => {
-                        const newNature = 'CREDIT';
-                        const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
-                        const isStillValid = currentType && (currentType.entry_type === 'CREDIT' || currentType.entry_type === 'BOTH');
-                        setForm(prev => ({
-                          ...prev,
-                          entry_nature: newNature,
-                          transaction_type_id: isStillValid ? prev.transaction_type_id : '',
-                        }));
-                      }}
-                    >
-                      {lang === 'mr' ? '१. जमा नोंद (आवक → जमा वही)' : 'CREDIT ENTRY (Receipt Inflow → Credit Book)'}
-                    </button>
-                    <button
-                      type="button"
-                      className={`nature-pill-btn ${form.entry_nature === 'DEBIT' ? 'debit-active' : ''}`}
-                      onClick={() => {
-                        const newNature = 'DEBIT';
-                        const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
-                        const isStillValid = currentType && (currentType.entry_type === 'DEBIT' || currentType.entry_type === 'BOTH');
-                        setForm(prev => ({
-                          ...prev,
-                          entry_nature: newNature,
-                          transaction_type_id: isStillValid ? prev.transaction_type_id : '',
-                        }));
-                      }}
-                    >
-                      {lang === 'mr' ? '२. नावे नोंद (जावक → नावे वही)' : 'DEBIT ENTRY (Payment Outflow → Debit Book)'}
-                    </button>
-                  </div>
-                </div>
+                    {/* 6. Transaction Type + Remarks */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>
+                          {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते नाव (Head)` : `${form.entry_nature} Account Head`} <span className="required">*</span>
+                        </span>
+                        {form.entry_nature && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
+                            background: form.entry_nature === 'CREDIT' ? '#dcfce7' : '#fee2e2',
+                            color: form.entry_nature === 'CREDIT' ? '#15803d' : '#b91c1c',
+                            border: form.entry_nature === 'CREDIT' ? '1px solid #86efac' : '1px solid #fca5a5',
+                          }}>
+                            {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} वही` : `${form.entry_nature} BOOK`}
+                          </span>
+                        )}
+                      </label>
+                      <div style={{ width: '100%' }}>
+                        <SearchableCombobox
+                          value={form.transaction_type_id ? (txnTypes.find(t => String(t.id) === form.transaction_type_id)?.name || form.transaction_type_id) : ''}
+                          onChange={val => {
+                            const matchedType = txnTypes.find(t => t.name === val || String(t.id) === val);
+                            const selectedId = matchedType ? String(matchedType.id) : val;
+                            let defaultNature = form.entry_nature || 'CREDIT';
+                            if (matchedType) {
+                              if (matchedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
+                              else if (matchedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
+                            }
+                            setForm(prev => ({
+                              ...prev,
+                              transaction_type_id: selectedId,
+                              entry_nature: defaultNature,
+                            }));
+                          }}
+                          options={Array.from(new Set([
+                            ...(form.entry_nature === 'DEBIT' ? PAYMENT_PARTICULARS_OPTIONS : RECEIPT_PARTICULARS_OPTIONS),
+                            ...txnTypes
+                              .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
+                              .map(t => t.name)
+                          ]))}
+                          allowCustom={true}
+                          onAddNewOption={newOpt => {
+                            const trimmed = newOpt.trim();
+                            if (trimmed) {
+                              const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
+                              if (!exists) {
+                                const newType: TransactionType = {
+                                  id: Date.now(),
+                                  name: trimmed,
+                                  cash_book_column: 'sundary_ac',
+                                  ledger_account: trimmed,
+                                  entry_type: form.entry_nature || 'BOTH',
+                                  display_order: 99,
+                                };
+                                setTxnTypes(prev => [...prev, newType]);
+                                setForm(prev => ({
+                                  ...prev,
+                                  transaction_type_id: String(newType.id),
+                                }));
+                              }
+                            }
+                          }}
+                          lang={lang}
+                          placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
+                        />
+                      </div>
 
-                {/* ── 1. Transaction Type + Remarks ── */}
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>
-                      {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते नाव (Head)` : `${form.entry_nature} Account Head`} <span className="required">*</span>
-                    </span>
-                    {form.entry_nature && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 12,
-                        background: form.entry_nature === 'CREDIT' ? '#dcfce7' : '#fee2e2',
-                        color: form.entry_nature === 'CREDIT' ? '#15803d' : '#b91c1c',
-                        border: form.entry_nature === 'CREDIT' ? '1px solid #86efac' : '1px solid #fca5a5',
-                      }}>
-                        {lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} वही` : `${form.entry_nature} BOOK`}
-                      </span>
-                    )}
-                  </label>
-                  <SearchableCombobox
-                    value={form.transaction_type_id ? (txnTypes.find(t => String(t.id) === form.transaction_type_id)?.name || form.transaction_type_id) : ''}
-                    onChange={val => {
-                      const matchedType = txnTypes.find(t => t.name === val || String(t.id) === val);
-                      const selectedId = matchedType ? String(matchedType.id) : val;
-                      let defaultNature = form.entry_nature || 'CREDIT';
-                      if (matchedType) {
-                        if (matchedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
-                        else if (matchedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
-                      }
-                      setForm(prev => ({
-                        ...prev,
-                        transaction_type_id: selectedId,
-                        entry_nature: defaultNature,
-                      }));
-                    }}
-                    options={Array.from(new Set([
-                      ...(form.entry_nature === 'DEBIT' ? PAYMENT_PARTICULARS_OPTIONS : RECEIPT_PARTICULARS_OPTIONS),
-                      ...txnTypes
-                        .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
-                        .map(t => t.name)
-                    ]))}
-                    allowCustom={true}
-                    onAddNewOption={newOpt => {
-                      const trimmed = newOpt.trim();
-                      if (trimmed) {
-                        const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
-                        if (!exists) {
-                          const newType: TransactionType = {
-                            id: Date.now(),
-                            name: trimmed,
-                            cash_book_column: 'sundary_ac',
-                            ledger_account: trimmed,
-                            entry_type: form.entry_nature || 'BOTH',
-                            display_order: 99,
-                          };
-                          setTxnTypes(prev => [...prev, newType]);
-                          setForm(prev => ({
-                            ...prev,
-                            transaction_type_id: String(newType.id),
-                          }));
+                      {/* Configurable Credit / Debit selector for Sundry Account / Both types */}
+                      {(() => {
+                        const selType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                        if (selType && selType.entry_type === 'BOTH') {
+                          return (
+                            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'नोंदीचे स्वरूप:' : 'Entry Nature:'}</span>
+                              <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <input
+                                  type="radio"
+                                  name="entry_nature"
+                                  value="CREDIT"
+                                  checked={form.entry_nature === 'CREDIT'}
+                                  onChange={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
+                                />
+                                {lang === 'mr' ? 'जमा वही (पावती)' : 'Credit Book (Receipt)'}
+                              </label>
+                              <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <input
+                                  type="radio"
+                                  name="entry_nature"
+                                  value="DEBIT"
+                                  checked={form.entry_nature === 'DEBIT'}
+                                  onChange={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
+                                />
+                                {lang === 'mr' ? 'नावे वही (खर्च)' : 'Debit Book (Payment)'}
+                              </label>
+                            </div>
+                          );
                         }
-                      }
-                    }}
-                    lang={lang}
-                    placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
-                  />
+                        return null;
+                      })()}
+                    </div>
+                  </div>
 
-                  {/* Configurable Credit / Debit selector for Sundry Account / Both types */}
-                  {(() => {
-                    const selType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
-                    if (selType && selType.entry_type === 'BOTH') {
-                      return (
-                        <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'नोंदीचे स्वरूप:' : 'Entry Nature:'}</span>
-                          <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <input
-                              type="radio"
-                              name="entry_nature"
-                              value="CREDIT"
-                              checked={form.entry_nature === 'CREDIT'}
-                              onChange={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
-                            />
-                            {lang === 'mr' ? 'जमा वही (पावती)' : 'Credit Book (Receipt)'}
-                          </label>
-                          <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <input
-                              type="radio"
-                              name="entry_nature"
-                              value="DEBIT"
-                              checked={form.entry_nature === 'DEBIT'}
-                              onChange={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
-                            />
-                            {lang === 'mr' ? 'नावे वही (खर्च)' : 'Debit Book (Payment)'}
-                          </label>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  {/* ── 7. Remarks (Spans full width across both columns) ── */}
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label">{lang === 'mr' ? 'शेरा' : 'Remarks'}</label>
+                    <input id="remarks" type="text" className="form-input"
+                      placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
+                      value={form.remarks} onChange={handleChange('remarks')} style={{ width: '100%' }} />
+                  </div>
+
                 </div>
+              )}
 
-                <div className="form-group">
-                  <label className="form-label">{lang === 'mr' ? 'शेरा' : 'Remarks'}</label>
-                  <input id="remarks" type="text" className="form-input"
-                    placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
-                    value={form.remarks} onChange={handleChange('remarks')} />
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {/* MODE 2: EXCEL SPREADSHEET GRID VIEW                           */}
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {viewMode === 'excel' && (
+                <div className="excel-form-container" style={{ marginBottom: 20, width: '100%' }}>
+                  <div className="excel-toolbar">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Table size={16} color="#059669" />
+                      <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                        {lang === 'mr' ? 'व्यवहार तपशील नोंदवही (एक्सेल ग्रिड)' : 'TRANSACTION_HEADER_ENTRY_SHEET (Excel Grid)'}
+                      </span>
+                      <span style={{ fontSize: 10, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                        {lang === 'mr' ? '७ रकाने' : '7 Header Rows'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>
+                      {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+                    </div>
+                  </div>
+
+                  <div className="excel-form-table-wrapper">
+                    <table className="excel-form-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                          <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                          <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                          <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साधने' : 'Validation & Info'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Row 1: Date */}
+                        <tr>
+                          <td className="excel-row-idx">1</td>
+                          <td className="excel-col-label">
+                            <span>{t('lbl_date')}</span>
+                            <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <input id="txn-date-excel" type="date" className="form-input"
+                              value={form.date} onChange={handleChange('date')} required style={{ maxWidth: 240, height: 38 }} />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{form.date}</span>
+                          </td>
+                        </tr>
+
+                        {/* Row 2: Customer ID */}
+                        <tr>
+                          <td className="excel-row-idx">2</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Hash size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी / खाते क्र.' : '10-Digit Customer ID / Account No.'}</span>
+                              <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                            </div>
+                          </td>
+                          <td className="excel-col-input">
+                            <input
+                              id="customer-id-excel"
+                              type="text"
+                              maxLength={10}
+                              list="saved-customers-list"
+                              className="form-input"
+                              placeholder={lang === 'mr' ? '१०-अंकी ओळख क्र. (e.g. 1000000001)' : 'Enter 10-Digit ID (e.g. 1000000001)'}
+                              value={form.customer_id}
+                              onChange={e => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setForm(prev => ({ ...prev, customer_id: val }));
+                                const match = customerList.find(c => c.customer_id === val || c.full_name === val);
+                                if (match) {
+                                  setForm(prev => ({
+                                    ...prev,
+                                    customer_id: match.customer_id,
+                                    salutation: match.salutation || 'Mr.',
+                                    customer_name: `${match.first_name}${match.middle_name ? ' ' + match.middle_name : ''} ${match.last_name}`.trim(),
+                                  }));
+                                  setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
+                                }
+                              }}
+                              required
+                              style={{ maxWidth: 280, height: 38 }}
+                            />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: form.customer_id && form.customer_id.length === 10 ? '#15803d' : form.customer_id ? '#dc2626' : '#64748b', fontWeight: 700 }}>
+                              {form.customer_id ? `${form.customer_id.length}/10 digits` : '10 Digits Required'}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Row 3: Accountant */}
+                        <tr>
+                          <td className="excel-row-idx">3</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</span>
+                          </td>
+                          <td className="excel-col-input">
+                            <input id="created-by-excel" type="text" className="form-input"
+                              placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
+                              value={form.created_by} onChange={handleChange('created_by')} style={{ maxWidth: 360, height: 38 }} />
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: '#64748b' }}>Clerk / Accountant</span>
+                          </td>
+                        </tr>
+
+                        {/* Row 4: Customer Name */}
+                        <tr>
+                          <td className="excel-row-idx">4</td>
+                          <td className="excel-col-label">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <UserIcon size={14} color="var(--blue-700)" />
+                              <span>{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'}</span>
+                              <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                            </div>
+                          </td>
+                          <td className="excel-col-input">
+                            <div style={{ display: 'flex', gap: 8, maxWidth: 460 }}>
+                              <select id="salutation-excel" className="form-select"
+                                style={{ width: 110, flexShrink: 0, height: 38 }}
+                                value={form.salutation} onChange={handleChange('salutation')}>
+                                <option value="Mr.">{lang === 'mr' ? 'श्री. (Mr.)' : 'Mr.'}</option>
+                                <option value="Mrs.">{lang === 'mr' ? 'सौ. (Mrs.)' : 'Mrs.'}</option>
+                                <option value="Ms.">{lang === 'mr' ? 'कु. (Ms.)' : 'Ms.'}</option>
+                                <option value="Dr.">{lang === 'mr' ? 'डॉ. (Dr.)' : 'Dr.'}</option>
+                                <option value="Sri.">{lang === 'mr' ? 'श्री. (Sri.)' : 'Sri.'}</option>
+                                <option value="Smt.">{lang === 'mr' ? 'श्रीमती (Smt.)' : 'Smt.'}</option>
+                              </select>
+                              <input id="customer-name-excel" type="text" className="form-input"
+                                placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
+                                value={form.customer_name} onChange={handleChange('customer_name')} required style={{ flex: 1, height: 38 }} />
+                            </div>
+                          </td>
+                          <td className="excel-col-tools">
+                            <span style={{ fontSize: 11, color: form.customer_name ? '#15803d' : '#dc2626', fontWeight: 700 }}>
+                              {form.customer_name ? '✓ ' + form.salutation + ' ' + form.customer_name : '* Required'}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Row 5: Entry Nature */}
+                        <tr>
+                          <td className="excel-row-idx">5</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'व्यवहाराचे स्वरूप' : 'Transaction Nature'}</span>
+                            <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <div className="nature-pill-container" style={{ width: 'fit-content' }}>
+                              <button
+                                type="button"
+                                className={`nature-pill-btn ${form.entry_nature === 'CREDIT' ? 'credit-active' : ''}`}
+                                onClick={() => {
+                                  const newNature = 'CREDIT';
+                                  const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                                  const isStillValid = currentType && (currentType.entry_type === 'CREDIT' || currentType.entry_type === 'BOTH');
+                                  setForm(prev => ({
+                                    ...prev,
+                                    entry_nature: newNature,
+                                    transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                                  }));
+                                }}
+                              >
+                                {lang === 'mr' ? '१. जमा नोंद (आवक → जमा वही)' : 'CREDIT ENTRY (Receipt Inflow → Credit Book)'}
+                              </button>
+                              <button
+                                type="button"
+                                className={`nature-pill-btn ${form.entry_nature === 'DEBIT' ? 'debit-active' : ''}`}
+                                onClick={() => {
+                                  const newNature = 'DEBIT';
+                                  const currentType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                                  const isStillValid = currentType && (currentType.entry_type === 'DEBIT' || currentType.entry_type === 'BOTH');
+                                  setForm(prev => ({
+                                    ...prev,
+                                    entry_nature: newNature,
+                                    transaction_type_id: isStillValid ? prev.transaction_type_id : '',
+                                  }));
+                                }}
+                              >
+                                {lang === 'mr' ? '२. नावे नोंद (जावक → नावे वही)' : 'DEBIT ENTRY (Payment Outflow → Debit Book)'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 6: Transaction Type / Head */}
+                        <tr>
+                          <td className="excel-row-idx">6</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते नाव (Head)` : `${form.entry_nature} Account Head`}</span>
+                            <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <SearchableCombobox
+                              value={form.transaction_type_id ? (txnTypes.find(t => String(t.id) === form.transaction_type_id)?.name || form.transaction_type_id) : ''}
+                              onChange={val => {
+                                const matchedType = txnTypes.find(t => t.name === val || String(t.id) === val);
+                                const selectedId = matchedType ? String(matchedType.id) : val;
+                                let defaultNature = form.entry_nature || 'CREDIT';
+                                if (matchedType) {
+                                  if (matchedType.entry_type === 'DEBIT') defaultNature = 'DEBIT';
+                                  else if (matchedType.entry_type === 'CREDIT') defaultNature = 'CREDIT';
+                                }
+                                setForm(prev => ({
+                                  ...prev,
+                                  transaction_type_id: selectedId,
+                                  entry_nature: defaultNature,
+                                }));
+                              }}
+                              options={Array.from(new Set([
+                                ...(form.entry_nature === 'DEBIT' ? PAYMENT_PARTICULARS_OPTIONS : RECEIPT_PARTICULARS_OPTIONS),
+                                ...txnTypes
+                                  .filter(t => t.entry_type === 'BOTH' || t.entry_type === form.entry_nature)
+                                  .map(t => t.name)
+                              ]))}
+                              allowCustom={true}
+                              onAddNewOption={newOpt => {
+                                const trimmed = newOpt.trim();
+                                if (trimmed) {
+                                  const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
+                                  if (!exists) {
+                                    const newType: TransactionType = {
+                                      id: Date.now(),
+                                      name: trimmed,
+                                      cash_book_column: 'sundary_ac',
+                                      ledger_account: trimmed,
+                                      entry_type: form.entry_nature || 'BOTH',
+                                      display_order: 99,
+                                    };
+                                    setTxnTypes(prev => [...prev, newType]);
+                                    setForm(prev => ({
+                                      ...prev,
+                                      transaction_type_id: String(newType.id),
+                                    }));
+                                  }
+                                }
+                              }}
+                              lang={lang}
+                              placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
+                            />
+
+                            {/* Configurable Credit / Debit selector for Sundry Account / Both types */}
+                            {(() => {
+                              const selType = txnTypes.find(t => String(t.id) === form.transaction_type_id);
+                              if (selType && selType.entry_type === 'BOTH') {
+                                return (
+                                  <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'नोंदीचे स्वरूप:' : 'Entry Nature:'}</span>
+                                    <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <input
+                                        type="radio"
+                                        name="entry_nature_excel"
+                                        value="CREDIT"
+                                        checked={form.entry_nature === 'CREDIT'}
+                                        onChange={() => setForm(prev => ({ ...prev, entry_nature: 'CREDIT' }))}
+                                      />
+                                      {lang === 'mr' ? 'जमा वही (पावती)' : 'Credit Book (Receipt)'}
+                                    </label>
+                                    <label style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <input
+                                        type="radio"
+                                        name="entry_nature_excel"
+                                        value="DEBIT"
+                                        checked={form.entry_nature === 'DEBIT'}
+                                        onChange={() => setForm(prev => ({ ...prev, entry_nature: 'DEBIT' }))}
+                                      />
+                                      {lang === 'mr' ? 'नावे वही (खर्च)' : 'Debit Book (Payment)'}
+                                    </label>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </td>
+                        </tr>
+
+                        {/* Row 7: Remarks */}
+                        <tr>
+                          <td className="excel-row-idx">7</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'शेरा' : 'Remarks'}</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <input id="remarks-excel" type="text" className="form-input"
+                              placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
+                              value={form.remarks} onChange={handleChange('remarks')} style={{ width: '100%', height: 38 }} />
+                          </td>
+                        </tr>
+
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-
-              </div>{/* /form-grid */}
+              )}
 
               {/* ── 2. Particulars Grid ── */}
-              <div style={{ marginTop: 24 }}>
+              <div style={{ marginTop: 24, width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <label className="form-label" style={{ margin: 0 }}>
                     {lang === 'mr' ? 'तपशील' : 'Particulars'} <span className="required">*</span>
@@ -1202,7 +1593,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               {/* ── 5. Received Amount in Words (auto) ── */}
-              <div style={{ marginTop: 16 }}>
+              <div style={{ marginTop: 16, width: '100%' }}>
                 <label className="form-label">{lang === 'mr' ? 'रक्कम (अक्षरी)' : 'Received Amount (in Words)'}</label>
                 <div style={{
                   padding: '12px 16px',
@@ -1230,7 +1621,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               {/* ── Bill Footer ── */}
-              <div className="bill-footer" style={{ marginTop: 24 }}>
+              <div className="bill-footer" style={{ marginTop: 24, width: '100%' }}>
                 <div className="signature-block">
                   <div className="signature-line" />
                   <div className="signature-label">{lang === 'mr' ? 'खातेधारकाची स्वाक्षरी' : 'Signature of Account Holder'}</div>
@@ -1248,7 +1639,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               </div>
 
               {/* ── Action Buttons ── */}
-              <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-end' }} className="no-print">
+              <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center', width: '100%' }} className="no-print">
                 <button type="button" className="btn btn-secondary" onClick={() => handleReset(true)} id="reset-btn">
                   <RotateCcw size={15} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
                 </button>
@@ -1283,106 +1674,450 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               <div className="card-subtitle">{lang === 'mr' ? 'कोणत्याही कालावधीसाठी संपूर्ण मासिक विवरणपत्र पाहण्यासाठी व मुद्रित करण्यासाठी शोध घ्या' : 'Search by Customer ID / Name for any period to view & print complete monthly statement'}</div>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => setShowStatementModal(true)}
-              disabled={historyList.length === 0}
-              id="print-monthly-stmt-btn"
-            >
-              <Printer size={14} /> {lang === 'mr' ? 'मासिक खाते विवरणपत्र मुद्रित करा' : 'Print Customer Monthly Statement'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {/* View Switcher: Excel vs Vertical */}
+              <div style={{
+                display: 'inline-flex',
+                background: '#f1f5f9',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleSearchViewModeChange('excel')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: searchViewMode === 'excel' ? '#059669' : 'transparent',
+                    color: searchViewMode === 'excel' ? '#ffffff' : '#475569',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="search-excel-grid-btn"
+                >
+                  <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSearchViewModeChange('vertical')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: searchViewMode === 'vertical' ? '#2563eb' : 'transparent',
+                    color: searchViewMode === 'vertical' ? '#ffffff' : '#475569',
+                    transition: 'all 0.15s ease',
+                  }}
+                  id="search-vertical-btn"
+                >
+                  <List size={14} /> {lang === 'mr' ? 'उभी मांडणी' : 'Vertical Stack'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowStatementModal(true)}
+                disabled={historyList.length === 0}
+                id="print-monthly-stmt-btn"
+              >
+                <Printer size={14} /> {lang === 'mr' ? 'मासिक खाते विवरणपत्र मुद्रित करा' : 'Print Customer Monthly Statement'}
+              </button>
+            </div>
           </div>
 
           <div className="card-body">
-            {/* Filter Bar */}
-            <div className="filter-bar" style={{ boxShadow: 'none', background: '#f8fafc', marginBottom: 20 }}>
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'ग्राहक आयडी / नाव:' : 'Customer ID / Name:'}</span>
-                <input
-                  id="hist-cust-id"
-                  type="text"
-                  className="filter-input"
-                  placeholder={lang === 'mr' ? 'उदा. CUST-1001 किंवा नाव' : 'e.g. CUST-1001 or Name'}
-                  value={hCustomerId}
-                  onChange={e => setHCustomerId(e.target.value)}
-                  style={{ minWidth: 160 }}
-                />
-              </div>
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* SEARCH MODE 1: EXCEL SPREADSHEET GRID VIEW (Vertically Aligned) */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {searchViewMode === 'excel' && (
+              <div className="excel-form-container" style={{ marginBottom: 20, width: '100%' }}>
+                <div className="excel-toolbar">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Table size={16} color="#059669" />
+                    <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                      {lang === 'mr' ? 'कालावधी शोध निकष (एक्सेल ग्रिड)' : 'PERIOD_SEARCH_FILTER_SHEET (Excel Grid)'}
+                    </span>
+                    <span style={{ fontSize: 10, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                      {lang === 'mr' ? '६ शोध निकष' : '6 Search Rows'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    {lang === 'mr' ? 'सर्व शोध निकष एकाखाली एक ओळीत मांडलेले आहेत' : 'All search fields aligned vertically row-by-row'}
+                  </div>
+                </div>
 
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'सुरुवातीची तारीख:' : 'From Date:'}</span>
-                <input
-                  id="hist-start"
-                  type="date"
-                  className="filter-input"
-                  value={hStartDate}
-                  onChange={e => setHStartDate(e.target.value)}
-                />
-              </div>
+                <div className="excel-form-table-wrapper">
+                  <table className="excel-form-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                        <th style={{ width: 250 }}>{lang === 'mr' ? 'शोध निकष / रकाना' : 'Search Parameter / Field'}</th>
+                        <th>{lang === 'mr' ? 'शोध इनपुट / मूल्य' : 'Search Input / Selection'}</th>
+                        <th style={{ width: 280 }}>{lang === 'mr' ? 'तपशील आणि सद्य स्थिती' : 'Description & Info'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Row 1: Customer ID / Name */}
+                      <tr>
+                        <td className="excel-row-idx">1</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <UserIcon size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'ग्राहक आयडी / नाव' : 'Customer ID / Name'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? '१०-अंकी आयडी किंवा ग्राहकाचे नाव' : '10-Digit ID or Customer Name'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            id="hist-cust-id"
+                            type="text"
+                            className="form-input"
+                            placeholder={lang === 'mr' ? 'उदा. 1000000001 किंवा नाव' : 'e.g. 1000000001 or Name'}
+                            value={hCustomerId}
+                            onChange={e => setHCustomerId(e.target.value)}
+                            style={{ width: '100%', maxWidth: 420, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            {hCustomerId ? `🔍 ${hCustomerId}` : (lang === 'mr' ? 'सर्व ग्राहक' : 'All Customers')}
+                          </span>
+                        </td>
+                      </tr>
 
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'शेवटची तारीख:' : 'To Date:'}</span>
-                <input
-                  id="hist-end"
-                  type="date"
-                  className="filter-input"
-                  value={hEndDate}
-                  onChange={e => setHEndDate(e.target.value)}
-                />
-              </div>
+                      {/* Row 2: From Date */}
+                      <tr>
+                        <td className="excel-row-idx">2</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Calendar size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'सुरुवातीची तारीख' : 'From Date'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'कालावधी प्रारंभ तारीख' : 'Search Period Start'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            id="hist-start"
+                            type="date"
+                            className="form-input"
+                            value={hStartDate}
+                            onChange={e => setHStartDate(e.target.value)}
+                            style={{ width: '100%', maxWidth: 260, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{hStartDate}</span>
+                        </td>
+                      </tr>
 
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'वही नोंदीचे स्वरूप:' : 'Book Entry Nature:'}</span>
-                <select
-                  id="hist-nature"
-                  className="filter-select"
-                  value={hNature}
-                  onChange={e => setHNature(e.target.value)}
-                  style={{ minWidth: 160, fontWeight: 700 }}
-                >
-                  <option value="">— {lang === 'mr' ? 'सर्व (जमा आणि नावे)' : 'All (Credit & Debit)'} —</option>
-                  <option value="CREDIT">📥 {lang === 'mr' ? 'केवळ जमा पावत्या' : 'CREDIT Receipts Only'}</option>
-                  <option value="DEBIT">📤 {lang === 'mr' ? 'केवळ नावे खर्च' : 'DEBIT Payments Only'}</option>
-                </select>
-              </div>
+                      {/* Row 3: To Date */}
+                      <tr>
+                        <td className="excel-row-idx">3</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Calendar size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'शेवटची तारीख' : 'To Date'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'कालावधी समाप्ती तारीख' : 'Search Period End'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            id="hist-end"
+                            type="date"
+                            className="form-input"
+                            value={hEndDate}
+                            onChange={e => setHEndDate(e.target.value)}
+                            style={{ width: '100%', maxWidth: 260, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{hEndDate}</span>
+                        </td>
+                      </tr>
 
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'व्यवहाराचा प्रकार:' : 'Transaction Type:'}</span>
-                <select
-                  id="hist-type"
-                  className="filter-select"
-                  value={hTxnTypeId}
-                  onChange={e => setHTxnTypeId(e.target.value)}
-                  style={{ minWidth: 160 }}
-                >
-                  <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
-                  {txnTypes.map(t => (
-                    <option key={t.id} value={t.id}>
-                      {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
-                    </option>
-                  ))}
-                </select>
-              </div>
+                      {/* Row 4: Book Entry Nature */}
+                      <tr>
+                        <td className="excel-row-idx">4</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <BookOpen size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'वही नोंदीचे स्वरूप' : 'Book Entry Nature'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'जमा पावती किंवा नावे खर्च' : 'Receipts vs Payments'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <select
+                            id="hist-nature"
+                            className="form-select"
+                            value={hNature}
+                            onChange={e => setHNature(e.target.value)}
+                            style={{ width: '100%', maxWidth: 360, height: 38, fontWeight: 700 }}
+                          >
+                            <option value="">— {lang === 'mr' ? 'सर्व (जमा आणि नावे)' : 'All (Credit & Debit)'} —</option>
+                            <option value="CREDIT">📥 {lang === 'mr' ? 'केवळ जमा पावत्या' : 'CREDIT Receipts Only'}</option>
+                            <option value="DEBIT">📤 {lang === 'mr' ? 'केवळ नावे खर्च' : 'DEBIT Payments Only'}</option>
+                          </select>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            {hNature === 'CREDIT' ? '📥 CREDIT Only' : hNature === 'DEBIT' ? '📤 DEBIT Only' : (lang === 'mr' ? 'सर्व प्रकार' : 'All Entries')}
+                          </span>
+                        </td>
+                      </tr>
 
-              <div className="filter-group">
-                <span className="filter-label">{lang === 'mr' ? 'स्थिती:' : 'Status:'}</span>
-                <select
-                  id="hist-status"
-                  className="filter-select"
-                  value={hStatus}
-                  onChange={e => setHStatus(e.target.value)}
-                >
-                  <option value="">— {lang === 'mr' ? 'सर्व स्थिती' : 'All Statuses'} —</option>
-                  <option value="POSTED">{lang === 'mr' ? 'केवळ पोस्ट केलेले' : 'Posted Only'}</option>
-                  <option value="DRAFT">{lang === 'mr' ? 'केवळ मसुदे' : 'Drafts Only'}</option>
-                </select>
-              </div>
+                      {/* Row 5: Transaction Type */}
+                      <tr>
+                        <td className="excel-row-idx">5</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FileText size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'व्यवहाराचा प्रकार' : 'Transaction Type'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'विशिष्ट खाते नोंद शीर्षक' : 'Specific Ledger Account Head'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <select
+                            id="hist-type"
+                            className="form-select"
+                            value={hTxnTypeId}
+                            onChange={e => setHTxnTypeId(e.target.value)}
+                            style={{ width: '100%', maxWidth: 420, height: 38 }}
+                          >
+                            <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
+                            {txnTypes.map(t => (
+                              <option key={t.id} value={t.id}>
+                                {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            {hTxnTypeId ? (txnTypes.find(t => String(t.id) === String(hTxnTypeId))?.name || 'Selected') : (lang === 'mr' ? 'सर्व खाती' : 'All Types')}
+                          </span>
+                        </td>
+                      </tr>
 
-              <button className="btn btn-primary btn-sm" onClick={loadHistory} id="hist-refresh-btn">
-                <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
-              </button>
-            </div>
+                      {/* Row 6: Status */}
+                      <tr>
+                        <td className="excel-row-idx">6</td>
+                        <td className="excel-col-label">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <CheckCircle size={14} color="var(--blue-700)" />
+                            <span>{lang === 'mr' ? 'स्थिती' : 'Status'}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{lang === 'mr' ? 'नोंदीची सद्य स्थिती' : 'Posted vs Draft status'}</div>
+                        </td>
+                        <td className="excel-col-input">
+                          <select
+                            id="hist-status"
+                            className="form-select"
+                            value={hStatus}
+                            onChange={e => setHStatus(e.target.value)}
+                            style={{ width: '100%', maxWidth: 300, height: 38 }}
+                          >
+                            <option value="">— {lang === 'mr' ? 'सर्व स्थिती' : 'All Statuses'} —</option>
+                            <option value="POSTED">{lang === 'mr' ? 'केवळ पोस्ट केलेले' : 'Posted Only'}</option>
+                            <option value="DRAFT">{lang === 'mr' ? 'केवळ मसुदे' : 'Drafts Only'}</option>
+                          </select>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            {hStatus || (lang === 'mr' ? 'सर्व' : 'All')}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Filter Action Buttons Row */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '14px 18px', background: '#f8fafc', borderTop: '1px solid #cbd5e1', borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}>
+                  <button className="btn btn-primary btn-sm" onClick={loadHistory} id="hist-refresh-btn" style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
+                  </button>
+
+                  {(hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setHCustomerId('');
+                        setHStartDate(todayStr);
+                        setHEndDate(todayStr);
+                        setHTxnTypeId('');
+                        setHStatus('');
+                        setHNature('');
+                        fetchTransactions(todayStr, todayStr).then(setHistoryList);
+                      }}
+                      id="hist-reset-btn"
+                      style={{ padding: '8px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <RotateCcw size={13} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* SEARCH MODE 2: VERTICAL STACK VIEW (Clean One Below Another)   */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {searchViewMode === 'vertical' && (
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: 10,
+                padding: '20px 24px',
+                marginBottom: 20,
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Row 1: Customer ID / Name */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'ग्राहक आयडी / नाव:' : 'Customer ID / Name:'}
+                    </label>
+                    <input
+                      id="hist-cust-id"
+                      type="text"
+                      className="form-input"
+                      placeholder={lang === 'mr' ? 'उदा. 1000000001 किंवा नाव' : 'e.g. 1000000001 or Name'}
+                      value={hCustomerId}
+                      onChange={e => setHCustomerId(e.target.value)}
+                      style={{ width: '100%', maxWidth: 420, height: 38 }}
+                    />
+                  </div>
+
+                  {/* Row 2: From Date */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'सुरुवातीची तारीख:' : 'From Date:'}
+                    </label>
+                    <input
+                      id="hist-start"
+                      type="date"
+                      className="form-input"
+                      value={hStartDate}
+                      onChange={e => setHStartDate(e.target.value)}
+                      style={{ width: '100%', maxWidth: 260, height: 38 }}
+                    />
+                  </div>
+
+                  {/* Row 3: To Date */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'शेवटची तारीख:' : 'To Date:'}
+                    </label>
+                    <input
+                      id="hist-end"
+                      type="date"
+                      className="form-input"
+                      value={hEndDate}
+                      onChange={e => setHEndDate(e.target.value)}
+                      style={{ width: '100%', maxWidth: 260, height: 38 }}
+                    />
+                  </div>
+
+                  {/* Row 4: Book Entry Nature */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'वही नोंदीचे स्वरूप:' : 'Book Entry Nature:'}
+                    </label>
+                    <select
+                      id="hist-nature"
+                      className="form-select"
+                      value={hNature}
+                      onChange={e => setHNature(e.target.value)}
+                      style={{ width: '100%', maxWidth: 360, height: 38, fontWeight: 700 }}
+                    >
+                      <option value="">— {lang === 'mr' ? 'सर्व (जमा आणि नावे)' : 'All (Credit & Debit)'} —</option>
+                      <option value="CREDIT">📥 {lang === 'mr' ? 'केवळ जमा पावत्या' : 'CREDIT Receipts Only'}</option>
+                      <option value="DEBIT">📤 {lang === 'mr' ? 'केवळ नावे खर्च' : 'DEBIT Payments Only'}</option>
+                    </select>
+                  </div>
+
+                  {/* Row 5: Transaction Type */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'व्यवहाराचा प्रकार:' : 'Transaction Type:'}
+                    </label>
+                    <select
+                      id="hist-type"
+                      className="form-select"
+                      value={hTxnTypeId}
+                      onChange={e => setHTxnTypeId(e.target.value)}
+                      style={{ width: '100%', maxWidth: 420, height: 38 }}
+                    >
+                      <option value="">— {lang === 'mr' ? 'सर्व प्रकार' : 'All Types'} —</option>
+                      {txnTypes.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {lang === 'mr' ? getTxnHeadMarathi(t.name) : t.name} ({t.entry_type === 'DEBIT' ? (lang === 'mr' ? 'नावे' : 'DEBIT') : (t.entry_type === 'CREDIT' ? (lang === 'mr' ? 'जमा' : 'CREDIT') : (lang === 'mr' ? 'जमा/नावे' : 'BOTH'))})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Row 6: Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'स्थिती:' : 'Status:'}
+                    </label>
+                    <select
+                      id="hist-status"
+                      className="form-select"
+                      value={hStatus}
+                      onChange={e => setHStatus(e.target.value)}
+                      style={{ width: '100%', maxWidth: 300, height: 38 }}
+                    >
+                      <option value="">— {lang === 'mr' ? 'सर्व स्थिती' : 'All Statuses'} —</option>
+                      <option value="POSTED">{lang === 'mr' ? 'केवळ पोस्ट केलेले' : 'Posted Only'}</option>
+                      <option value="DRAFT">{lang === 'mr' ? 'केवळ मसुदे' : 'Drafts Only'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Vertical Mode Action Buttons */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', paddingTop: 16, marginTop: 16, borderTop: '1px solid #e2e8f0' }}>
+                  <button className="btn btn-primary btn-sm" onClick={loadHistory} id="hist-refresh-btn" style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
+                  </button>
+
+                  {(hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setHCustomerId('');
+                        setHStartDate(todayStr);
+                        setHEndDate(todayStr);
+                        setHTxnTypeId('');
+                        setHStatus('');
+                        setHNature('');
+                        fetchTransactions(todayStr, todayStr).then(setHistoryList);
+                      }}
+                      id="hist-reset-btn"
+                      style={{ padding: '8px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <RotateCcw size={13} /> {lang === 'mr' ? 'रीसेट' : 'Reset'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Total Amount & Count Summary Banner */}
             <div className="stat-row" style={{ marginBottom: 20 }}>

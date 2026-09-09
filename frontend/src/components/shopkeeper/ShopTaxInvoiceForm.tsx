@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus, Zap, Loader2 } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Receipt, X, Languages, Check, FolderPlus, Zap, Loader2, Table, List } from 'lucide-react';
 import { createShopTaxInvoice, updateShopTaxInvoice, fetchShopTaxInvoices, deleteShopTaxInvoice, generate30DaysTestData } from '../../api/client';
 
 
@@ -41,6 +41,15 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   const [invoiceNo, setInvoiceNo] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [docPath, setDocPath] = useState('');
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_shop_tax_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleViewModeChange = (mode: 'excel' | 'vertical') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_shop_tax_view_mode', mode);
+  };
 
   // Search & Filter states
   const [startDate, setStartDate] = useState(firstDay);
@@ -375,7 +384,59 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* View Mode Toggle: Excel Grid vs Vertical Stack */}
+          <div style={{
+            display: 'flex',
+            background: '#f1f5f9',
+            padding: '3px',
+            borderRadius: '8px',
+            border: '1px solid #cbd5e1',
+          }}>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('excel')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'excel' ? '#4f46e5' : 'transparent',
+                color: viewMode === 'excel' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="tax-excel-view-btn"
+            >
+              <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('vertical')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+                color: viewMode === 'vertical' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="tax-vertical-view-btn"
+            >
+              <List size={14} /> {lang === 'mr' ? 'उभी मांडणी' : 'Vertical Stack'}
+            </button>
+          </div>
+
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -444,7 +505,521 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
 
       {/* Entry Form */}
       <form onSubmit={handleSubmit}>
-        <div className="form-grid-4" style={{ marginBottom: 16 }}>
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 1: EXCEL SPREADSHEET GRID VIEW (Vertically Aligned)       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'excel' && (
+          <div className="excel-form-container" style={{ marginBottom: 20, width: '100%' }}>
+            <div className="excel-toolbar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Table size={16} color="#4f46e5" />
+                <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                  {lang === 'mr' ? 'दुकानाचे टॅक्स इनव्हॉईस नोंद (एक्सेल ग्रिड)' : 'SHOP_TAX_INVOICE_SHEET (Excel Grid)'}
+                </span>
+                <span style={{ fontSize: 10, background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                  {items.length} {lang === 'mr' ? 'वस्तू नोंदी' : 'Items'}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+              </div>
+            </div>
+
+            <div className="excel-form-table-wrapper">
+              <table className="excel-form-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                    <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                    <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                    <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साधने' : 'Validation & Info'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Row 1: Invoice No */}
+                  <tr>
+                    <td className="excel-row-idx">1</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No)' : 'Invoice No.'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ maxWidth: 280, height: 38, fontWeight: 700, color: '#4f46e5' }}
+                        value={invoiceNo}
+                        onChange={e => setInvoiceNo(e.target.value)}
+                        required
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{invoiceNo}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 2: Date */}
+                  <tr>
+                    <td className="excel-row-idx">2</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        required
+                        style={{ maxWidth: 260, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{date}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 3: Customer Name */}
+                  <tr>
+                    <td className="excel-row-idx">3</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={lang === 'mr' ? 'ग्राहकाचे नाव प्रविष्ट करा' : 'Customer name'}
+                        value={customerName}
+                        onChange={e => setCustomerName(e.target.value)}
+                        required
+                        style={{ maxWidth: 420, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <button
+                        type="button"
+                        onClick={handleTranslateAllFields}
+                        disabled={translating}
+                        style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                        {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Section Header: Items Grid */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#e0e7ff', color: '#3730a3', borderTop: '2px solid #a5b4fc' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>📦 {lang === 'mr' ? 'इनव्हॉईस वस्तू व जीएसटी तक्ता (Tax Invoice Line Items & GST)' : 'Tax Invoice Line Items & GST Rates'}</span>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ background: '#fff', color: '#3730a3', borderColor: '#a5b4fc', fontSize: 11, padding: '3px 8px' }}
+                            onClick={() => {
+                              const newProd = window.prompt(
+                                lang === 'mr' ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:' : 'Enter new product name to add to master dropdown:'
+                              );
+                              if (newProd && newProd.trim()) {
+                                const updatedList = addStoredProduct(newProd.trim());
+                                setProductList(updatedList);
+                                setMsg({
+                                  type: 'success',
+                                  text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added: ') + newProd.trim()
+                                });
+                              }
+                            }}
+                          >
+                            <FolderPlus size={12} /> {lang === 'mr' ? '+ नवीन वस्तू' : '+ New Item'}
+                          </button>
+                          {!editingId && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ background: '#fff', fontSize: 11, padding: '3px 8px' }}
+                              onClick={addRow}
+                            >
+                              <Plus size={12} /> {lang === 'mr' ? '+ ओळ जोडा' : '+ Add Row'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Vertically Aligned Items Row-by-Row */}
+                  {items.map((row, idx) => (
+                    <React.Fragment key={row.id}>
+                      {/* Item Header / Separator */}
+                      <tr style={{ background: '#eef2ff', borderTop: idx > 0 ? '2px solid #c7d2fe' : '1px solid #e0e7ff' }}>
+                        <td className="excel-row-idx" style={{ fontWeight: 800, color: '#4338ca', background: '#e0e7ff' }}>
+                          #{idx + 1}
+                        </td>
+                        <td className="excel-col-label" style={{ fontWeight: 800, color: '#4338ca', fontSize: 13, background: '#eef2ff' }}>
+                          <span>📦 {lang === 'mr' ? `इनव्हॉईस वस्तू क्र. ${idx + 1}` : `Tax Invoice Item #${idx + 1}`}</span>
+                        </td>
+                        <td className="excel-col-input" style={{ background: '#eef2ff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12 }}>
+                            <span style={{ fontWeight: 800, color: '#4f46e5' }}>
+                              {lang === 'mr' ? 'एकूण:' : 'Line Total:'} ₹{safeNum(row.total_amount).toFixed(2)}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span style={{ color: '#475569', fontWeight: 600 }}>
+                              Qty: {row.qty} @ ₹{safeNum(row.rate).toFixed(2)}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span style={{ color: '#6366f1' }}>
+                              HSN: {row.hsn_code || '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools" style={{ background: '#eef2ff' }}>
+                          {items.length > 1 && !editingId && (
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              style={{ padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              title="Delete Item"
+                              onClick={() => removeRow(idx)}
+                            >
+                              <Trash2 size={12} /> {lang === 'mr' ? 'वस्तू हटवा' : 'Remove Item'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Item Field 1: Product Name */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.1</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'उत्पादनाचे नाव (Product Name)' : 'Product Name'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <SearchableCombobox
+                            value={row.product_name}
+                            onChange={val => updateRow(idx, 'product_name', val)}
+                            options={productList}
+                            onAddNewOption={newProd => {
+                              const updatedList = addStoredProduct(newProd);
+                              setProductList(updatedList);
+                            }}
+                            lang={lang}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#4338ca', fontWeight: 600 }}>{row.product_name || '—'}</span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 2: HSN Code & Quantity */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.2</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'एचएसएन व प्रमाण (HSN Code & Qty)' : 'HSN Code & Quantity'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>HSN</span>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="3808"
+                                style={{ width: 120, height: 38 }}
+                                value={row.hsn_code}
+                                onChange={e => updateRow(idx, 'hsn_code', e.target.value)}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Qty</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className="form-input"
+                                placeholder="1"
+                                style={{ width: 110, height: 38 }}
+                                value={row.qty}
+                                onChange={e => updateRow(idx, 'qty', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            HSN: {row.hsn_code || '—'} | Qty: {row.qty}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 3: Rate per Unit & Base Amount */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.3</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'दर व मूळ रक्कम (Rate & Base Amount ₹)' : 'Rate per Unit & Base Amount (₹)'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{lang === 'mr' ? 'दर ₹' : 'Rate ₹'}</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 130, height: 38 }}
+                                value={row.rate !== undefined && row.rate !== null ? row.rate : ''}
+                                onChange={e => updateRow(idx, 'rate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <span style={{ fontSize: 11, color: '#64748b', display: 'block' }}>{lang === 'mr' ? 'करपूर्व मूळ रक्कम ₹' : 'Base Amount ₹'}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: '#334155' }}>₹{safeNum(row.amount).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569' }}>
+                            {row.qty} × ₹{safeNum(row.rate).toFixed(2)} = ₹{safeNum(row.amount).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 4: SGST % & CGST % */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.4</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'जीएसटी कर दर (SGST & CGST %)' : 'SGST & CGST GST Rates (%)'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>SGST %</span>
+                              <select
+                                className="form-select"
+                                style={{ width: 110, height: 38 }}
+                                value={row.sgst_rate}
+                                onChange={e => updateRow(idx, 'sgst_rate', e.target.value)}
+                              >
+                                <option value="0">0%</option>
+                                <option value="2.5">2.5%</option>
+                                <option value="6">6%</option>
+                                <option value="9">9%</option>
+                                <option value="14">14%</option>
+                              </select>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>CGST %</span>
+                              <select
+                                className="form-select"
+                                style={{ width: 110, height: 38 }}
+                                value={row.cgst_rate}
+                                onChange={e => updateRow(idx, 'cgst_rate', e.target.value)}
+                              >
+                                <option value="0">0%</option>
+                                <option value="2.5">2.5%</option>
+                                <option value="6">6%</option>
+                                <option value="9">9%</option>
+                                <option value="14">14%</option>
+                              </select>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            SGST: ₹{safeNum(row.sgst_amount).toFixed(2)} | CGST: ₹{safeNum(row.cgst_amount).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 5: Line Total (₹) */}
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td className="excel-row-idx" style={{ color: '#4f46e5', fontWeight: 800, fontSize: 11 }}>{idx + 1}.5</td>
+                        <td className="excel-col-label">
+                          <span style={{ fontWeight: 700, color: '#4338ca' }}>
+                            {lang === 'mr' ? 'वस्तू एकूण रक्कम ₹ (Line Total)' : 'Item Line Total (₹)'}
+                          </span>
+                        </td>
+                        <td className="excel-col-input">
+                          <span style={{ fontSize: 16, fontWeight: 900, color: '#4f46e5' }}>
+                            ₹{safeNum(row.total_amount).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#4338ca', fontWeight: 600 }}>
+                            Base ₹{safeNum(row.amount).toFixed(2)} + GST ₹{(safeNum(row.sgst_amount) + safeNum(row.cgst_amount)).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  ))}
+
+                  {/* Add Row Button Row */}
+                  {!editingId && (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '10px 16px', background: '#eef2ff', borderTop: '1px dashed #a5b4fc', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ background: '#fff', color: '#4338ca', borderColor: '#a5b4fc', fontWeight: 700, padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          onClick={addRow}
+                        >
+                          <Plus size={14} /> {lang === 'mr' ? '+ आणखी एक इनव्हॉईस वस्तू जोडा' : '+ Add Another Invoice Item'}
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Section Header: Summary */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#f8fafc', color: '#334155' }}>
+                      📊 {lang === 'mr' ? 'आर्थिक सारांश व एकूण कर गणना (Financial Summary & GST Totals)' : 'Financial Summary & GST Totals'}
+                    </td>
+                  </tr>
+
+                  {/* Row: Subtotal Base Amount */}
+                  <tr>
+                    <td className="excel-row-idx">4</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'मूळ रक्कम उप-एकूण (Base Subtotal)' : 'Base Subtotal (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <span style={{ fontWeight: 700, fontSize: 14, color: '#334155' }}>
+                        ₹{items.reduce((s, r) => s + (r.amount || 0), 0).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#64748b' }}>Taxable base amount</span>
+                    </td>
+                  </tr>
+
+                  {/* Row: SGST Total */}
+                  <tr>
+                    <td className="excel-row-idx">5</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'एकूण एसजीएसटी (Total SGST)' : 'Total SGST (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <span style={{ fontWeight: 700, fontSize: 14, color: '#4f46e5' }}>
+                        ₹{items.reduce((s, r) => s + (r.sgst_amount || 0), 0).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#64748b' }}>State GST</span>
+                    </td>
+                  </tr>
+
+                  {/* Row: CGST Total */}
+                  <tr>
+                    <td className="excel-row-idx">6</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'एकूण सीजीएसटी (Total CGST)' : 'Total CGST (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <span style={{ fontWeight: 700, fontSize: 14, color: '#4f46e5' }}>
+                        ₹{items.reduce((s, r) => s + (r.cgst_amount || 0), 0).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#64748b' }}>Central GST</span>
+                    </td>
+                  </tr>
+
+                  {/* Row: Grand Total Amount */}
+                  <tr style={{ background: '#eef2ff' }}>
+                    <td className="excel-row-idx" style={{ fontWeight: 800, color: '#4338ca' }}>7</td>
+                    <td className="excel-col-label">
+                      <span style={{ fontWeight: 800, color: '#4338ca', fontSize: 14 }}>{lang === 'mr' ? 'एकूण इनव्हॉईस रक्कम ₹' : 'Grand Total Invoice (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <span style={{ fontWeight: 900, fontSize: 18, color: '#4338ca' }}>
+                        ₹{grandTotal.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#4338ca', fontWeight: 700 }}>
+                        {lang === 'mr' ? 'मूळ रक्कम + सर्व जीएसटी कर' : 'Base + SGST + CGST Total'}
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* Row: Document Attachment */}
+                  <tr>
+                    <td className="excel-row-idx">8</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'कागदपत्र / पावती स्कॅन / अपलोड' : 'Document Attachment / Scan'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="form-input"
+                        style={{ maxWidth: 320, padding: '3px 6px', fontSize: 12 }}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) setDocPath(file.name);
+                        }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      {docPath ? (
+                        <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>Optional image or PDF</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Action Buttons Row */}
+                  <tr>
+                    <td colSpan={4} style={{ padding: '12px 16px', background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#4f46e5', borderColor: '#4f46e5' }}>
+                          <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Invoice') : (lang === 'mr' ? 'टॅक्स इनव्हॉईस जतन करा' : 'Save Tax Invoice'))}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ background: '#e0e7ff', color: '#4338ca', borderColor: '#c7d2fe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                          onClick={handleTranslateAllFields}
+                          disabled={translating || loading}
+                        >
+                          {translating ? (
+                            <>
+                              <Loader2 size={16} className="spinner" />
+                              {lang === 'mr' ? 'मराठीत भाषांतर करत आहे...' : 'Translating to Marathi...'}
+                            </>
+                          ) : (
+                            <>
+                              <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                            </>
+                          )}
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={handleReset}>
+                          {lang === 'mr' ? 'रीसेट' : 'Reset'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 2: VERTICAL STACK VIEW                                    */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'vertical' && (
+          <div>
+            <div className="form-grid-4" style={{ marginBottom: 16 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No)' : 'Invoice No.'}</label>
             <input type="text" className="form-input" style={{ fontWeight: 700, color: '#2563eb' }} value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
@@ -674,6 +1249,8 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
           </button>
         </div>
+        </div>
+        )}
       </form>
 
       {/* History Register */}

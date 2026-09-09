@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen, Loader2 } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen, Loader2, Table, List } from 'lucide-react';
 import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -14,6 +14,10 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_cashier_scroll_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
 
   const [date, setDate] = useState(today);
   const [pageNo, setPageNo] = useState('');
@@ -153,7 +157,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
     <div>
       <DailyBalanceBar selectedDate={date} />
 
-      {/* Form Entry Card — Accountant Styled Layout */}
+      {/* Form Entry Card */}
       <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 16px rgba(79, 70, 229, 0.08)', marginBottom: 28 }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -171,6 +175,65 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* View Mode Switcher */}
+            <div style={{
+              display: 'inline-flex',
+              background: '#f1f5f9',
+              padding: '3px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              gap: 3
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('excel');
+                  localStorage.setItem('bgs_cashier_scroll_view_mode', 'excel');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: viewMode === 'excel' ? '#4f46e5' : 'transparent',
+                  color: viewMode === 'excel' ? '#ffffff' : '#64748b',
+                  boxShadow: viewMode === 'excel' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Table size={13} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('vertical');
+                  localStorage.setItem('bgs_cashier_scroll_view_mode', 'vertical');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: viewMode === 'vertical' ? '#4f46e5' : 'transparent',
+                  color: viewMode === 'vertical' ? '#ffffff' : '#64748b',
+                  boxShadow: viewMode === 'vertical' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <List size={13} /> {lang === 'mr' ? 'उभे लेआउट' : 'Vertical Stack'}
+              </button>
+            </div>
+
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -216,7 +279,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
                 }
               }}
             >
-              {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
+              <Trash2 size={14} /> {lang === 'mr' ? 'चाचणी डेटा हटवा' : 'Delete Test Data'}
             </button>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
               <Printer size={14} /> {lang === 'mr' ? 'स्क्रोल प्रिंट' : 'Print Scroll'}
@@ -235,69 +298,298 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
             </div>
           )}
 
-          {/* Manual Entry Form */}
-          <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: '#f8fafc', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: 'var(--text-primary)' }}>
-              {lang === 'mr' ? 'हस्ते स्क्रोल नोंद जोडा (Manual Scroll Entry)' : 'Add Manual Scroll Entry'}
-            </h4>
-            <div className="form-grid-3" style={{ marginBottom: 14 }}>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span className="required">*</span></label>
-                <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'पान क्र. (Page No.)' : 'Page No.'}</label>
-                <input type="text" className="form-input" placeholder="e.g. 662" value={pageNo} onChange={e => setPageNo(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'व्हाऊचर / B कॅश क्र.' : 'V. / B Cash No.'}</label>
-                <input type="text" className="form-input" placeholder="e.g. PV-001" value={voucherNo} onChange={e => setVoucherNo(e.target.value)} />
-              </div>
-            </div>
+          {/* Form Content */}
+          <form onSubmit={handleSubmit}>
+            {viewMode === 'excel' ? (
+              /* Excel Grid Table Mode */
+              <div className="excel-form-container" style={{ marginBottom: 20 }}>
+                <table className="excel-form-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '50px', textAlign: 'center' }}>#</th>
+                      <th style={{ width: '250px' }}>{lang === 'mr' ? 'फील्ड / तपशील' : 'Field / Description'}</th>
+                      <th>{lang === 'mr' ? 'नोंद / माहिती' : 'Data Entry / Input Value'}</th>
+                      <th style={{ width: '220px' }}>{lang === 'mr' ? 'स्थिती / संकेत' : 'Validation & Info'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Row 1: Date */}
+                    <tr>
+                      <td className="row-num">1</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span style={{ color: '#dc2626' }}>*</span>
+                      </td>
+                      <td>
+                        <input
+                          type="date"
+                          className="form-input"
+                          style={{ maxWidth: 220 }}
+                          value={date}
+                          onChange={e => setDate(e.target.value)}
+                          required
+                        />
+                      </td>
+                      <td className="field-info">{lang === 'mr' ? 'आवश्यक तारीख' : 'Transaction Date'}</td>
+                    </tr>
 
-            <div className="form-group" style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label">{lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'} <span className="required">*</span></label>
-                <button
-                  type="button"
-                  onClick={handleTranslateParticulars}
-                  disabled={translating}
-                  style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, opacity: translating ? 0.6 : 1 }}
-                >
-                  {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
-                  {translating ? (lang === 'mr' ? 'भाषांतर होत आहे...' : 'Translating...') : (lang === 'mr' ? 'मराठीत भाषांतर' : 'Translate')}
-                </button>
-              </div>
-              <input
-                type="text"
-                className="form-input"
-                placeholder={lang === 'mr' ? 'तपशील / खाते नाव' : 'Particulars / Member or Vendor Name'}
-                value={particulars}
-                onChange={e => setParticulars(e.target.value)}
-                required
-              />
-            </div>
+                    {/* Row 2: Page No */}
+                    <tr>
+                      <td className="row-num">2</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'पान क्र. (Page No.)' : 'Page No.'}
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ maxWidth: 220 }}
+                          placeholder="e.g. 662"
+                          value={pageNo}
+                          onChange={e => setPageNo(e.target.value)}
+                        />
+                      </td>
+                      <td className="field-info">{lang === 'mr' ? 'वैकल्पिक लेजर पृष्ठ' : 'Scroll Register Page'}</td>
+                    </tr>
 
-            <div className="form-grid-3" style={{ marginBottom: 16 }}>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}</label>
-                <input type="number" step="0.01" className="form-input" style={{ fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }} value={receivedAmount} onChange={e => setReceivedAmount(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}</label>
-                <input type="number" step="0.01" className="form-input" style={{ fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }} value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}</label>
-                <input type="number" step="0.01" className="form-input" style={{ fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }} value={chequeAmount} onChange={e => setChequeAmount(e.target.value)} />
-              </div>
-            </div>
+                    {/* Row 3: Voucher / B Cash No */}
+                    <tr>
+                      <td className="row-num">3</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'व्हाऊचर / B कॅश क्र.' : 'V. / B Cash No.'}
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ maxWidth: 260 }}
+                          placeholder="e.g. PV-001"
+                          value={voucherNo}
+                          onChange={e => setVoucherNo(e.target.value)}
+                        />
+                      </td>
+                      <td className="field-info">{lang === 'mr' ? 'व्हाऊचर अथवा कॅश संदर्भ क्र.' : 'Voucher or Cash Ref No.'}</td>
+                    </tr>
 
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button type="submit" className="btn btn-primary btn-sm" disabled={loading}>
-                <Save size={14} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जोडा' : 'Add Entry')}
+                    {/* Row 4: Particulars */}
+                    <tr>
+                      <td className="row-num">4</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'} <span style={{ color: '#dc2626' }}>*</span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ maxWidth: 460 }}
+                            placeholder={lang === 'mr' ? 'तपशील / खाते नाव' : 'Particulars / Member or Vendor Name'}
+                            value={particulars}
+                            onChange={e => setParticulars(e.target.value)}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={handleTranslateParticulars}
+                            disabled={translating}
+                            className="btn btn-secondary btn-sm"
+                            style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                          >
+                            {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
+                            {translating ? (lang === 'mr' ? '...' : '...') : (lang === 'mr' ? 'मराठी' : 'Translate')}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="field-info">{lang === 'mr' ? 'खातेदार अथवा पक्षकाराचे नाव' : 'Party or Ledger Name'}</td>
+                    </tr>
+
+                    {/* Row 5: Received Amount */}
+                    <tr>
+                      <td className="row-num">5</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          style={{ maxWidth: 240, fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }}
+                          value={receivedAmount}
+                          onChange={e => setReceivedAmount(e.target.value)}
+                        />
+                      </td>
+                      <td className="field-info" style={{ color: '#16a34a', fontWeight: 600 }}>{lang === 'mr' ? 'कॅश जमा' : 'Cash Inflow'}</td>
+                    </tr>
+
+                    {/* Row 6: Paid Amount */}
+                    <tr>
+                      <td className="row-num">6</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          style={{ maxWidth: 240, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}
+                          value={paidAmount}
+                          onChange={e => setPaidAmount(e.target.value)}
+                        />
+                      </td>
+                      <td className="field-info" style={{ color: '#dc2626', fontWeight: 600 }}>{lang === 'mr' ? 'कॅश खर्च / नावे' : 'Cash Outflow'}</td>
+                    </tr>
+
+                    {/* Row 7: Cheque Amount */}
+                    <tr>
+                      <td className="row-num">7</td>
+                      <td className="field-label">
+                        {lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          style={{ maxWidth: 240, fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }}
+                          value={chequeAmount}
+                          onChange={e => setChequeAmount(e.target.value)}
+                        />
+                      </td>
+                      <td className="field-info" style={{ color: '#2563eb', fontWeight: 600 }}>{lang === 'mr' ? 'चेक द्वारे व्यवहार' : 'Cheque In/Out'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Vertical Stack Mode */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 840, marginBottom: 20 }}>
+                {/* Date */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ maxWidth: 220 }}
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Page No */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'पान क्र. (Page No.)' : 'Page No.'}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ maxWidth: 220 }}
+                    placeholder="e.g. 662"
+                    value={pageNo}
+                    onChange={e => setPageNo(e.target.value)}
+                  />
+                </div>
+
+                {/* Voucher / B Cash No */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'व्हाऊचर / B कॅश क्र.' : 'V. / B Cash No.'}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ maxWidth: 260 }}
+                    placeholder="e.g. PV-001"
+                    value={voucherNo}
+                    onChange={e => setVoucherNo(e.target.value)}
+                  />
+                </div>
+
+                {/* Particulars */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'} <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1, maxWidth: 460 }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder={lang === 'mr' ? 'तपशील / खाते नाव' : 'Particulars / Member or Vendor Name'}
+                      value={particulars}
+                      onChange={e => setParticulars(e.target.value)}
+                      required
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTranslateParticulars}
+                      disabled={translating}
+                      className="btn btn-secondary btn-sm"
+                      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                    >
+                      {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
+                      {translating ? (lang === 'mr' ? '...' : '...') : (lang === 'mr' ? 'मराठी' : 'Translate')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Received Amount */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    style={{ maxWidth: 240, fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }}
+                    value={receivedAmount}
+                    onChange={e => setReceivedAmount(e.target.value)}
+                  />
+                </div>
+
+                {/* Paid Amount */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    style={{ maxWidth: 240, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}
+                    value={paidAmount}
+                    onChange={e => setPaidAmount(e.target.value)}
+                  />
+                </div>
+
+                {/* Cheque Amount */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    style={{ maxWidth: 240, fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }}
+                    value={chequeAmount}
+                    onChange={e => setChequeAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', paddingTop: 8, borderTop: '1px solid #e2e8f0' }}>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                <Save size={15} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जोडा' : 'Add Entry')}
               </button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
+              <button type="button" className="btn btn-secondary" onClick={handleReset}>
                 {lang === 'mr' ? 'रीसेट' : 'Reset'}
               </button>
             </div>
@@ -319,15 +611,23 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
           </div>
         </div>
 
-        <div className="filter-bar no-print" style={{ padding: '10px 18px', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
-          <div className="filter-group">
+        <div className="no-print" style={{
+          padding: '12px 18px',
+          background: '#f8fafc',
+          borderBottom: '1px solid var(--border-subtle)',
+          display: 'flex',
+          gap: 16,
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Calendar size={15} color="var(--blue-600)" />
-            <span className="filter-label">{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
-            <input type="date" className="filter-select" style={{ width: 'auto' }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
-            <span style={{ fontSize: 12 }}>to</span>
-            <input type="date" className="filter-select" style={{ width: 'auto' }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
+            <input type="date" className="form-input" style={{ width: 140, padding: '4px 8px', fontSize: 13 }} value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>to</span>
+            <input type="date" className="form-input" style={{ width: 140, padding: '4px 8px', fontSize: 13 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
           </div>
-          <div className="filter-group">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={14} color="var(--text-secondary)" />
             <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (तपशील)...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>

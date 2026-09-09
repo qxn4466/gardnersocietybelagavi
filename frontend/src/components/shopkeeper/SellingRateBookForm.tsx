@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X, Languages, Check, FolderPlus, Zap, Loader2 } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, Tag, X, Languages, Check, FolderPlus, Zap, Loader2, Table, List } from 'lucide-react';
 
 import { createSellingRateEntry, updateSellingRateEntry, fetchSellingRateEntries, deleteSellingRateEntry, generate30DaysTestData, delete30DaysTestData } from '../../api/client';
 
@@ -45,6 +45,15 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   const [stockBookNo, setStockBookNo] = useState('');
   const [signStatus, setSignStatus] = useState('Signed');
   const [docPath, setDocPath] = useState('');
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_shop_selling_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleViewModeChange = (mode: 'excel' | 'vertical') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_shop_selling_view_mode', mode);
+  };
 
   // Filter & Search states
   const [startDate, setStartDate] = useState(firstDay);
@@ -434,6 +443,58 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
           >
             {lang === 'mr' ? '🗑️ चाचणी डेटा हटवा' : '🗑️ Delete Test Data'}
           </button>
+          {/* View Mode Switcher (Excel Grid vs Vertical Stack) */}
+          <div style={{
+            display: 'flex',
+            background: '#f1f5f9',
+            padding: '3px',
+            borderRadius: '8px',
+            border: '1px solid #cbd5e1',
+          }}>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('excel')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'excel' ? '#059669' : 'transparent',
+                color: viewMode === 'excel' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="selling-excel-view-btn"
+            >
+              <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('vertical')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+                color: viewMode === 'vertical' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="selling-vertical-view-btn"
+            >
+              <List size={14} /> {lang === 'mr' ? 'उभी मांडणी' : 'Vertical Stack'}
+            </button>
+          </div>
+
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
@@ -462,277 +523,772 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-grid-4" style={{ marginBottom: 16 }}>
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
-            <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
-          </div>
-
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder={lang === 'mr' ? 'ग्राहकाचे / सदस्याचे नाव' : 'Customer or member name'}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{lang === 'mr' ? 'स्टॉक बुक क्र. (Stock Book No)' : 'Stock Book No.'}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. SB-402"
-              value={stockBookNo}
-              onChange={e => setStockBookNo(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Spacious, Consistent Multi-Item Dynamic Table Grid */}
-        <div style={{ background: '#f0fdf4', padding: 18, borderRadius: 8, border: '1px solid #bbf7d0', marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#166534' }}>
-              {lang === 'mr' ? 'उत्पादन दर व खर्च तक्ता (Selling Rate Grid Items)' : 'Selling Rate Grid Items'}
-            </h4>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ background: '#fff', color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
-                onClick={() => {
-                  const newProd = window.prompt(
-                    lang === 'mr'
-                      ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:'
-                      : 'Enter new product name to add to master list:'
-                  );
-                  if (newProd && newProd.trim()) {
-                    const updatedList = addStoredProduct(newProd.trim());
-                    setProductList(updatedList);
-                    setMsg({
-                      type: 'success',
-                      text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added to master dropdown: ') + newProd.trim()
-                    });
-                  }
-                }}
-              >
-                <FolderPlus size={14} /> {lang === 'mr' ? 'नवीन वस्तू यादीत जोडा' : 'Add Custom Product'}
-              </button>
-              {!editingId && (
-                <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
-                  <Plus size={14} /> {lang === 'mr' ? 'ओळ जोडा' : 'Add Item Row'}
-                </button>
-              )}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 1: EXCEL SPREADSHEET GRID VIEW (Vertically Aligned)       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'excel' && (
+          <div className="excel-form-container" style={{ marginBottom: 20, width: '100%' }}>
+            <div className="excel-toolbar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Table size={16} color="#059669" />
+                <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                  {lang === 'mr' ? 'बियाणे व कीटकनाशके विक्री दर नोंदवही (एक्सेल ग्रिड)' : 'SELLING_RATE_BOOK_ENTRY_SHEET (Excel Grid)'}
+                </span>
+                <span style={{ fontSize: 10, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                  {items.length} {lang === 'mr' ? 'वस्तू नोंदी' : 'Items'}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+              </div>
             </div>
-          </div>
 
-          <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#dcfce7', borderBottom: '2px solid #86efac' }}>
-                  <th style={{ width: 28, padding: '6px 4px' }}>#</th>
-                  <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars / Item Name'}</th>
-                  <th style={{ width: 60, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
-                  <th style={{ width: 95, padding: '6px 4px' }}>{lang === 'mr' ? 'एकक (Unit)' : 'Unit'}</th>
-                  <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base (₹)'}</th>
-                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
-                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
-                  <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
-                  <th style={{ width: 80, padding: '6px 4px' }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
-                  <th style={{ width: 90, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
-                  <th style={{ width: 75, padding: '6px 4px' }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
-                  <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
-                  <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((row, idx) => (
-                  <tr key={row.id} style={{ background: '#fff' }}>
-                    <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
-                    <td style={{ padding: '6px 4px', minWidth: 220 }}>
-                      <SearchableCombobox
-                        value={row.particulars}
-                        onChange={val => updateRow(idx, 'particulars', val)}
-                        options={productList}
-                        onAddNewOption={newProd => {
-                          const updatedList = addStoredProduct(newProd);
-                          setProductList(updatedList);
-                        }}
-                        lang={lang}
-                      />
+            <div className="excel-form-table-wrapper">
+              <table className="excel-form-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                    <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                    <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                    <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साधने' : 'Validation & Info'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Row 1: Date */}
+                  <tr>
+                    <td className="excel-row-idx">1</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
                     </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.qty}
-                        onChange={e => updateRow(idx, 'qty', e.target.value)}
-                      />
+                    <td className="excel-col-input">
+                      <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required style={{ maxWidth: 260, height: 38 }} />
                     </td>
-                    <td style={{ padding: '6px 4px', minWidth: 95 }}>
-                      <select
-                        className="form-select"
-                        style={{ fontSize: 12, padding: '6px 4px' }}
-                        value={row.unit || 'kg'}
-                        onChange={e => updateRow(idx, 'unit', e.target.value)}
-                      >
-                        <optgroup label={lang === 'mr' ? 'घन / वजन (Solids)' : 'Solids / Weight'}>
-                          <option value="kg">kg (किलो)</option>
-                          <option value="50 gm">50 gm</option>
-                          <option value="100 gm">100 gm</option>
-                          <option value="250 gm">250 gm</option>
-                          <option value="500 gm">500 gm</option>
-                          <option value="gm">gm (ग्रॅम)</option>
-                          <option value="1 kg">1 kg</option>
-                          <option value="5 kg">5 kg</option>
-                          <option value="10 kg">10 kg</option>
-                          <option value="25 kg">25 kg</option>
-                          <option value="50 kg">50 kg</option>
-                          <option value="Quintal">Quintal (क्विंटल)</option>
-                          <option value="MT">MT (मेट्रिक टन)</option>
-                        </optgroup>
-                        <optgroup label={lang === 'mr' ? 'द्रव (Liquids)' : 'Liquids / Volume'}>
-                          <option value="Liter">Liter (लीटर)</option>
-                          <option value="50 ml">50 ml</option>
-                          <option value="100 ml">100 ml</option>
-                          <option value="250 ml">250 ml</option>
-                          <option value="500 ml">500 ml</option>
-                          <option value="ml">ml (मिली)</option>
-                          <option value="1 Liter">1 Liter</option>
-                          <option value="5 Liter">5 Liter</option>
-                          <option value="10 Liter">10 Liter</option>
-                          <option value="20 Liter">20 Liter</option>
-                        </optgroup>
-                        <optgroup label={lang === 'mr' ? 'इतर / पॅक (Pack / General)' : 'General / Pack'}>
-                          <option value="Pkt">Pkt (पाकीट)</option>
-                          <option value="Btl">Btl (बाटली)</option>
-                          <option value="Can">Can (कॅन)</option>
-                          <option value="Box">Box (बॉक्स)</option>
-                          <option value="Bag">Bag (पोते/बॅग)</option>
-                          <option value="Nos">Nos (नग/संख्या)</option>
-                        </optgroup>
-                      </select>
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.amount !== undefined && row.amount !== null ? row.amount : ''}
-                        onChange={e => updateRow(idx, 'amount', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.sgst !== undefined && row.sgst !== null ? row.sgst : ''}
-                        onChange={e => updateRow(idx, 'sgst', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.cgst !== undefined && row.cgst !== null ? row.cgst : ''}
-                        onChange={e => updateRow(idx, 'cgst', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.hmall || ''}
-                        onChange={e => updateRow(idx, 'hmall', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px' }}
-                        value={row.motor_rent || ''}
-                        onChange={e => updateRow(idx, 'motor_rent', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: 14 }}>
-                      ₹{safeNum(row.total_amount).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '6px 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      ₹{safeNum(row.net_rate).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '6px 4px' }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-input"
-                        style={{ fontSize: 13, padding: '6px 8px', fontWeight: 700, color: '#2563eb' }}
-                        value={row.selling_rate || ''}
-                        onChange={e => updateRow(idx, 'selling_rate', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: '4px 6px', marginRight: 4, color: '#16a34a' }}
-                        title="Save Row & Product"
-                        onClick={() => {
-                          if (row.particulars.trim()) {
-                            const updatedList = addStoredProduct(row.particulars.trim());
-                            setProductList(updatedList);
-                          }
-                          updateRow(idx, 'isCustomText', false);
-                        }}
-                      >
-                        <Save size={12} />
-                      </button>
-                      {items.length > 1 && !editingId && (
-                        <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 6px' }} title="Delete Row" onClick={() => removeRow(idx)}>
-                          <Trash2 size={12} />
-                        </button>
-                      )}
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{date}</span>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
 
-          <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#15803d' }}>
-            {lang === 'mr' ? 'सर्व नोंदींची एकूण रक्कम:' : 'Grand Total Amount:'} ₹{grandTotal.toFixed(2)}
-          </div>
-        </div>
+                  {/* Row 2: Customer / Member Name */}
+                  <tr>
+                    <td className="excel-row-idx">2</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Customer / Member Name'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={lang === 'mr' ? 'ग्राहकाचे / सदस्याचे नाव' : 'Customer or member name'}
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        required
+                        style={{ maxWidth: 420, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <button
+                        type="button"
+                        onClick={handleTranslateAllFields}
+                        disabled={translating}
+                        style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                        {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                      </button>
+                    </td>
+                  </tr>
 
-        <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-          <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-            📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
-          </label>
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            className="form-input"
-            style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) setDocPath(file.name);
-            }}
-          />
-          {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
-        </div>
+                  {/* Row 3: Stock Book No */}
+                  <tr>
+                    <td className="excel-row-idx">3</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'स्टॉक बुक क्र. (Stock Book No)' : 'Stock Book No.'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. SB-402"
+                        value={stockBookNo}
+                        onChange={e => setStockBookNo(e.target.value)}
+                        style={{ maxWidth: 260, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{stockBookNo || '—'}</span>
+                    </td>
+                  </tr>
+
+                  {/* Section Header: Items */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#dcfce7', color: '#166534', borderTop: '2px solid #86efac' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>📦 {lang === 'mr' ? 'आवक साठा वस्तू व विक्री दर तपशील (Stock Items & Rates Grid)' : 'Inward Stock Items & Selling Rates'}</span>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ background: '#fff', color: '#15803d', borderColor: '#86efac', fontSize: 11, padding: '3px 8px' }}
+                            onClick={() => {
+                              const newProd = window.prompt(
+                                lang === 'mr' ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:' : 'Enter new product name to add to master dropdown:'
+                              );
+                              if (newProd && newProd.trim()) {
+                                const updatedList = addStoredProduct(newProd.trim());
+                                setProductList(updatedList);
+                                setMsg({
+                                  type: 'success',
+                                  text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added: ') + newProd.trim()
+                                });
+                              }
+                            }}
+                          >
+                            <FolderPlus size={12} /> {lang === 'mr' ? '+ नवीन वस्तू' : '+ New Item'}
+                          </button>
+                          {!editingId && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ background: '#fff', fontSize: 11, padding: '3px 8px' }}
+                              onClick={addRow}
+                            >
+                              <Plus size={12} /> {lang === 'mr' ? '+ ओळ जोडा' : '+ Add Row'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Vertically Aligned Items Row-by-Row */}
+                  {items.map((row, idx) => (
+                    <React.Fragment key={row.id}>
+                      {/* Item Header / Separator */}
+                      <tr style={{ background: '#f0fdf4', borderTop: idx > 0 ? '2px solid #bbf7d0' : '1px solid #dcfce7' }}>
+                        <td className="excel-row-idx" style={{ fontWeight: 800, color: '#166534', background: '#dcfce7' }}>
+                          #{idx + 1}
+                        </td>
+                        <td className="excel-col-label" style={{ fontWeight: 800, color: '#166534', fontSize: 13, background: '#f0fdf4' }}>
+                          <span>📦 {lang === 'mr' ? `वस्तू क्र. ${idx + 1}` : `Stock Item #${idx + 1}`}</span>
+                        </td>
+                        <td className="excel-col-input" style={{ background: '#f0fdf4' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12 }}>
+                            <span style={{ fontWeight: 700, color: '#15803d' }}>
+                              {lang === 'mr' ? 'एकूण:' : 'Total:'} ₹{safeNum(row.total_amount).toFixed(2)}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span style={{ color: '#475569', fontWeight: 600 }}>
+                              {row.qty} {row.unit || 'kg'}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span style={{ color: '#2563eb', fontWeight: 700 }}>
+                              {lang === 'mr' ? 'विक्री दर:' : 'Selling:'} ₹{safeNum(row.selling_rate).toFixed(2)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools" style={{ background: '#f0fdf4' }}>
+                          {items.length > 1 && !editingId && (
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              style={{ padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              title="Delete Item"
+                              onClick={() => removeRow(idx)}
+                            >
+                              <Trash2 size={12} /> {lang === 'mr' ? 'वस्तू हटवा' : 'Remove Item'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Item Field 1: Product / Particulars */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.1</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'उत्पादन नाव (Product / Particulars)' : 'Product / Particulars'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <SearchableCombobox
+                            value={row.particulars}
+                            onChange={val => updateRow(idx, 'particulars', val)}
+                            options={productList}
+                            onAddNewOption={newProd => {
+                              const updatedList = addStoredProduct(newProd);
+                              setProductList(updatedList);
+                            }}
+                            lang={lang}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{row.particulars || '—'}</span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 2: Quantity & Unit */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.2</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'प्रमाण व युनिट (Quantity & Unit)' : 'Quantity & Unit'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <input
+                              type="number"
+                              step="0.1"
+                              className="form-input"
+                              placeholder="Qty"
+                              style={{ width: 120, height: 38 }}
+                              value={row.qty}
+                              onChange={e => updateRow(idx, 'qty', e.target.value)}
+                            />
+                            <select
+                              className="form-select"
+                              style={{ width: 180, height: 38 }}
+                              value={row.unit || 'kg'}
+                              onChange={e => updateRow(idx, 'unit', e.target.value)}
+                            >
+                              <optgroup label={lang === 'mr' ? 'घन / वजन (Solids)' : 'Solids / Weight'}>
+                                <option value="kg">kg (किलो)</option>
+                                <option value="50 gm">50 gm</option>
+                                <option value="100 gm">100 gm</option>
+                                <option value="250 gm">250 gm</option>
+                                <option value="500 gm">500 gm</option>
+                                <option value="gm">gm (ग्रॅम)</option>
+                                <option value="1 kg">1 kg</option>
+                                <option value="5 kg">5 kg</option>
+                                <option value="10 kg">10 kg</option>
+                                <option value="25 kg">25 kg</option>
+                                <option value="50 kg">50 kg</option>
+                                <option value="Quintal">Quintal (क्विंटल)</option>
+                              </optgroup>
+                              <optgroup label={lang === 'mr' ? 'द्रव (Liquids)' : 'Liquids / Volume'}>
+                                <option value="Liter">Liter (लीटर)</option>
+                                <option value="50 ml">50 ml</option>
+                                <option value="100 ml">100 ml</option>
+                                <option value="250 ml">250 ml</option>
+                                <option value="500 ml">500 ml</option>
+                                <option value="ml">ml (मिली)</option>
+                                <option value="1 Liter">1 Liter</option>
+                                <option value="5 Liter">5 Liter</option>
+                                <option value="10 Liter">10 Liter</option>
+                                <option value="20 Liter">20 Liter</option>
+                              </optgroup>
+                              <optgroup label={lang === 'mr' ? 'इतर / पॅक (Pack / General)' : 'General / Pack'}>
+                                <option value="Pkt">Pkt (पाकीट)</option>
+                                <option value="Btl">Btl (बाटली)</option>
+                                <option value="Can">Can (कॅन)</option>
+                                <option value="Box">Box (बॉक्स)</option>
+                                <option value="Bag">Bag (पोते/बॅग)</option>
+                                <option value="Nos">Nos (नग/संख्या)</option>
+                              </optgroup>
+                            </select>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            {row.qty} {row.unit || 'kg'}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 3: Base Amount (₹) */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.3</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'मूळ रक्कम ₹ (Base Amount)' : 'Base Amount (₹)'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            placeholder="0.00"
+                            style={{ maxWidth: 220, height: 38 }}
+                            value={row.amount !== undefined && row.amount !== null ? row.amount : ''}
+                            onChange={e => updateRow(idx, 'amount', e.target.value)}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569' }}>
+                            {lang === 'mr' ? 'करपूर्व मूळ खरेदी किंमत' : 'Pre-tax base purchase cost'}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 4: SGST & CGST (₹) */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.4</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'जीएसटी कर (SGST & CGST ₹)' : 'SGST & CGST (₹)'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>SGST ₹</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 110, height: 38 }}
+                                value={row.sgst !== undefined && row.sgst !== null ? row.sgst : ''}
+                                onChange={e => updateRow(idx, 'sgst', e.target.value)}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>CGST ₹</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 110, height: 38 }}
+                                value={row.cgst !== undefined && row.cgst !== null ? row.cgst : ''}
+                                onChange={e => updateRow(idx, 'cgst', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            Total GST: ₹{(safeNum(row.sgst) + safeNum(row.cgst)).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 5: Hamali & Motor Rent (₹) */}
+                      <tr>
+                        <td className="excel-row-idx" style={{ color: '#64748b', fontSize: 11 }}>{idx + 1}.5</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'हमाली व मोटर भाडे (Hmall & Motor Rent ₹)' : 'Hamali & Motor Rent (₹)'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{lang === 'mr' ? 'हमाली ₹' : 'HMall ₹'}</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 110, height: 38 }}
+                                value={row.hmall || ''}
+                                onChange={e => updateRow(idx, 'hmall', e.target.value)}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{lang === 'mr' ? 'भाडे ₹' : 'Motor Rent ₹'}</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 110, height: 38 }}
+                                value={row.motor_rent || ''}
+                                onChange={e => updateRow(idx, 'motor_rent', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                            Charges: ₹{(safeNum(row.hmall) + safeNum(row.motor_rent)).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Item Field 6: Item Total, Net Rate & Selling Rate (₹) */}
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td className="excel-row-idx" style={{ color: '#15803d', fontWeight: 800, fontSize: 11 }}>{idx + 1}.6</td>
+                        <td className="excel-col-label">
+                          <span style={{ fontWeight: 700, color: '#15803d' }}>
+                            {lang === 'mr' ? 'एकूण रक्कम व विक्री दर (Total & Selling Rate ₹)' : 'Total Amount & Selling Rate (₹)'}
+                          </span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div>
+                              <span style={{ fontSize: 11, color: '#64748b', display: 'block', fontWeight: 600 }}>{lang === 'mr' ? 'एकूण रक्कम ₹' : 'Item Total ₹'}</span>
+                              <span style={{ fontSize: 16, fontWeight: 900, color: '#16a34a' }}>₹{safeNum(row.total_amount).toFixed(2)}</span>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: 11, color: '#64748b', display: 'block', fontWeight: 600 }}>{lang === 'mr' ? 'निव्वळ दर ₹' : 'Net Rate ₹'}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: '#475569' }}>₹{safeNum(row.net_rate).toFixed(2)}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 700 }}>{lang === 'mr' ? 'विक्री दर ₹ *' : 'Selling Rate ₹ *'}</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="form-input"
+                                placeholder="0.00"
+                                style={{ width: 130, height: 38, fontWeight: 800, color: '#2563eb', borderColor: '#93c5fd' }}
+                                value={row.selling_rate || ''}
+                                onChange={e => updateRow(idx, 'selling_rate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 700 }}>
+                            {row.selling_rate ? `Selling: ₹${safeNum(row.selling_rate).toFixed(2)}` : 'Enter Selling Rate'}
+                          </span>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  ))}
+
+                  {/* Add Row Button Row */}
+                  {!editingId && (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '10px 16px', background: '#f0fdf4', borderTop: '1px dashed #86efac', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ background: '#fff', color: '#15803d', borderColor: '#86efac', fontWeight: 700, padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          onClick={addRow}
+                        >
+                          <Plus size={14} /> {lang === 'mr' ? '+ आणखी एक आवक वस्तू जोडा' : '+ Add Another Stock Item'}
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Section Header: Summary */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#f8fafc', color: '#334155' }}>
+                      📊 {lang === 'mr' ? 'आर्थिक सारांश व एकूण गणना (Financial Summary)' : 'Financial Summary & Totals'}
+                    </td>
+                  </tr>
+
+                  {/* Row: Grand Total Amount */}
+                  <tr>
+                    <td className="excel-row-idx">4</td>
+                    <td className="excel-col-label">
+                      <span style={{ fontWeight: 800, color: '#15803d' }}>{lang === 'mr' ? 'सर्व नोंदींची एकूण रक्कम ₹' : 'Grand Total Amount (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <div style={{ fontSize: 18, fontWeight: 900, color: '#15803d' }}>
+                        ₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#64748b' }}>
+                        {items.length} {lang === 'mr' ? 'एकूण बाबी समाविष्ट' : 'Items included'}
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* Row: Document Upload */}
+                  <tr>
+                    <td className="excel-row-idx">5</td>
+                    <td className="excel-col-label">
+                      <span>📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन किंवा अपलोड' : 'Scan / Upload Document'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="form-input"
+                        style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) setDocPath(file.name);
+                        }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      {docPath ? <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>Optional</span>}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 2: TRADITIONAL VERTICAL STACK VIEW                        */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'vertical' && (
+          <>
+            <div className="form-grid-4" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
+                <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">{lang === 'mr' ? 'नाव (Customer / Member Name)' : 'Name'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={lang === 'mr' ? 'ग्राहकाचे / सदस्याचे नाव' : 'Customer or member name'}
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{lang === 'mr' ? 'स्टॉक बुक क्र. (Stock Book No)' : 'Stock Book No.'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. SB-402"
+                  value={stockBookNo}
+                  onChange={e => setStockBookNo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Spacious, Consistent Multi-Item Dynamic Table Grid */}
+            <div style={{ background: '#f0fdf4', padding: 18, borderRadius: 8, border: '1px solid #bbf7d0', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: '#166534' }}>
+                  {lang === 'mr' ? 'उत्पादन दर व खर्च तक्ता (Selling Rate Grid Items)' : 'Selling Rate Grid Items'}
+                </h4>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ background: '#fff', color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
+                    onClick={() => {
+                      const newProd = window.prompt(
+                        lang === 'mr'
+                          ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:'
+                          : 'Enter new product name to add to master list:'
+                      );
+                      if (newProd && newProd.trim()) {
+                        const updatedList = addStoredProduct(newProd.trim());
+                        setProductList(updatedList);
+                        setMsg({
+                          type: 'success',
+                          text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added to master dropdown: ') + newProd.trim()
+                        });
+                      }
+                    }}
+                  >
+                    <FolderPlus size={14} /> {lang === 'mr' ? 'नवीन वस्तू यादीत जोडा' : 'Add Custom Product'}
+                  </button>
+                  {!editingId && (
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={addRow} style={{ background: '#fff' }}>
+                      <Plus size={14} /> {lang === 'mr' ? 'ओळ जोडा' : 'Add Item Row'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#dcfce7', borderBottom: '2px solid #86efac' }}>
+                      <th style={{ width: 28, padding: '6px 4px' }}>#</th>
+                      <th style={{ minWidth: 150, padding: '6px 4px' }}>{lang === 'mr' ? 'तपशील (Particulars)' : 'Particulars / Item Name'}</th>
+                      <th style={{ width: 60, padding: '6px 4px' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                      <th style={{ width: 95, padding: '6px 4px' }}>{lang === 'mr' ? 'एकक (Unit)' : 'Unit'}</th>
+                      <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'मूळ रक्कम' : 'Base (₹)'}</th>
+                      <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'एसजीएसटी' : 'SGST'}</th>
+                      <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'सीजीएसटी' : 'CGST'}</th>
+                      <th style={{ width: 70, padding: '6px 4px' }}>{lang === 'mr' ? 'हमाली' : 'HMall'}</th>
+                      <th style={{ width: 80, padding: '6px 4px' }}>{lang === 'mr' ? 'मोटर भाडे' : 'Motor Rent'}</th>
+                      <th style={{ width: 90, padding: '6px 4px', textAlign: 'right' }}>{lang === 'mr' ? 'एकूण' : 'Total (₹)'}</th>
+                      <th style={{ width: 75, padding: '6px 4px' }}>{lang === 'mr' ? 'निव्वळ दर' : 'Net Rate'}</th>
+                      <th style={{ width: 85, padding: '6px 4px' }}>{lang === 'mr' ? 'विक्री दर' : 'Selling Rate'}</th>
+                      <th style={{ width: 70, padding: '6px 4px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((row, idx) => (
+                      <tr key={row.id} style={{ background: '#fff' }}>
+                        <td style={{ padding: '6px 4px', textIndent: 4 }}>{idx + 1}</td>
+                        <td style={{ padding: '6px 4px', minWidth: 220 }}>
+                          <SearchableCombobox
+                            value={row.particulars}
+                            onChange={val => updateRow(idx, 'particulars', val)}
+                            options={productList}
+                            onAddNewOption={newProd => {
+                              const updatedList = addStoredProduct(newProd);
+                              setProductList(updatedList);
+                            }}
+                            lang={lang}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.1"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.qty}
+                            onChange={e => updateRow(idx, 'qty', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px', minWidth: 95 }}>
+                          <select
+                            className="form-select"
+                            style={{ fontSize: 12, padding: '6px 4px' }}
+                            value={row.unit || 'kg'}
+                            onChange={e => updateRow(idx, 'unit', e.target.value)}
+                          >
+                            <optgroup label={lang === 'mr' ? 'घन / वजन (Solids)' : 'Solids / Weight'}>
+                              <option value="kg">kg (किलो)</option>
+                              <option value="50 gm">50 gm</option>
+                              <option value="100 gm">100 gm</option>
+                              <option value="250 gm">250 gm</option>
+                              <option value="500 gm">500 gm</option>
+                              <option value="gm">gm (ग्रॅम)</option>
+                              <option value="1 kg">1 kg</option>
+                              <option value="5 kg">5 kg</option>
+                              <option value="10 kg">10 kg</option>
+                              <option value="25 kg">25 kg</option>
+                              <option value="50 kg">50 kg</option>
+                              <option value="Quintal">Quintal (क्विंटल)</option>
+                            </optgroup>
+                            <optgroup label={lang === 'mr' ? 'द्रव (Liquids)' : 'Liquids / Volume'}>
+                              <option value="Liter">Liter (लीटर)</option>
+                              <option value="50 ml">50 ml</option>
+                              <option value="100 ml">100 ml</option>
+                              <option value="250 ml">250 ml</option>
+                              <option value="500 ml">500 ml</option>
+                              <option value="ml">ml (मिली)</option>
+                              <option value="1 Liter">1 Liter</option>
+                              <option value="5 Liter">5 Liter</option>
+                              <option value="10 Liter">10 Liter</option>
+                              <option value="20 Liter">20 Liter</option>
+                            </optgroup>
+                            <optgroup label={lang === 'mr' ? 'इतर / पॅक (Pack / General)' : 'General / Pack'}>
+                              <option value="Pkt">Pkt (पाकीट)</option>
+                              <option value="Btl">Btl (बाटली)</option>
+                              <option value="Can">Can (कॅन)</option>
+                              <option value="Box">Box (बॉक्स)</option>
+                              <option value="Bag">Bag (पोते/बॅग)</option>
+                              <option value="Nos">Nos (नग/संख्या)</option>
+                            </optgroup>
+                          </select>
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.amount !== undefined && row.amount !== null ? row.amount : ''}
+                            onChange={e => updateRow(idx, 'amount', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.sgst !== undefined && row.sgst !== null ? row.sgst : ''}
+                            onChange={e => updateRow(idx, 'sgst', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.cgst !== undefined && row.cgst !== null ? row.cgst : ''}
+                            onChange={e => updateRow(idx, 'cgst', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.hmall || ''}
+                            onChange={e => updateRow(idx, 'hmall', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px' }}
+                            value={row.motor_rent || ''}
+                            onChange={e => updateRow(idx, 'motor_rent', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: 14 }}>
+                          ₹{safeNum(row.total_amount).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '6px 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          ₹{safeNum(row.net_rate).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            style={{ fontSize: 13, padding: '6px 8px', fontWeight: 700, color: '#2563eb' }}
+                            value={row.selling_rate || ''}
+                            onChange={e => updateRow(idx, 'selling_rate', e.target.value)}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '4px 6px', marginRight: 4, color: '#16a34a' }}
+                            title="Save Row & Product"
+                            onClick={() => {
+                              if (row.particulars.trim()) {
+                                const updatedList = addStoredProduct(row.particulars.trim());
+                                setProductList(updatedList);
+                              }
+                              updateRow(idx, 'isCustomText', false);
+                            }}
+                          >
+                            <Save size={12} />
+                          </button>
+                          {items.length > 1 && !editingId && (
+                            <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 6px' }} title="Delete Row" onClick={() => removeRow(idx)}>
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: 14, textAlign: 'right', fontWeight: 800, fontSize: 16, color: '#15803d' }}>
+                {lang === 'mr' ? 'सर्व नोंदींची एकूण रक्कम:' : 'Grand Total Amount:'} ₹{grandTotal.toFixed(2)}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+              <label style={{ fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                📷 {lang === 'mr' ? 'कागदपत्र / पावती स्कॅन करा किंवा अपलोड करा:' : 'Scan & Upload Attachment Document:'}
+              </label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                className="form-input"
+                style={{ width: 'auto', padding: '3px 6px', fontSize: 12 }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) setDocPath(file.name);
+                }}
+              />
+              {docPath && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>}
+            </div>
+          </>
+        )}
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#16a34a', borderColor: '#16a34a' }}>

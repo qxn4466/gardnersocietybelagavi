@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical, Languages, Loader2 } from 'lucide-react';
+import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Calendar, Search, FlaskConical, Languages, Loader2, Table, List } from 'lucide-react';
 import { createPesticideSale, updatePesticideSale, fetchPesticideSales, deletePesticideSale } from '../../api/client';
 import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
@@ -22,6 +22,15 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
   const [date, setDate] = useState(today);
   const [customerName, setCustomerName] = useState('');
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_shop_pesticide_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleViewModeChange = (mode: 'excel' | 'vertical') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_shop_pesticide_view_mode', mode);
+  };
   const [productName, setProductName] = useState(PESTICIDE_PRODUCT_LIST[0]);
   const [batchNo, setBatchNo] = useState('');
   const [cibNo, setCibNo] = useState('');
@@ -51,6 +60,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [searchTerm, setSearchTerm] = useState('');
+  const [matrixViewMode, setMatrixViewMode] = useState<'vertical' | 'matrix'>('vertical');
 
   const [loading, setLoading] = useState(false);
   const [translating, setTranslating] = useState(false);
@@ -216,7 +226,59 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* View Mode Toggle: Excel Grid vs Vertical Stack */}
+          <div style={{
+            display: 'flex',
+            background: '#f1f5f9',
+            padding: '3px',
+            borderRadius: '8px',
+            border: '1px solid #cbd5e1',
+          }}>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('excel')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'excel' ? '#7c3aed' : 'transparent',
+                color: viewMode === 'excel' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="pesticide-excel-view-btn"
+            >
+              <Table size={14} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('vertical')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+                color: viewMode === 'vertical' ? '#ffffff' : '#475569',
+                transition: 'all 0.15s ease',
+              }}
+              id="pesticide-vertical-view-btn"
+            >
+              <List size={14} /> {lang === 'mr' ? 'उभी मांडणी' : 'Vertical Stack'}
+            </button>
+          </div>
+
           <button className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
             <Printer size={14} /> {lang === 'mr' ? 'महिना / कालावधी रजिस्टर प्रिंट करा' : 'Print Month / Range Register'}
           </button>
@@ -234,11 +296,382 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
       )}
 
       {/* Manual Entry Form */}
-      <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: '#faf5ff', padding: 18, borderRadius: 8, border: '1px solid #e9d5ff' }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#6b21a8' }}>
-          {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा (Manual Entry)' : 'Add Manual Pesticide Sale Entry'}
-        </h4>
-        <div className="form-grid-3" style={{ marginBottom: 14 }}>
+      <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 1: EXCEL SPREADSHEET GRID VIEW (Vertically Aligned)       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'excel' && (
+          <div className="excel-form-container" style={{ marginBottom: 20, width: '100%' }}>
+            <div className="excel-toolbar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Table size={16} color="#7c3aed" />
+                <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                  {lang === 'mr' ? 'कीटकनाशके विक्री नोंद (एक्सेल ग्रिड)' : 'PESTICIDE_SALE_REGISTER_SHEET (Excel Grid)'}
+                </span>
+                <span style={{ fontSize: 10, background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', padding: '1px 8px', borderRadius: 10, fontWeight: 700 }}>
+                  {history.length} {lang === 'mr' ? 'नोंदी' : 'Entries'}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+              </div>
+            </div>
+
+            <div className="excel-form-table-wrapper">
+              <table className="excel-form-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                    <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                    <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                    <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साधने' : 'Validation & Info'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Row 1: Date */}
+                  <tr>
+                    <td className="excel-row-idx">1</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        required
+                        style={{ maxWidth: 260, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{date}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 2: Customer Name */}
+                  <tr>
+                    <td className="excel-row-idx">2</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'ग्राहक नाव (Customer Name)' : 'Customer Name'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={lang === 'mr' ? 'ग्राहकाचे नाव प्रविष्ट करा' : 'Customer name'}
+                        value={customerName}
+                        onChange={e => setCustomerName(e.target.value)}
+                        required
+                        style={{ maxWidth: 420, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (customerName) {
+                            setTranslating(true);
+                            try {
+                              const t = await translateToMarathi(customerName);
+                              setCustomerName(t);
+                            } finally {
+                              setTranslating(false);
+                            }
+                          }
+                        }}
+                        disabled={translating}
+                        style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        {translating ? <Loader2 size={12} className="spinner" /> : <Languages size={12} />}
+                        {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Section Header: Pesticide Details */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#f5f3ff', color: '#5b21b6', borderTop: '2px solid #ddd6fe' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>📦 {lang === 'mr' ? 'कीटकनाशक उत्पादन व विक्री दर तपशील' : 'Pesticide Product Details & Selling Rates'}</span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ background: '#fff', color: '#5b21b6', borderColor: '#ddd6fe', fontSize: 11, padding: '3px 8px' }}
+                          onClick={handleAddNewProduct}
+                        >
+                          <Plus size={12} /> {lang === 'mr' ? '+ नवीन उत्पादन जोडा' : '+ Add Custom Product'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Row 3: Product Name */}
+                  <tr>
+                    <td className="excel-row-idx">3</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'कीटकनाशक उत्पादन नाव' : 'Pesticide Product Name'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <div style={{ maxWidth: 420 }}>
+                        <SearchableCombobox
+                          value={productName}
+                          onChange={val => setProductName(val)}
+                          options={productList}
+                          onAddNewOption={newProd => {
+                            const updatedList = addStoredProduct(newProd);
+                            setProductList(updatedList);
+                          }}
+                          lang={lang}
+                        />
+                      </div>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#6d28d9', fontWeight: 600 }}>{productName}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 4: Batch No / Ref */}
+                  <tr>
+                    <td className="excel-row-idx">4</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'बॅच क्र. / संदर्भ (Batch No)' : 'Batch No. / Ref'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. B-902 / LOT-44"
+                        value={batchNo}
+                        onChange={e => setBatchNo(e.target.value)}
+                        style={{ maxWidth: 280, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569' }}>{batchNo || '—'}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 5: CIB No */}
+                  <tr>
+                    <td className="excel-row-idx">5</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'सीआयबी नोंदणी क्र. (CIB Reg No)' : 'CIB Reg. No.'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. CIR-294/2019"
+                        value={cibNo}
+                        onChange={e => setCibNo(e.target.value)}
+                        style={{ maxWidth: 280, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569' }}>{cibNo || '—'}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 6: Quantity */}
+                  <tr>
+                    <td className="excel-row-idx">6</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'प्रमाण / नग संख्या (Quantity)' : 'Quantity'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        value={qty}
+                        onChange={e => setQty(e.target.value)}
+                        required
+                        style={{ maxWidth: 200, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Qty: {qty}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 7: Rate */}
+                  <tr>
+                    <td className="excel-row-idx">7</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'दर प्रति युनिट ₹ (Rate)' : 'Rate per Unit (₹)'}</span>
+                      <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        value={rate}
+                        onChange={e => setRate(e.target.value)}
+                        required
+                        placeholder="e.g. 240.00"
+                        style={{ maxWidth: 200, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Rate: ₹{rate || '0.00'}</span>
+                    </td>
+                  </tr>
+
+                  {/* Section Header: Total & Info */}
+                  <tr>
+                    <td colSpan={4} className="excel-section-row" style={{ background: '#f8fafc', color: '#334155' }}>
+                      📊 {lang === 'mr' ? 'एकूण रक्कम गणना व शेरा (Total Calculation & Remarks)' : 'Total Calculation & Remarks'}
+                    </td>
+                  </tr>
+
+                  {/* Row 8: Total Amount */}
+                  <tr style={{ background: '#f5f3ff' }}>
+                    <td className="excel-row-idx" style={{ fontWeight: 800, color: '#6d28d9' }}>8</td>
+                    <td className="excel-col-label">
+                      <span style={{ fontWeight: 800, color: '#6d28d9', fontSize: 14 }}>{lang === 'mr' ? 'एकूण विक्री रक्कम ₹' : 'Total Sale Amount (₹)'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <span style={{ fontWeight: 900, fontSize: 18, color: '#6d28d9' }}>
+                        ₹{amount.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#6d28d9', fontWeight: 700 }}>
+                        {qty} × ₹{rate || 0} = ₹{amount.toFixed(2)}
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* Row 9: Remarks */}
+                  <tr>
+                    <td className="excel-row-idx">9</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'शेरा / नोंद (Remarks)' : 'Remarks / Note'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={lang === 'mr' ? 'शेरा किंवा संदर्भ प्रविष्ट करा' : 'Optional remarks or batch note'}
+                        value={remarks}
+                        onChange={e => setRemarks(e.target.value)}
+                        style={{ maxWidth: 420, height: 38 }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      <span style={{ fontSize: 11, color: '#64748b' }}>{remarks || '—'}</span>
+                    </td>
+                  </tr>
+
+                  {/* Row 10: Document Attachment */}
+                  <tr>
+                    <td className="excel-row-idx">10</td>
+                    <td className="excel-col-label">
+                      <span>{lang === 'mr' ? 'कागदपत्र / पावती स्कॅन / अपलोड' : 'Document Attachment / Scan'}</span>
+                    </td>
+                    <td className="excel-col-input">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="form-input"
+                        style={{ maxWidth: 320, padding: '3px 6px', fontSize: 12 }}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) setDocPath(file.name);
+                        }}
+                      />
+                    </td>
+                    <td className="excel-col-tools">
+                      {docPath ? (
+                        <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>Attached: {docPath}</span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>Optional image or PDF</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Row 11: Action Buttons Row */}
+                  <tr style={{ background: '#f5f3ff' }}>
+                    <td className="excel-row-idx" style={{ background: '#ede9fe', color: '#6d28d9', fontWeight: 800 }}>11</td>
+                    <td className="excel-col-label" style={{ background: '#f5f3ff' }}>
+                      <span style={{ fontWeight: 800, color: '#6d28d9' }}>{lang === 'mr' ? 'फॉर्म क्रिया / जतन' : 'Form Actions / Submit'}</span>
+                    </td>
+                    <td className="excel-col-input" style={{ background: '#f5f3ff' }}>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
+                          <Save size={16} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (editingId ? (lang === 'mr' ? 'अपडेट करा' : 'Update Entry') : (lang === 'mr' ? 'नोंद जतन करा' : 'Save Pesticide Sale'))}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ background: '#fff', color: '#6b21a8', borderColor: '#d8b4fe', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                          onClick={async () => {
+                            setTranslating(true);
+                            try {
+                              if (customerName) {
+                                const tn = await translateToMarathi(customerName);
+                                setCustomerName(tn);
+                              }
+                              if (productName) {
+                                const tp = await translateToMarathi(productName);
+                                setProductName(tp);
+                              }
+                              if (remarks) {
+                                const tr = await translateToMarathi(remarks);
+                                setRemarks(tr);
+                              }
+                              setMsg({ type: 'success', text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!' });
+                            } catch {
+                              setMsg({ type: 'error', text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.' });
+                            } finally {
+                              setTranslating(false);
+                            }
+                          }}
+                          disabled={translating || loading}
+                        >
+                          {translating ? (
+                            <>
+                              <Loader2 size={16} className="spinner" />
+                              {lang === 'mr' ? 'मराठीत भाषांतर करत आहे...' : 'Translating to Marathi...'}
+                            </>
+                          ) : (
+                            <>
+                              <Languages size={16} /> {lang === 'mr' ? 'मराठीत भाषांतर करा' : 'Translate to Marathi'}
+                            </>
+                          )}
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={handleReset} style={{ background: '#fff' }}>
+                          {lang === 'mr' ? 'रीसेट' : 'Reset'}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="excel-col-tools" style={{ background: '#f5f3ff' }}>
+                      <span style={{ fontSize: 11, color: '#6d28d9', fontWeight: 600 }}>
+                        {editingId ? (lang === 'mr' ? 'संपादन सुरू आहे' : 'Editing mode') : (lang === 'mr' ? 'नोंद जतन करण्यास तयार' : 'Ready to save entry')}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODE 2: VERTICAL STACK VIEW                                    */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {viewMode === 'vertical' && (
+          <div style={{ background: '#faf5ff', padding: 18, borderRadius: 8, border: '1px solid #e9d5ff' }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#6b21a8' }}>
+              {lang === 'mr' ? 'हस्ते कीटकनाशक नोंद जोडा (Manual Entry)' : 'Add Manual Pesticide Sale Entry'}
+            </h4>
+            <div className="form-grid-3" style={{ marginBottom: 14 }}>
           <div className="form-group">
             <label className="form-label">{lang === 'mr' ? 'दिनांक' : 'Date'}</label>
             <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
@@ -369,6 +802,8 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
             {lang === 'mr' ? 'रीसेट' : 'Reset'}
           </button>
         </div>
+        </div>
+        )}
       </form>
 
       {/* Date Range Filter Bar & Search Input Bar */}
@@ -411,105 +846,221 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
 
           return (
             <div style={{ background: '#fff', border: '1px solid #d8b4fe', borderRadius: 8, overflow: 'hidden', marginBottom: 24, boxShadow: '0 4px 12px rgba(124, 58, 237, 0.05)' }}>
-              <div style={{ background: '#7c3aed', color: '#fff', padding: '12px 16px', fontWeight: 700, fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>📊 {lang === 'mr' ? 'कीटकनाशके वस्तू-निहाय स्तंभ नोंदवही (Item Column-Wise Register)' : 'Pesticides Item Column-Wise Register Matrix'}</span>
-                <span style={{ fontSize: 11, background: '#6b21a8', padding: '2px 8px', borderRadius: 12 }}>{itemColumns.length} Products</span>
+              <div style={{ background: '#7c3aed', color: '#fff', padding: '12px 16px', fontWeight: 700, fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>📊 {lang === 'mr' ? 'कीटकनाशके विक्री नोंदवही' : 'Pesticides Sale Register'}</span>
+                  <span style={{ fontSize: 11, background: '#6b21a8', padding: '2px 8px', borderRadius: 12 }}>{filteredHistory.length} Entries</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    style={{
+                      fontSize: 11,
+                      padding: '3px 10px',
+                      background: matrixViewMode === 'vertical' ? '#fff' : 'rgba(255,255,255,0.2)',
+                      color: matrixViewMode === 'vertical' ? '#6b21a8' : '#fff',
+                      border: '1px solid rgba(255,255,255,0.4)',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                    onClick={() => setMatrixViewMode('vertical')}
+                  >
+                    <List size={12} /> {lang === 'mr' ? 'उभी नोंदवही (Vertical)' : 'Vertical Register'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    style={{
+                      fontSize: 11,
+                      padding: '3px 10px',
+                      background: matrixViewMode === 'matrix' ? '#fff' : 'rgba(255,255,255,0.2)',
+                      color: matrixViewMode === 'matrix' ? '#6b21a8' : '#fff',
+                      border: '1px solid rgba(255,255,255,0.4)',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                    onClick={() => setMatrixViewMode('matrix')}
+                  >
+                    <Table size={12} /> {lang === 'mr' ? 'स्तंभ तक्ता (Matrix)' : 'Column Matrix'}
+                  </button>
+                </div>
               </div>
 
-              <div className="table-responsive" style={{ overflowX: 'auto' }}>
-                <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f3e8ff', borderBottom: '2px solid #d8b4fe' }}>
-                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 90 }}>Date</th>
-                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 140 }}>Customer / Ref</th>
-                      {itemColumns.map(col => (
-                        <th key={col} style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 140, color: '#6b21a8' }}>
-                          <div>{col}</div>
-                          <div style={{ fontSize: 10, color: '#64748b', fontWeight: 400 }}>Qty @ Rate = Total ₹</div>
-                        </th>
-                      ))}
-                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'right', minWidth: 110, color: '#7c3aed' }}>Row Total (₹)</th>
-                      <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 80 }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredHistory.length === 0 ? (
-                      <tr>
-                        <td colSpan={itemColumns.length + 4} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
-                        </td>
+              {/* VIEW A: VERTICAL REGISTER VIEW (Clean, Row-by-Row Alignment) */}
+              {matrixViewMode === 'vertical' && (
+                <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                  <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f5f3ff', borderBottom: '2px solid #d8b4fe' }}>
+                        <th style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}>#</th>
+                        <th style={{ width: 100, padding: '8px 6px', textAlign: 'left' }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
+                        <th style={{ minWidth: 160, padding: '8px 6px', textAlign: 'left' }}>{lang === 'mr' ? 'ग्राहक नाव' : 'Customer Name'}</th>
+                        <th style={{ minWidth: 180, padding: '8px 6px', textAlign: 'left' }}>{lang === 'mr' ? 'कीटकनाशक उत्पादन' : 'Product Name'}</th>
+                        <th style={{ width: 110, padding: '8px 6px', textAlign: 'left' }}>{lang === 'mr' ? 'बॅच / CIB क्र.' : 'Batch / CIB'}</th>
+                        <th style={{ width: 80, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'प्रमाण' : 'Qty'}</th>
+                        <th style={{ width: 90, padding: '8px 6px', textAlign: 'right' }}>{lang === 'mr' ? 'दर ₹' : 'Rate (₹)'}</th>
+                        <th style={{ width: 110, padding: '8px 6px', textAlign: 'right', color: '#7c3aed' }}>{lang === 'mr' ? 'एकूण रक्कम ₹' : 'Total (₹)'}</th>
+                        <th style={{ width: 80, padding: '8px 6px', textAlign: 'center' }}>{lang === 'mr' ? 'कृती' : 'Action'}</th>
                       </tr>
-                    ) : (
-                      filteredHistory.map(row => {
-                        const rowAmt = Number(row.amount || 0);
-
-                        return (
-                          <tr key={row.id} style={{ borderBottom: '1px solid #f3e8ff' }}>
-                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', whiteSpace: 'nowrap', fontSize: 11 }}>{row.date}</td>
-                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', fontWeight: 600 }}>{row.customer_name}</td>
-                            {itemColumns.map(col => {
-                              const matches = row.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
-                                row.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0]);
-
-                              return (
-                                <td key={col} style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', background: matches ? '#faf5ff' : 'transparent' }}>
-                                  {matches ? (
-                                    <div>
-                                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{row.qty} @ ₹{Number(row.rate || 0).toFixed(2)}</div>
-                                      <div style={{ fontWeight: 800, color: '#7c3aed', fontSize: 11 }}>= ₹{rowAmt.toFixed(2)}</div>
-                                    </div>
-                                  ) : (
-                                    <span style={{ color: '#cbd5e1' }}>-</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'right', fontWeight: 800, color: '#7c3aed', fontFamily: 'monospace', fontSize: 13 }}>
-                              ₹{rowAmt.toFixed(2)}
-                            </td>
-                            <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ padding: '2px 4px', marginRight: 2, background: '#fef3c7', color: '#92400e' }} title="Edit">
-                                <Edit size={12} />
-                              </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '2px 4px' }} title="Delete">
-                                <Trash2 size={12} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                  {filteredHistory.length > 0 && (
-                    <tfoot>
-                      <tr style={{ background: '#f3e8ff', fontWeight: 800 }}>
-                        <td colSpan={2} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8' }}>
-                          COLUMN GRAND TOTALS:
-                        </td>
-                        {itemColumns.map(col => {
-                          const colMatching = filteredHistory.filter(h =>
-                            h.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
-                            h.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0])
+                    </thead>
+                    <tbody>
+                      {filteredHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredHistory.map((row, idx) => {
+                          const rowAmt = Number(row.amount || 0);
+                          return (
+                            <tr key={row.id} style={{ borderBottom: '1px solid #f3e8ff', background: idx % 2 === 0 ? '#fff' : '#faf5ff' }}>
+                              <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700, color: '#64748b' }}>{idx + 1}</td>
+                              <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600 }}>{row.date}</td>
+                              <td style={{ padding: '6px 8px', fontWeight: 600, color: '#1e293b' }}>{row.customer_name}</td>
+                              <td style={{ padding: '6px 8px', color: '#6d28d9', fontWeight: 700 }}>{row.product_name}</td>
+                              <td style={{ padding: '6px 8px', fontSize: 11, color: '#64748b' }}>{row.batch_no || '—'}</td>
+                              <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 600 }}>{row.qty}</td>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#475569' }}>₹{Number(row.rate || 0).toFixed(2)}</td>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 800, color: '#7c3aed', fontSize: 13, fontFamily: 'monospace' }}>
+                                ₹{rowAmt.toFixed(2)}
+                              </td>
+                              <td style={{ padding: '6px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ padding: '2px 5px', marginRight: 4, background: '#fef3c7', color: '#92400e' }} title="Edit">
+                                  <Edit size={12} />
+                                </button>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '2px 5px' }} title="Delete">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
                           );
-                          const totalQ = colMatching.reduce((s, h) => s + Number(h.qty || 0), 0);
-                          const totalA = colMatching.reduce((s, h) => s + Number(h.amount || 0), 0);
+                        })
+                      )}
+                    </tbody>
+                    {filteredHistory.length > 0 && (
+                      <tfoot>
+                        <tr style={{ background: '#ede9fe', fontWeight: 800 }}>
+                          <td colSpan={5} style={{ padding: '8px 10px', textAlign: 'right', color: '#6d28d9' }}>
+                            {lang === 'mr' ? 'एकूण बेरीज (GRAND TOTAL):' : 'GRAND TOTAL:'}
+                          </td>
+                          <td style={{ padding: '8px 6px', textAlign: 'center', color: '#1e293b' }}>
+                            {filteredHistory.reduce((s, h) => s + Number(h.qty || 0), 0)}
+                          </td>
+                          <td></td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right', color: '#6d28d9', fontSize: 14, fontFamily: 'monospace' }}>
+                            ₹{grandTotalAmount.toFixed(2)}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              )}
+
+              {/* VIEW B: COLUMN-WISE REGISTER MATRIX (Dynamic Product Columns) */}
+              {matrixViewMode === 'matrix' && (
+                <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                  <table className="table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f3e8ff', borderBottom: '2px solid #d8b4fe' }}>
+                        <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 90 }}>Date</th>
+                        <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'left', minWidth: 140 }}>Customer / Ref</th>
+                        {itemColumns.map(col => (
+                          <th key={col} style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 140, color: '#6b21a8' }}>
+                            <div>{col}</div>
+                            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 400 }}>Qty @ Rate = Total ₹</div>
+                          </th>
+                        ))}
+                        <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'right', minWidth: 110, color: '#7c3aed' }}>Row Total (₹)</th>
+                        <th style={{ padding: '8px 6px', border: '1px solid #e9d5ff', textAlign: 'center', minWidth: 80 }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={itemColumns.length + 4} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            {lang === 'mr' ? 'निवडलेल्या कालावधीसाठी कोणत्याही कीटकनाशक नोंदी नाहीत.' : 'No pesticide sales found for selected date range.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredHistory.map(row => {
+                          const rowAmt = Number(row.amount || 0);
 
                           return (
-                            <td key={col} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center', background: '#e9d5ff' }}>
-                              <div style={{ fontSize: 11, color: '#1e293b' }}>Qty: {totalQ}</div>
-                              <div style={{ fontSize: 12, color: '#6b21a8', fontWeight: 800 }}>₹{totalA.toFixed(2)}</div>
-                            </td>
+                            <tr key={row.id} style={{ borderBottom: '1px solid #f3e8ff' }}>
+                              <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', whiteSpace: 'nowrap', fontSize: 11 }}>{row.date}</td>
+                              <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', fontWeight: 600 }}>{row.customer_name}</td>
+                              {itemColumns.map(col => {
+                                const matches = row.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
+                                  row.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0]);
+
+                                return (
+                                  <td key={col} style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', background: matches ? '#faf5ff' : 'transparent' }}>
+                                    {matches ? (
+                                      <div>
+                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{row.qty} @ ₹{Number(row.rate || 0).toFixed(2)}</div>
+                                        <div style={{ fontWeight: 800, color: '#7c3aed', fontSize: 11 }}>= ₹{rowAmt.toFixed(2)}</div>
+                                      </div>
+                                    ) : (
+                                      <span style={{ color: '#cbd5e1' }}>-</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                              <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'right', fontWeight: 800, color: '#7c3aed', fontFamily: 'monospace', fontSize: 13 }}>
+                                ₹{rowAmt.toFixed(2)}
+                              </td>
+                              <td style={{ padding: '6px 8px', border: '1px solid #f3e8ff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ padding: '2px 4px', marginRight: 2, background: '#fef3c7', color: '#92400e' }} title="Edit">
+                                  <Edit size={12} />
+                                </button>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} style={{ padding: '2px 4px' }} title="Delete">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
                           );
-                        })}
-                        <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8', fontSize: 14, fontFamily: 'monospace' }}>
-                          ₹{grandTotalAmount.toFixed(2)}
-                        </td>
-                        <td style={{ padding: 8, border: '1px solid #d8b4fe' }}></td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
+                        })
+                      )}
+                    </tbody>
+                    {filteredHistory.length > 0 && (
+                      <tfoot>
+                        <tr style={{ background: '#f3e8ff', fontWeight: 800 }}>
+                          <td colSpan={2} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8' }}>
+                            COLUMN GRAND TOTALS:
+                          </td>
+                          {itemColumns.map(col => {
+                            const colMatching = filteredHistory.filter(h =>
+                              h.product_name.toLowerCase().trim() === col.toLowerCase().trim() ||
+                              h.product_name.toLowerCase().includes(col.toLowerCase().split(' ')[0])
+                            );
+                            const totalQ = colMatching.reduce((s, h) => s + Number(h.qty || 0), 0);
+                            const totalA = colMatching.reduce((s, h) => s + Number(h.amount || 0), 0);
+
+                            return (
+                              <td key={col} style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'center', background: '#e9d5ff' }}>
+                                <div style={{ fontSize: 11, color: '#1e293b' }}>Qty: {totalQ}</div>
+                                <div style={{ fontSize: 12, color: '#6b21a8', fontWeight: 800 }}>₹{totalA.toFixed(2)}</div>
+                              </td>
+                            );
+                          })}
+                          <td style={{ padding: 8, border: '1px solid #d8b4fe', textAlign: 'right', color: '#6b21a8', fontSize: 14, fontFamily: 'monospace' }}>
+                            ₹{grandTotalAmount.toFixed(2)}
+                          </td>
+                          <td style={{ padding: 8, border: '1px solid #d8b4fe' }}></td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              )}
             </div>
           );
         })()}

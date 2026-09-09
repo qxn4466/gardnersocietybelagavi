@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Package, ArrowUpRight, ArrowDownLeft, Plus, CheckCircle, AlertTriangle,
-  Layers, Trash2, PlusCircle, Edit3, X, Tag
+  Layers, Trash2, PlusCircle, Edit3, X, Tag, Table, List
 } from 'lucide-react';
 import {
   getInventoryProducts,
@@ -34,6 +34,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
   const [sales, setSales] = useState<SalesRecord[]>([]);
+
+  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
+    return (localStorage.getItem('bgs_inventory_view_mode') as 'excel' | 'vertical') || 'excel';
+  });
+
+  const handleViewModeChange = (mode: 'excel' | 'vertical') => {
+    setViewMode(mode);
+    localStorage.setItem('bgs_inventory_view_mode', mode);
+  };
 
   // Alert State
   const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -364,46 +373,100 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
         </div>
       )}
 
-      {/* Sub-Tab Switcher */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 4 }}>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('products')}
-          style={{
-            padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
-            background: activeSubTab === 'products' ? '#1e293b' : '#f1f5f9',
-            color: activeSubTab === 'products' ? '#ffffff' : '#64748b',
-            display: 'flex', alignItems: 'center', gap: 6
-          }}
-        >
-          <Layers size={15} /> 1. {lang === 'mr' ? 'उत्पादने व साठा (Products List)' : 'Products & Stock'}
-        </button>
+      {/* Sub-Tab Switcher & View Mode Toggle */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('products')}
+            style={{
+              padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
+              background: activeSubTab === 'products' ? '#1e293b' : '#f1f5f9',
+              color: activeSubTab === 'products' ? '#ffffff' : '#64748b',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <Layers size={15} /> 1. {lang === 'mr' ? 'उत्पादने व साठा (Products List)' : 'Products & Stock'}
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('purchase')}
-          style={{
-            padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
-            background: activeSubTab === 'purchase' ? '#15803d' : '#f1f5f9',
-            color: activeSubTab === 'purchase' ? '#ffffff' : '#64748b',
-            display: 'flex', alignItems: 'center', gap: 6
-          }}
-        >
-          <ArrowDownLeft size={15} /> 2. {lang === 'mr' ? 'खरेदी (+साठा ऑटो वाढतो)' : 'Purchase (Stock Increases)'}
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('purchase')}
+            style={{
+              padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
+              background: activeSubTab === 'purchase' ? '#15803d' : '#f1f5f9',
+              color: activeSubTab === 'purchase' ? '#ffffff' : '#64748b',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <ArrowDownLeft size={15} /> 2. {lang === 'mr' ? 'खरेदी (+साठा ऑटो वाढतो)' : 'Purchase (Stock Increases)'}
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('sales')}
-          style={{
-            padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
-            background: activeSubTab === 'sales' ? '#b91c1c' : '#f1f5f9',
-            color: activeSubTab === 'sales' ? '#ffffff' : '#64748b',
-            display: 'flex', alignItems: 'center', gap: 6
-          }}
-        >
-          <ArrowUpRight size={15} /> 3. {lang === 'mr' ? 'विक्री (-साठा ऑटो कमी होतो)' : 'Sales (Stock Decreases)'}
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('sales')}
+            style={{
+              padding: '8px 16px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
+              background: activeSubTab === 'sales' ? '#b91c1c' : '#f1f5f9',
+              color: activeSubTab === 'sales' ? '#ffffff' : '#64748b',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <ArrowUpRight size={15} /> 3. {lang === 'mr' ? 'विक्री (-साठा ऑटो कमी होतो)' : 'Sales (Stock Decreases)'}
+          </button>
+        </div>
+
+        {/* View Mode Toggle: Excel Grid vs Vertical Stack */}
+        <div style={{
+          display: 'flex',
+          background: '#f1f5f9',
+          padding: '3px',
+          borderRadius: '8px',
+          border: '1px solid #cbd5e1',
+        }}>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('excel')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: 11,
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              background: viewMode === 'excel' ? '#059669' : 'transparent',
+              color: viewMode === 'excel' ? '#ffffff' : '#475569',
+              transition: 'all 0.15s ease',
+            }}
+            id="inventory-excel-view-btn"
+          >
+            <Table size={13} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('vertical')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: 11,
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              background: viewMode === 'vertical' ? '#2563eb' : 'transparent',
+              color: viewMode === 'vertical' ? '#ffffff' : '#475569',
+              transition: 'all 0.15s ease',
+            }}
+            id="inventory-vertical-view-btn"
+          >
+            <List size={13} /> {lang === 'mr' ? 'उभी मांडणी' : 'Vertical Stack'}
+          </button>
+        </div>
       </div>
 
       {/* ── Sub Tab 1: Products & Current Stock List ── */}
@@ -527,85 +590,255 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
       {/* ── Sub Tab 2: Purchase Form & Log (Stock Increases Automatically) ── */}
       {activeSubTab === 'purchase' && (
         <div>
-          <form onSubmit={handlePurchaseSubmit} style={{ background: '#f0fdf4', padding: 16, borderRadius: 8, border: '1px solid #bbf7d0', marginBottom: 20 }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <ArrowDownLeft size={16} /> {lang === 'mr' ? '१. नवीन खरेदी नोंदवा (Stock increases automatically)' : 'Record Product Purchase (Stock increases automatically)'}
-            </h4>
+          {viewMode === 'excel' ? (
+            <form onSubmit={handlePurchaseSubmit} style={{ marginBottom: 20 }}>
+              <div className="excel-form-container" style={{ width: '100%' }}>
+                <div className="excel-toolbar">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Table size={16} color="#15803d" />
+                    <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                      {lang === 'mr' ? 'नवीन खरेदी नोंद (एक्सेल ग्रिड)' : 'PRODUCT_PURCHASE_ENTRY_SHEET (Excel Grid)'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+                  </div>
+                </div>
 
-            <div className="form-grid-4" style={{ gap: 12 }}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
-                <select
-                  className="form-select"
-                  value={purProductId}
-                  onChange={e => setPurProductId(e.target.value)}
-                  required
+                <div className="excel-form-table-wrapper">
+                  <table className="excel-form-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                        <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                        <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                        <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साठा' : 'Validation & Stock Info'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="excel-row-idx">1</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <select
+                            className="form-select"
+                            value={purProductId}
+                            onChange={e => setPurProductId(e.target.value)}
+                            required
+                            style={{ maxWidth: 360, height: 38 }}
+                          >
+                            {products.map(p => {
+                              const isOut = p.current_stock <= 0;
+                              const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                              const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </td>
+                        <td className="excel-col-tools">
+                          {(() => {
+                            const selectedP = products.find(p => p.id === purProductId);
+                            return (
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+                                Current Stock: {selectedP?.current_stock || 0}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">2</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'खरेदी नग संख्या (Quantity Purchased)' : 'Quantity Purchased'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="number"
+                            min="1"
+                            className="form-input"
+                            placeholder="e.g. 20"
+                            value={purQty}
+                            onChange={e => setPurQty(e.target.value)}
+                            required
+                            style={{ maxWidth: 200, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#64748b' }}>Purchase units</span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">3</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'खरेदी दर प्रति नग ₹ (Purchase Price)' : 'Purchase Price per Unit (₹)'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            placeholder="e.g. 400.00"
+                            value={purPrice}
+                            onChange={e => setPurPrice(e.target.value)}
+                            required
+                            style={{ maxWidth: 200, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#64748b' }}>Cost rate per item</span>
+                        </td>
+                      </tr>
+
+                      <tr style={{ background: '#f0fdf4' }}>
+                        <td className="excel-row-idx" style={{ fontWeight: 800, color: '#166534' }}>4</td>
+                        <td className="excel-col-label">
+                          <span style={{ fontWeight: 800, color: '#166534', fontSize: 13 }}>{lang === 'mr' ? 'एकूण खरेदी रक्कम ₹' : 'Total Purchase Cost (₹)'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <span style={{ fontWeight: 900, fontSize: 16, color: '#15803d' }}>
+                            ₹ {((parseInt(purQty) || 0) * (parseFloat(purPrice) || 0)).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#15803d', fontWeight: 700 }}>
+                            {purQty || 0} × ₹{purPrice || 0}
+                          </span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">5</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={purDate}
+                            onChange={e => setPurDate(e.target.value)}
+                            required
+                            style={{ maxWidth: 260, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{purDate}</span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td colSpan={4} style={{ padding: '12px 16px', background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                          <button
+                            type="submit"
+                            style={{
+                              background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 8,
+                              padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
+                            }}
+                          >
+                            <ArrowDownLeft size={16} />
+                            {lang === 'mr' ? 'खरेदी जमा करा (+ साठा ऑटो वाढवा)' : 'Submit Purchase (+ Increase Stock)'}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handlePurchaseSubmit} style={{ background: '#f0fdf4', padding: 16, borderRadius: 8, border: '1px solid #bbf7d0', marginBottom: 20 }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ArrowDownLeft size={16} /> {lang === 'mr' ? '१. नवीन खरेदी नोंदवा (Stock increases automatically)' : 'Record Product Purchase (Stock increases automatically)'}
+              </h4>
+
+              <div className="form-grid-4" style={{ gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
+                  <select
+                    className="form-select"
+                    value={purProductId}
+                    onChange={e => setPurProductId(e.target.value)}
+                    required
+                  >
+                    {products.map(p => {
+                      const isOut = p.current_stock <= 0;
+                      const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                      const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'खरेदी नग संख्या (Quantity Purchased)' : 'Quantity Purchased'}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-input"
+                    placeholder="e.g. 20"
+                    value={purQty}
+                    onChange={e => setPurQty(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'खरेदी दर प्रति नग ₹ (Purchase Price)' : 'Purchase Price per Unit (₹)'}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="e.g. 400.00"
+                    value={purPrice}
+                    onChange={e => setPurPrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={purDate}
+                    onChange={e => setPurDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, textAlign: 'right' }}>
+                <button
+                  type="submit"
+                  style={{
+                    background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 8,
+                    padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
+                  }}
                 >
-                  {products.map(p => {
-                    const isOut = p.current_stock <= 0;
-                    const isLow = p.current_stock > 0 && p.current_stock <= 10;
-                    const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
-                      </option>
-                    );
-                  })}
-                </select>
+                  <ArrowDownLeft size={16} />
+                  {lang === 'mr' ? 'खरेदी जमा करा (+ साठा ऑटो वाढवा)' : 'Submit Purchase (+ Increase Stock)'}
+                </button>
               </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'खरेदी नग संख्या (Quantity Purchased)' : 'Quantity Purchased'}</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="form-input"
-                  placeholder="e.g. 20"
-                  value={purQty}
-                  onChange={e => setPurQty(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'खरेदी दर प्रति नग ₹ (Purchase Price)' : 'Purchase Price per Unit (₹)'}</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input"
-                  placeholder="e.g. 400.00"
-                  value={purPrice}
-                  onChange={e => setPurPrice(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={purDate}
-                  onChange={e => setPurDate(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, textAlign: 'right' }}>
-              <button
-                type="submit"
-                style={{
-                  background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 8,
-                  padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
-                }}
-              >
-                <ArrowDownLeft size={16} />
-                {lang === 'mr' ? 'खरेदी जमा करा (+ साठा ऑटो वाढवा)' : 'Submit Purchase (+ Increase Stock)'}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
 
           {/* Purchase Log Table */}
           <h4 style={{ fontSize: 14, fontWeight: 700, color: '#334155', marginBottom: 10 }}>
@@ -649,90 +882,265 @@ const InventoryManager: React.FC<InventoryManagerProps> = () => {
       {/* ── Sub Tab 3: Sales Form & Log (Stock Decreases Automatically) ── */}
       {activeSubTab === 'sales' && (
         <div>
-          <form onSubmit={handleSaleSubmit} style={{ background: '#fef2f2', padding: 16, borderRadius: 8, border: '1px solid #fca5a5', marginBottom: 20 }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, color: '#991b1b', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <ArrowUpRight size={16} /> {lang === 'mr' ? '२. नवीन विक्री नोंदवा (Stock decreases automatically)' : 'Record Product Sale (Stock decreases automatically)'}
-            </h4>
+          {viewMode === 'excel' ? (
+            <form onSubmit={handleSaleSubmit} style={{ marginBottom: 20 }}>
+              <div className="excel-form-container" style={{ width: '100%' }}>
+                <div className="excel-toolbar">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Table size={16} color="#dc2626" />
+                    <span style={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em' }}>
+                      {lang === 'mr' ? 'नवीन विक्री नोंद (एक्सेल ग्रिड)' : 'PRODUCT_SALE_ENTRY_SHEET (Excel Grid)'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    {lang === 'mr' ? 'सर्व रकाने एकाखाली एक ओळीत मांडलेले आहेत' : 'All fields aligned vertically row-by-row'}
+                  </div>
+                </div>
 
-            <div className="form-grid-3" style={{ gap: 12 }}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
-                <select
-                  className="form-select"
-                  value={saleProductId}
-                  onChange={e => {
-                    const pid = e.target.value;
-                    setSaleProductId(pid);
-                    const matched = products.find(p => p.id === pid);
-                    if (matched) setSalePrice(String(matched.selling_price));
+                <div className="excel-form-table-wrapper">
+                  <table className="excel-form-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 44, textAlign: 'center' }}>#</th>
+                        <th style={{ width: 250 }}>{lang === 'mr' ? 'तपशील / रकाना' : 'Field / Description'}</th>
+                        <th>{lang === 'mr' ? 'माहिती नोंद / मूल्य' : 'Data Entry / Input Value'}</th>
+                        <th style={{ width: 280 }}>{lang === 'mr' ? 'पडताळणी आणि साठा' : 'Validation & Stock Info'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="excel-row-idx">1</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <select
+                            className="form-select"
+                            value={saleProductId}
+                            onChange={e => {
+                              const pid = e.target.value;
+                              setSaleProductId(pid);
+                              const matched = products.find(p => p.id === pid);
+                              if (matched) setSalePrice(String(matched.selling_price));
+                            }}
+                            required
+                            style={{ maxWidth: 360, height: 38 }}
+                          >
+                            {products.map(p => {
+                              const isOut = p.current_stock <= 0;
+                              const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                              const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </td>
+                        <td className="excel-col-tools">
+                          {(() => {
+                            const selectedP = products.find(p => p.id === saleProductId);
+                            return (
+                              <span style={{ fontSize: 12, fontWeight: 700, color: (selectedP?.current_stock || 0) <= 0 ? '#b91c1c' : '#15803d' }}>
+                                Available: {selectedP?.current_stock || 0}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">2</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'विक्री नग संख्या (Quantity Sold)' : 'Quantity Sold'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="number"
+                            min="1"
+                            className="form-input"
+                            placeholder="e.g. 5"
+                            value={saleQty}
+                            onChange={e => setSaleQty(e.target.value)}
+                            required
+                            style={{ maxWidth: 200, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#64748b' }}>Sold units</span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">3</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'विक्री दर प्रति नग ₹ (Selling Price)' : 'Selling Price per Unit (₹)'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input"
+                            placeholder="e.g. 480.00"
+                            value={salePrice}
+                            onChange={e => setSalePrice(e.target.value)}
+                            required
+                            style={{ maxWidth: 200, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#64748b' }}>Selling rate per item</span>
+                        </td>
+                      </tr>
+
+                      <tr style={{ background: '#fef2f2' }}>
+                        <td className="excel-row-idx" style={{ fontWeight: 800, color: '#991b1b' }}>4</td>
+                        <td className="excel-col-label">
+                          <span style={{ fontWeight: 800, color: '#991b1b', fontSize: 13 }}>{lang === 'mr' ? 'एकूण विक्री रक्कम ₹' : 'Total Revenue (₹)'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <span style={{ fontWeight: 900, fontSize: 16, color: '#b91c1c' }}>
+                            ₹ {((parseInt(saleQty) || 0) * (parseFloat(salePrice) || 0)).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#b91c1c', fontWeight: 700 }}>
+                            {saleQty || 0} × ₹{salePrice || 0}
+                          </span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td className="excel-row-idx">5</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</span>
+                          <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={saleDate}
+                            onChange={e => setSaleDate(e.target.value)}
+                            required
+                            style={{ maxWidth: 260, height: 38 }}
+                          />
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{saleDate}</span>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td colSpan={4} style={{ padding: '12px 16px', background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                          <button
+                            type="submit"
+                            style={{
+                              background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 8,
+                              padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(220,38,38,0.3)'
+                            }}
+                          >
+                            <ArrowUpRight size={16} />
+                            {lang === 'mr' ? 'विक्री जमा करा (- साठा ऑटो कमी करा)' : 'Submit Sale (- Decrease Stock)'}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleSaleSubmit} style={{ background: '#fef2f2', padding: 16, borderRadius: 8, border: '1px solid #fca5a5', marginBottom: 20 }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, color: '#991b1b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ArrowUpRight size={16} /> {lang === 'mr' ? '२. नवीन विक्री नोंदवा (Stock decreases automatically)' : 'Record Product Sale (Stock decreases automatically)'}
+              </h4>
+
+              <div className="form-grid-3" style={{ gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'उत्पादन निवडा (Product)' : 'Select Product'}</label>
+                  <select
+                    className="form-select"
+                    value={saleProductId}
+                    onChange={e => {
+                      const pid = e.target.value;
+                      setSaleProductId(pid);
+                      const matched = products.find(p => p.id === pid);
+                      if (matched) setSalePrice(String(matched.selling_price));
+                    }}
+                    required
+                  >
+                    {products.map(p => {
+                      const isOut = p.current_stock <= 0;
+                      const isLow = p.current_stock > 0 && p.current_stock <= 10;
+                      const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'विक्री नग संख्या (Quantity Sold)' : 'Quantity Sold'}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-input"
+                    placeholder="e.g. 5"
+                    value={saleQty}
+                    onChange={e => setSaleQty(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'विक्री दर प्रति नग ₹ (Selling Price)' : 'Selling Price per Unit (₹)'}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="e.g. 480.00"
+                    value={salePrice}
+                    onChange={e => setSalePrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={saleDate}
+                    onChange={e => setSaleDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, textAlign: 'right' }}>
+                <button
+                  type="submit"
+                  style={{
+                    background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 8,
+                    padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(220,38,38,0.3)'
                   }}
-                  required
                 >
-                  {products.map(p => {
-                    const isOut = p.current_stock <= 0;
-                    const isLow = p.current_stock > 0 && p.current_stock <= 10;
-                    const icon = isOut ? '🔴' : isLow ? '🟠' : '🟢';
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {icon} {p.name} ({p.pack_size}) — {lang === 'mr' ? `साठा: ${p.current_stock}` : `Stock: ${p.current_stock}`}
-                      </option>
-                    );
-                  })}
-                </select>
+                  <ArrowUpRight size={16} />
+                  {lang === 'mr' ? 'विक्री जमा करा (- साठा ऑटो कमी करा)' : 'Submit Sale (- Decrease Stock)'}
+                </button>
               </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'विक्री नग संख्या (Quantity Sold)' : 'Quantity Sold'}</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="form-input"
-                  placeholder="e.g. 5"
-                  value={saleQty}
-                  onChange={e => setSaleQty(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'विक्री दर प्रति नग ₹ (Selling Price)' : 'Selling Price per Unit (₹)'}</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input"
-                  placeholder="e.g. 480.00"
-                  value={salePrice}
-                  onChange={e => setSalePrice(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 12 }}>{lang === 'mr' ? 'दिनांक (Date)' : 'Date'}</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={saleDate}
-                  onChange={e => setSaleDate(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, textAlign: 'right' }}>
-              <button
-                type="submit"
-                style={{
-                  background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 8,
-                  padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(220,38,38,0.3)'
-                }}
-              >
-                <ArrowUpRight size={16} />
-                {lang === 'mr' ? 'विक्री जमा करा (- साठा ऑटो कमी करा)' : 'Submit Sale (- Decrease Stock)'}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
 
           {/* Sales Log Table */}
           <h4 style={{ fontSize: 14, fontWeight: 700, color: '#334155', marginBottom: 10 }}>
