@@ -19,11 +19,44 @@ def generate_cash_memo_no(db: Session, txn_date: date) -> str:
     return f"{prefix}{str(count + 1).zfill(4)}"
 
 
+def financial_year_bounds(txn_date: date) -> tuple[date, date]:
+    """Return the April-to-March financial year containing txn_date."""
+    start_year = txn_date.year if txn_date.month >= 4 else txn_date.year - 1
+    return date(start_year, 4, 1), date(start_year + 1, 4, 1)
+
+
+def generate_reference_no(db: Session, txn_date: date, entry_nature: str) -> str:
+    """Generate B.No./V.No. serials independently for each financial year."""
+    fy_start, fy_end = financial_year_bounds(txn_date)
+    reference_column = Transaction.bill_no if entry_nature == "CREDIT" else Transaction.voucher_no
+    references = (
+        db.query(reference_column)
+        .filter(Transaction.date >= fy_start, Transaction.date < fy_end, reference_column.isnot(None))
+        .all()
+    )
+    highest = max((int(value[0]) for value in references if str(value[0]).isdigit()), default=0)
+    return str(highest + 1).zfill(4)
+
+
 @router.get("/next-memo", response_model=NextMemoResponse)
 def get_next_memo(txn_date: Optional[str] = None, db: Session = Depends(get_db)):
     """Preview next cash memo number without saving"""
     d = date.fromisoformat(txn_date) if txn_date else date.today()
     return NextMemoResponse(cash_memo_no=generate_cash_memo_no(db, d))
+
+
+@router.get("/next-reference")
+def get_next_reference(
+    txn_date: Optional[str] = None,
+    entry_nature: str = "CREDIT",
+    db: Session = Depends(get_db),
+):
+    """Preview the next financial-year Bill or Voucher serial number."""
+    nature = entry_nature.upper()
+    if nature not in {"CREDIT", "DEBIT"}:
+        raise HTTPException(status_code=400, detail="entry_nature must be CREDIT or DEBIT")
+    txn_date_value = date.fromisoformat(txn_date) if txn_date else date.today()
+    return {"reference_no": generate_reference_no(db, txn_date_value, nature)}
 
 
 @router.get("/drafts", response_model=List[TransactionOut])
@@ -51,16 +84,25 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     nature = payload.entry_nature
     if tt and (not nature or tt.entry_type in ["CREDIT", "DEBIT"]):
         nature = tt.entry_type if tt.entry_type != "BOTH" else (payload.entry_nature or "CREDIT")
+    nature = nature or "CREDIT"
+    bill_no = payload.bill_no if nature == "CREDIT" else None
+    voucher_no = payload.voucher_no if nature == "DEBIT" else None
+    if nature == "CREDIT" and not bill_no:
+        bill_no = generate_reference_no(db, payload.date, nature)
+    if nature == "DEBIT" and not voucher_no:
+        voucher_no = generate_reference_no(db, payload.date, nature)
 
     txn = Transaction(
         date=payload.date,
         cash_memo_no=memo_no,
         customer_id=payload.customer_id,
+        bill_no=bill_no,
+        voucher_no=voucher_no,
         mobile_no=payload.mobile_no,
         customer_name=payload.customer_name,
         particulars=payload.particulars,
         transaction_type_id=tt.id if tt else type_id,
-        entry_nature=nature or "CREDIT",
+        entry_nature=nature,
         amount_rs=payload.amount_rs,
         amount_ps=payload.amount_ps,
         remarks=payload.remarks,
@@ -92,6 +134,8 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
 
     txn.date = payload.date
     txn.customer_id = payload.customer_id
+    txn.bill_no = payload.bill_no
+    txn.voucher_no = payload.voucher_no
     txn.mobile_no = payload.mobile_no
     txn.customer_name = payload.customer_name
     txn.particulars = payload.particulars

@@ -1,14 +1,12 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
-import PaymentVoucherForm from '../components/cashier/PaymentVoucherForm';
-import ReceiptVoucherForm from '../components/cashier/ReceiptVoucherForm';
 import RentBillForm from '../components/cashier/RentBillForm';
 import CashScrollBookForm from '../components/cashier/CashScrollBookForm';
 import ChequeIssueBookForm from '../components/cashier/ChequeIssueBookForm';
 import type { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { FileText, Receipt, Landmark, BookOpen, CreditCard } from 'lucide-react';
+import { Landmark, BookOpen, CreditCard } from 'lucide-react';
 
 interface CashierDashboardProps {
   user?: User | null;
@@ -16,16 +14,16 @@ interface CashierDashboardProps {
   onToggleMobileMenu?: () => void;
 }
 
-export type CashierTab = 'payment-voucher' | 'receipt-voucher' | 'rent-bill' | 'cash-scroll' | 'cheque-issue';
+export type CashierTab = 'rent-bill' | 'cash-scroll' | 'cheque-issue';
 
 const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as CashierTab | null;
-  const activeTab: CashierTab = (tabParam && ['payment-voucher', 'receipt-voucher', 'rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam))
+  const activeTab: CashierTab = (tabParam && ['rent-bill', 'cash-scroll', 'cheque-issue'].includes(tabParam))
     ? tabParam
-    : 'payment-voucher';
+    : 'rent-bill';
 
   const handleTabChange = (tab: CashierTab) => {
     setSearchParams({ tab });
@@ -33,32 +31,20 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
 
   const tabs: { id: CashierTab; label: string; icon: React.ReactNode; badge: string }[] = [
     {
-      id: 'payment-voucher',
-      label: lang === 'mr' ? '१. रोख पेमेंट व्हाऊचर' : '1. Cash Payment Voucher',
-      icon: <FileText size={16} />,
-      badge: lang === 'mr' ? 'पेमेंट' : 'Payment'
-    },
-    {
-      id: 'receipt-voucher',
-      label: lang === 'mr' ? '२. रोख पावती व्हाऊचर' : '2. Cash Receipt Voucher',
-      icon: <Receipt size={16} />,
-      badge: lang === 'mr' ? 'पावती' : 'Receipt'
-    },
-    {
       id: 'rent-bill',
-      label: lang === 'mr' ? '३. भाडे बिल फॉर्म' : '3. Rent Bill Form',
+      label: lang === 'mr' ? '१. भाडे बिल फॉर्म' : '1. Rent Bill Form',
       icon: <Landmark size={16} />,
       badge: lang === 'mr' ? 'टॅक्स इनव्हॉईस' : 'Tax Invoice'
     },
     {
       id: 'cash-scroll',
-      label: lang === 'mr' ? '४. रोख स्क्रोल पुस्तक' : '4. Cash Scroll Book',
+      label: lang === 'mr' ? '२. रोख स्क्रोल पुस्तक' : '2. Cash Scroll Book',
       icon: <BookOpen size={16} />,
       badge: lang === 'mr' ? 'स्क्रोल' : 'Scroll'
     },
     {
       id: 'cheque-issue',
-      label: lang === 'mr' ? '५. चेक देणे नोंद पुस्तक' : '5. Cheque Issue Book',
+      label: lang === 'mr' ? '३. चेक देणे नोंद पुस्तक' : '3. Cheque Issue Book',
       icon: <CreditCard size={16} />,
       badge: lang === 'mr' ? 'धनादेश' : 'Cheque'
     },
@@ -69,8 +55,8 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
       <Header
         title={lang === 'mr' ? 'कॅशियर डॅशबोर्ड व फॉर्म्स' : 'Cashier Dashboard & Forms'}
         subtitle={lang === 'mr'
-          ? 'कॅशियरसाठी आवश्यक ५ फॉर्म्स प्रणाली (रोख पेमेंट, पावती, भाडे बिल, स्क्रोल, चेक)'
-          : 'Cashier operational suite for 5 essential forms'}
+          ? 'कॅशियरसाठी भाडे बिल, स्क्रोल आणि चेक नोंद प्रणाली'
+          : 'Cashier operational suite for rent, scroll and cheque records'}
         level={2}
         user={user}
         onLogout={onLogout}
@@ -113,8 +99,6 @@ const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, onLogout, onT
       </div>
 
       {/* Render selected form component strictly based on activeTab */}
-      {activeTab === 'payment-voucher' && <PaymentVoucherForm user={user} />}
-      {activeTab === 'receipt-voucher' && <ReceiptVoucherForm user={user} />}
       {activeTab === 'rent-bill' && <RentBillForm user={user} />}
       {activeTab === 'cash-scroll' && <CashScrollBookForm user={user} />}
       {activeTab === 'cheque-issue' && <ChequeIssueBookForm user={user} />}

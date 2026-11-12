@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Save, RotateCcw, CheckCircle, XCircle,
   Hash, Phone, Building2, CreditCard,
@@ -14,6 +14,7 @@ import {
   fetchOffice,
   fetchTransactionTypes,
   fetchNextMemo,
+  fetchNextReference,
   createTransaction,
   updateTransaction,
   fetchTransaction,
@@ -114,6 +115,8 @@ const newRow = (): ParticularRow => ({ id: _rowId++, description: '', amount_rs:
 interface FormState {
   date: string;
   customer_id: string;
+  bill_no: string;
+  voucher_no: string;
   salutation: string;
   customer_name: string;
   transaction_type_id: string;
@@ -127,6 +130,8 @@ interface FormState {
 const INITIAL_FORM: FormState = {
   date: new Date().toISOString().split('T')[0],
   customer_id: '',
+  bill_no: '',
+  voucher_no: '',
   salutation: 'Mr.',
   customer_name: '',
   transaction_type_id: '',
@@ -162,6 +167,13 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
+  const submissionFeedbackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (alert?.type === 'error') {
+      requestAnimationFrame(() => submissionFeedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    }
+  }, [alert]);
 
   const [viewMode, setViewMode] = useState<'vertical' | 'excel'>(() => {
     return (localStorage.getItem('bgs_credit_form_view_mode') as 'vertical' | 'excel') || 'vertical';
@@ -353,6 +365,19 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       setAlert(null);
     };
 
+  const generateReference = async () => {
+    try {
+      const { reference_no } = await fetchNextReference(form.date, form.entry_nature);
+      setForm(prev => form.entry_nature === 'CREDIT'
+        ? { ...prev, bill_no: reference_no }
+        : { ...prev, voucher_no: reference_no }
+      );
+      setAlert({ type: 'success', msg: `${form.entry_nature === 'CREDIT' ? 'Bill' : 'Voucher'} number ${reference_no} generated.` });
+    } catch {
+      setAlert({ type: 'error', msg: 'Could not generate the reference number. Check backend connection.' });
+    }
+  };
+
   // ── Particulars grid ────────────────────────────────────────────────────────
   const addRow = () => setRows(prev => [...prev, newRow()]);
   const removeRow = (id: number) =>
@@ -405,34 +430,13 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         });
         return;
       }
-      if (!form.customer_name.trim()) {
-        setAlert({
-          type: 'error',
-          msg: lang === 'mr' ? 'मसुदा जतन करण्यासाठी किमान ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter at least customer name to save a draft.'
-        });
-        return;
-      }
     } else {
-      if (!custIdTrimmed) {
-        setAlert({
-          type: 'error',
-          msg: lang === 'mr' ? 'कृपया १०-अंकी ग्राहक ओळख क्र. / खाते क्र. प्रविष्ट करा.' : 'Please enter 10-Digit Customer ID / Account No.'
-        });
-        return;
-      }
-      if (!/^\d{10}$/.test(custIdTrimmed)) {
+      if (custIdTrimmed && !/^\d{10}$/.test(custIdTrimmed)) {
         setAlert({
           type: 'error',
           msg: lang === 'mr'
             ? 'ग्राहक ओळख क्र. / खाते क्रमांक १० अंकी असणे आवश्यक आहे (उदा. 1000000001).'
             : 'Customer ID / Account No. must be a 10-digit numeric ID (e.g. 1000000001).'
-        });
-        return;
-      }
-      if (!form.customer_name.trim()) {
-        setAlert({
-          type: 'error',
-          msg: lang === 'mr' ? 'कृपया ग्राहकाचे नाव प्रविष्ट करा.' : 'Please enter the customer name.'
         });
         return;
       }
@@ -474,7 +478,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       const payload = {
         date: form.date,
         customer_id: custIdTrimmed || undefined,
-        customer_name: form.customer_name.startsWith(form.salutation) ? form.customer_name : `${form.salutation} ${form.customer_name}`,
+        bill_no: form.entry_nature === 'CREDIT' ? form.bill_no.trim() || undefined : undefined,
+        voucher_no: form.entry_nature === 'DEBIT' ? form.voucher_no.trim() || undefined : undefined,
+        customer_name: form.customer_name.trim()
+          ? (form.customer_name.startsWith(form.salutation) ? form.customer_name : `${form.salutation} ${form.customer_name}`)
+          : (lang === 'mr' ? 'सामान्य खाते' : 'General Account'),
         particulars: [particularsText, taxNote].filter(Boolean).join(' — '),
         transaction_type_id: parsedTypeId,
         entry_nature: form.entry_nature,
@@ -558,6 +566,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     setForm({
       date: d.date,
       customer_id: d.customer_id || '',
+      bill_no: d.bill_no || '',
+      voucher_no: d.voucher_no || '',
       salutation: sal,
       customer_name: custName,
       transaction_type_id: String(d.transaction_type_id),
@@ -701,29 +711,6 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
             </button>
           </div>
         </div>
-
-        {/* ── Alert ── */}
-        {alert && (
-          <div
-            className={`alert ${alert.type === 'info' ? 'alert-info' : alert.type === 'success' ? 'alert-success' : 'alert-error'}`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {alert.type === 'info' ? <Loader2 size={18} className="spinner" /> : alert.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-              <span style={{ fontWeight: 600 }}>{alert.msg}</span>
-            </div>
-            {alert.type === 'success' && lastSavedTxn && (
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => setPrintingTxn(lastSavedTxn)}
-                style={{ marginLeft: 'auto', background: '#15803d', borderColor: '#166534', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Printer size={14} /> {lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
-              </button>
-            )}
-          </div>
-        )}
 
         {/* ── Static Banner ── */}
         <div className="static-banner">
@@ -912,7 +899,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                     {/* 2. Customer ID */}
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र.' : '10-Digit Customer ID / Account No.'} <span className="required">*</span></label>
+                        <label className="form-label">{lang === 'mr' ? '१०-अंकी ग्राहक ओळख क्र. / खाते क्र. (पर्यायी)' : '10-Digit Customer ID / Account No. (Optional)'}</label>
                         {form.customer_id.trim().length > 0 && form.customer_id.trim().length !== 10 && (
                           <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
                             {lang === 'mr' ? `(${form.customer_id.trim().length}/१० अंक)` : `(${form.customer_id.trim().length}/10 digits)`}
@@ -941,7 +928,6 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                             setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
                           }
                         }}
-                        required
                         style={{ width: '100%' }}
                       />
                       <datalist id="saved-customers-list">
@@ -953,9 +939,31 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       </datalist>
                     </div>
 
+                    <div className="form-group">
+                      <label className="form-label">
+                        {form.entry_nature === 'CREDIT'
+                          ? (lang === 'mr' ? 'बिल क्रमांक (B.No.)' : 'Bill Number (B.No.)')
+                          : (lang === 'mr' ? 'व्हाऊचर क्रमांक (V.No.)' : 'Voucher Number (V.No.)')}
+                      </label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          id="entry-reference"
+                          type="text"
+                          className="form-input"
+                          placeholder={form.entry_nature === 'CREDIT' ? 'Enter bill number' : 'Enter voucher number'}
+                          value={form.entry_nature === 'CREDIT' ? form.bill_no : form.voucher_no}
+                          onChange={handleChange(form.entry_nature === 'CREDIT' ? 'bill_no' : 'voucher_no')}
+                          style={{ width: '100%' }}
+                        />
+                        <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>
+                          Generate
+                        </button>
+                      </div>
+                    </div>
+
                     {/* 3. Customer Name */}
                     <div className="form-group">
-                      <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'} <span className="required">*</span></label>
+                      <label className="form-label">{lang === 'mr' ? 'संबोधन / नाव (पर्यायी)' : 'Mr. / Mrs. Name (Optional)'}</label>
                       <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                         <select id="salutation" className="form-select"
                           style={{ width: 110, flexShrink: 0 }}
@@ -969,7 +977,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         </select>
                         <input id="customer-name" type="text" className="form-input"
                           placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
-                          value={form.customer_name} onChange={handleChange('customer_name')} required style={{ flex: 1 }} />
+                          value={form.customer_name} onChange={handleChange('customer_name')} style={{ flex: 1 }} />
                       </div>
                     </div>
                   </div>
@@ -1196,8 +1204,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           <td className="excel-col-label">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <Hash size={14} color="var(--blue-700)" />
-                              <span>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी / खाते क्र.' : '10-Digit Customer ID / Account No.'}</span>
-                              <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                              <span>{lang === 'mr' ? '१०-अंकी ग्राहक आयडी / खाते क्र. (पर्यायी)' : '10-Digit Customer ID / Account No. (Optional)'}</span>
                             </div>
                           </td>
                           <td className="excel-col-input">
@@ -1223,13 +1230,12 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                   setAlert({ type: 'success', msg: `${lang === 'mr' ? 'ग्राहक आत्मचलित:' : 'Auto-filled customer:'} ${match.full_name}` });
                                 }
                               }}
-                              required
                               style={{ maxWidth: 280, height: 38 }}
                             />
                           </td>
                           <td className="excel-col-tools">
                             <span style={{ fontSize: 11, color: form.customer_id && form.customer_id.length === 10 ? '#15803d' : form.customer_id ? '#dc2626' : '#64748b', fontWeight: 700 }}>
-                              {form.customer_id ? `${form.customer_id.length}/10 digits` : '10 Digits Required'}
+                              {form.customer_id ? `${form.customer_id.length}/10 digits` : 'Optional'}
                             </span>
                           </td>
                         </tr>
@@ -1256,8 +1262,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           <td className="excel-col-label">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <UserIcon size={14} color="var(--blue-700)" />
-                              <span>{lang === 'mr' ? 'संबोधन / नाव' : 'Mr. / Mrs. Name'}</span>
-                              <span className="required" style={{ color: '#dc2626', fontWeight: 800 }}>*</span>
+                              <span>{lang === 'mr' ? 'संबोधन / नाव (पर्यायी)' : 'Mr. / Mrs. Name (Optional)'}</span>
                             </div>
                           </td>
                           <td className="excel-col-input">
@@ -1274,7 +1279,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               </select>
                               <input id="customer-name-excel" type="text" className="form-input"
                                 placeholder={lang === 'mr' ? 'खातेधारकाचे पूर्ण नाव' : 'Full name of account holder'}
-                                value={form.customer_name} onChange={handleChange('customer_name')} required style={{ flex: 1, height: 38 }} />
+                                value={form.customer_name} onChange={handleChange('customer_name')} style={{ flex: 1, height: 38 }} />
                             </div>
                           </td>
                           <td className="excel-col-tools">
@@ -1420,9 +1425,33 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           </td>
                         </tr>
 
-                        {/* Row 7: Remarks */}
+                        {/* Row 7: Bill / Voucher number (depends on entry nature) */}
                         <tr>
                           <td className="excel-row-idx">7</td>
+                          <td className="excel-col-label">
+                            <span>{form.entry_nature === 'CREDIT' ? 'Bill Number (B.No.)' : 'Voucher Number (V.No.)'}</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                id="entry-reference-excel"
+                                type="text"
+                                className="form-input"
+                                placeholder={form.entry_nature === 'CREDIT' ? 'Enter bill number' : 'Enter voucher number'}
+                                value={form.entry_nature === 'CREDIT' ? form.bill_no : form.voucher_no}
+                                onChange={handleChange(form.entry_nature === 'CREDIT' ? 'bill_no' : 'voucher_no')}
+                                style={{ width: '100%', height: 38 }}
+                              />
+                              <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>
+                                Generate
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Row 8: Remarks */}
+                        <tr>
+                          <td className="excel-row-idx">8</td>
                           <td className="excel-col-label">
                             <span>{lang === 'mr' ? 'शेरा' : 'Remarks'}</span>
                           </td>
@@ -1660,6 +1689,30 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                   {loading ? (lang === 'mr' ? 'जतन होत आहे…' : 'Posting…') : (lang === 'mr' ? 'जतन करा आणि पोस्ट करा' : 'Save & Post Transaction')}
                 </button>
               </div>
+
+              {alert && (
+                <div
+                  ref={submissionFeedbackRef}
+                  className={`alert ${alert.type === 'info' ? 'alert-info' : alert.type === 'success' ? 'alert-success' : 'alert-error'} no-print`}
+                  style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}
+                  role={alert.type === 'error' ? 'alert' : 'status'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {alert.type === 'info' ? <Loader2 size={18} className="spinner" /> : alert.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                    <span style={{ fontWeight: 600 }}>{alert.msg}</span>
+                  </div>
+                  {alert.type === 'success' && lastSavedTxn && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setPrintingTxn(lastSavedTxn)}
+                      style={{ marginLeft: 'auto', background: '#15803d', borderColor: '#166534', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Printer size={14} /> {lang === 'mr' ? 'पावती मुद्रित करा' : 'Print Bill Receipt'}
+                    </button>
+                  )}
+                </div>
+              )}
             </form>
           </div>
         </div>

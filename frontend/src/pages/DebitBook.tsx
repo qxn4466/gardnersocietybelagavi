@@ -319,6 +319,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                 <thead>
                   <tr style={{ background: '#fef2f2' }}>
                     <th>{t('lbl_customer_id')}</th>
+                    <th>V.No.</th>
                     <th>{t('lbl_date')}</th>
                     <th>{t('cashbook_lbl_lf_no')}</th>
                     <th>{t('lbl_name')}</th>
@@ -337,6 +338,7 @@ const DebitBook: React.FC<DebitBookProps> = ({ user, onLogout, onToggleMobileMen
                       <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#b91c1c', fontSize: 12 }}>
                         {row.customer_id || '—'}
                       </td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.voucher_no || '—'}</td>
                       <td>{new Date(row.date).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day:'2-digit', month:'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{tr(row.name)}</td>

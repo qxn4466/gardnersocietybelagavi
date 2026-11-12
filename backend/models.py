@@ -46,6 +46,8 @@ class Transaction(Base):
     date = Column(Date, nullable=False, default=date.today)
     cash_memo_no = Column(String(30), nullable=False, unique=True, index=True)
     customer_id = Column(String(50), nullable=True, index=True)
+    bill_no = Column(String(50), nullable=True, index=True)
+    voucher_no = Column(String(50), nullable=True, index=True)
     mobile_no = Column(String(20), nullable=True, index=True)
     customer_name = Column(String(200), nullable=False)
     particulars = Column(Text, nullable=True)

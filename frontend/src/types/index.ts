@@ -65,6 +65,8 @@ export interface Transaction {
   date: string;
   cash_memo_no: string;
   customer_id?: string | null;
+  bill_no?: string | null;
+  voucher_no?: string | null;
   mobile_no?: string | null;
   customer_name: string;
   particulars: string | null;
@@ -82,6 +84,8 @@ export interface Transaction {
 export interface TransactionCreate {
   date: string;
   customer_id?: string;
+  bill_no?: string;
+  voucher_no?: string;
   mobile_no?: string;
   customer_name: string;
   particulars?: string;
@@ -98,6 +102,8 @@ export interface CashBookRow {
   id: number;
   date: string;
   customer_id?: string;
+  bill_no?: string;
+  voucher_no?: string;
   lf_no: string;
   name: string;
   particulars?: string;

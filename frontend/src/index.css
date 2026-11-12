@@ -1481,3 +1481,66 @@ body {
   background-color: #fafbfc;
 }
 
+/* Compact workspace for 12–14 inch displays: keep form fields in view instead
+   of reserving a wide validation column that forces horizontal scrolling. */
+@media (max-width: 1280px) {
+  .page-content {
+    padding: 18px 20px 88px !important;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .excel-form-container {
+    margin-bottom: 16px;
+  }
+
+  .excel-toolbar {
+    padding: 8px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .excel-form-table-wrapper {
+    overflow-x: visible;
+  }
+
+  .excel-form-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 12px;
+  }
+
+  .excel-form-table th,
+  .excel-form-table td {
+    padding: 6px 8px;
+  }
+
+  .excel-form-table th:nth-child(4),
+  .excel-form-table td:nth-child(4) {
+    display: none;
+  }
+
+  .excel-form-table th:nth-child(2),
+  .excel-form-table td:nth-child(2),
+  .excel-col-label,
+  .field-label {
+    width: 180px !important;
+  }
+
+  .excel-col-input .form-input,
+  .excel-col-input .form-select {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .excel-form-table th:first-child,
+  .excel-form-table td:first-child,
+  .excel-row-idx,
+  .row-num {
+    width: 34px !important;
+  }
+}
+

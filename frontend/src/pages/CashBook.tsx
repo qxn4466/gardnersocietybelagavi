@@ -342,6 +342,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                 <thead>
                   <tr>
                     <th>{t('lbl_customer_id')}</th>
+                    <th>B.No.</th>
                     <th>{t('lbl_date')}</th>
                     <th>{t('cashbook_lbl_lf_no')}</th>
                     <th>{t('lbl_name')}</th>
@@ -360,6 +361,7 @@ const CashBook: React.FC<CashBookProps> = ({ user, onLogout, onToggleMobileMenu 
                       <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-700)', fontSize: 12 }}>
                         {row.customer_id || '—'}
                       </td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.bill_no || '—'}</td>
                       <td>{new Date(row.date).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: '2-digit', month: 'short' })}</td>
                       <td>{row.lf_no}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>{tr(row.name)}</td>

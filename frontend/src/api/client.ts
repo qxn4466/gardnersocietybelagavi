@@ -60,6 +60,9 @@ export const fetchAccounts = (): Promise<AccountMaster[]> =>
 export const fetchNextMemo = (date?: string): Promise<{ cash_memo_no: string }> =>
   api.get('/transactions/next-memo', { params: { txn_date: date } }).then(r => r.data);
 
+export const fetchNextReference = (date: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ reference_no: string }> =>
+  api.get('/transactions/next-reference', { params: { txn_date: date, entry_nature: entryNature } }).then(r => r.data);
+
 export const createTransaction = (payload: TransactionCreate): Promise<Transaction> =>
   api.post('/transactions/', payload).then(r => r.data);
 

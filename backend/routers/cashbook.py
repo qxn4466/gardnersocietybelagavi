@@ -119,6 +119,8 @@ def get_cashbook(
             "id": txn.id,
             "date": txn.date,
             "customer_id": txn.customer_id or "",
+            "bill_no": txn.bill_no or "",
+            "voucher_no": txn.voucher_no or "",
             "lf_no": lf_no,
             "name": txn.customer_name,
             "particulars": txn.particulars or "",

@@ -63,6 +63,8 @@ class AccountMasterOut(AccountMasterBase):
 class TransactionCreate(BaseModel):
     date: date
     customer_id: Optional[str] = None
+    bill_no: Optional[str] = None
+    voucher_no: Optional[str] = None
     mobile_no: Optional[str] = None
     customer_name: str
     particulars: Optional[str] = None
@@ -89,6 +91,8 @@ class CashBookRow(BaseModel):
     id: int
     date: date
     customer_id: Optional[str] = ""
+    bill_no: Optional[str] = ""
+    voucher_no: Optional[str] = ""
     lf_no: str
     name: str
     particulars: Optional[str] = ""

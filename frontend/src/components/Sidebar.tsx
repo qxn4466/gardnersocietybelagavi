@@ -163,37 +163,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           }}>
             <span>{lang === 'mr' ? 'कॅशियर डॅशबोर्ड' : 'Cashier Dashboard'}</span>
             <span style={{ fontSize: 9, padding: '1px 6px', background: 'rgba(56, 189, 248, 0.15)', borderRadius: 4, color: '#38bdf8' }}>
-              {lang === 'mr' ? '५ फॉर्म्स' : '5 Forms'}
+              {lang === 'mr' ? '३ फॉर्म्स' : '3 Forms'}
             </span>
           </div>
 
-          <NavLink
-            to="/cashier?tab=payment-voucher"
-            onClick={onClose}
-            className={() => `sidebar-nav-item${location.pathname === '/cashier' && (currentTab === 'payment-voucher' || !currentTab) ? ' active' : ''}`}
-          >
-            <FileText size={18} className="nav-icon" />
-            <div className="nav-label-group">
-              <span>{lang === 'mr' ? '१. रोख पेमेंट व्हाऊचर' : '1. Cash Payment Voucher'}</span>
-              <span className="nav-level-badge">
-                {lang === 'mr' ? 'स्तर १ · खर्च व्हाऊचर' : 'Level 1 · Payment Voucher'}
-              </span>
-            </div>
-          </NavLink>
-
-          <NavLink
-            to="/cashier?tab=receipt-voucher"
-            onClick={onClose}
-            className={() => `sidebar-nav-item${location.pathname === '/cashier' && currentTab === 'receipt-voucher' ? ' active' : ''}`}
-          >
-            <Receipt size={18} className="nav-icon" />
-            <div className="nav-label-group">
-              <span>{lang === 'mr' ? '२. रोख पावती व्हाऊचर' : '2. Cash Receipt Voucher'}</span>
-              <span className="nav-level-badge">
-                {lang === 'mr' ? 'स्तर १ · कॅश मेमो' : 'Level 1 · Receipt Voucher'}
-              </span>
-            </div>
-          </NavLink>
 
           <NavLink
             to="/cashier?tab=rent-bill"
@@ -202,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           >
             <Landmark size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>{lang === 'mr' ? '३. भाडे बिल फॉर्म' : '3. Rent Bill Form'}</span>
+              <span>{lang === 'mr' ? '१. भाडे बिल फॉर्म' : '1. Rent Bill Form'}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? 'स्तर १ · टॅक्स इनव्हॉईस' : 'Level 1 · Rent Invoice'}
               </span>
@@ -216,7 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           >
             <BookOpen size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>{lang === 'mr' ? '४. रोख स्क्रोल पुस्तक' : '4. Cash Scroll Book'}</span>
+              <span>{lang === 'mr' ? '२. रोख स्क्रोल पुस्तक' : '2. Cash Scroll Book'}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? 'स्तर २ · दैनंदिन रोख नोंद' : 'Level 2 · Daily Scroll'}
               </span>
@@ -230,7 +203,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user: propUser, isOpen, onClose }) =>
           >
             <CreditCard size={18} className="nav-icon" />
             <div className="nav-label-group">
-              <span>{lang === 'mr' ? '५. चेक देणे नोंद पुस्तक' : '5. Cheque Issue Book'}</span>
+              <span>{lang === 'mr' ? '३. चेक देणे नोंद पुस्तक' : '3. Cheque Issue Book'}</span>
               <span className="nav-level-badge">
                 {lang === 'mr' ? 'स्तर २ · चेक नोंद' : 'Level 2 · Cheque Register'}
               </span>
