@@ -28,6 +28,8 @@ import {
   createTransactionType,
   uploadTransactionAttachment,
   getFileUrl,
+  acquireEditLock,
+  releaseEditLock,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 import { RECEIPT_PARTICULARS_OPTIONS, PAYMENT_PARTICULARS_OPTIONS } from '../types';
@@ -421,8 +423,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     if (editId) {
       fetchTransaction(parseInt(editId))
         .then(t => {
-          loadDraftIntoForm(t);
-          setAlert({ type: 'success', msg: `Editing transaction ${t.cash_memo_no}` });
+          void openForEdit(t);
         })
         .catch(() => setAlert({ type: 'error', msg: 'Failed to load transaction for editing.' }));
     } else if (custId || custName) {
@@ -665,6 +666,11 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       let saved: Transaction;
       if (editingDraftId) {
         saved = await updateTransaction(editingDraftId, payload);
+        if (isDraft) {
+          void acquireEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+        } else {
+          void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+        }
       } else {
         saved = await createTransaction(payload);
       }
@@ -708,6 +714,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   };
 
   const handleReset = (clearAlertAndMemo: boolean = true) => {
+    if (editingDraftId) {
+      void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+    }
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
@@ -718,6 +727,27 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
     setEditingDraftId(null);
     refreshMemo(INITIAL_FORM.date);
+  };
+
+  // ── One member edits a record at a time (edit lease) ────────────────────────
+  const openForEdit = async (d: Transaction) => {
+    if (d.id) {
+      try {
+        const res = await acquireEditLock('transaction', d.id, user?.username || 'unknown');
+        if (res.locked) {
+          setAlert({
+            type: 'error',
+            msg: lang === 'mr'
+              ? `ही नोंद सध्या ${res.locked_by} संपादनात आहे — ${Math.ceil((res.seconds_remaining || 0) / 60)} मिनिटांत पुन्हा प्रयत्न करा.`
+              : `This record is currently being edited by ${res.locked_by} — try again in ${Math.ceil((res.seconds_remaining || 0) / 60)} min.`,
+          });
+          return;
+        }
+      } catch {
+        // lock service unavailable — allow editing
+      }
+    }
+    loadDraftIntoForm(d);
   };
 
   // ── Load draft/transaction into form for editing ─────────────────────────────
@@ -2604,7 +2634,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               </button>
                               <button
                                 type="button"
-                                onClick={() => loadDraftIntoForm(txn)}
+                                onClick={() => void openForEdit(txn)}
                                 style={{ background: 'none', border: 'none', color: 'var(--blue-600)', cursor: 'pointer', padding: 4 }}
                                 title={lang === 'mr' ? 'व्यवहार संपादन करा' : 'Edit Transaction'}
                               >
@@ -2705,7 +2735,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           </button>
                           <button
                             className="btn btn-primary btn-sm"
-                            onClick={() => loadDraftIntoForm(d)}
+                            onClick={() => void openForEdit(d)}
                           >
                             {lang === 'mr' ? 'लोड करा' : 'Load Draft'}
                           </button>

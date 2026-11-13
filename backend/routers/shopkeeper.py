@@ -4,6 +4,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from numbering import acquire_numbering_lock, ensure_free
 from database import get_db
 from models import ShopSellingRateEntry, ShopTaxInvoice, ShopRetailBill, PesticideSaleEntry, PesticideProductMaster
 from schemas import (
@@ -313,7 +314,10 @@ def get_shop_tax_invoices(
 
 @router.post("/tax-invoices", response_model=ShopTaxInvoiceOut, status_code=201)
 def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db)):
+    acquire_numbering_lock(db)
     inv_no = payload.invoice_no or generate_shop_invoice_no(db, payload.date)
+    inv_no = ensure_free(db, ShopTaxInvoice, ShopTaxInvoice.invoice_no, inv_no,
+                         lambda: generate_shop_invoice_no(db, payload.date))
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     
     record = ShopTaxInvoice(
@@ -370,6 +374,7 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
     if not record:
         raise HTTPException(status_code=404, detail="Shop tax invoice not found")
     
+    acquire_numbering_lock(db)
     inv_no = payload.invoice_no or record.invoice_no
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     
@@ -434,7 +439,10 @@ def get_shop_retail_bills(
 
 @router.post("/retail-bills", response_model=ShopRetailBillOut, status_code=201)
 def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
+    acquire_numbering_lock(db)
     b_no = payload.bill_no or generate_shop_retail_bill_no(db, payload.date)
+    b_no = ensure_free(db, ShopRetailBill, ShopRetailBill.bill_no, b_no,
+                       lambda: generate_shop_retail_bill_no(db, payload.date))
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     q_val = payload.qty or Decimal("1.0")
     record = ShopRetailBill(
@@ -491,6 +499,7 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
     if not record:
         raise HTTPException(status_code=404, detail="Retail bill not found")
     
+    acquire_numbering_lock(db)
     b_no = payload.bill_no or record.bill_no
     tot_amt = payload.total_amount if (payload.total_amount and payload.total_amount > Decimal("0")) else (payload.amount + (payload.sgst_amount or Decimal("0")) + (payload.cgst_amount or Decimal("0")))
     q_val = payload.qty or Decimal("1.0")

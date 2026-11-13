@@ -49,6 +49,18 @@ class ListOptionMaster(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class EditLock(Base):
+    """Advisory edit lease — one member edits a record at a time (5-minute TTL, stealable)."""
+    __tablename__ = "edit_locks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    entity_type = Column(String(30), nullable=False, index=True)  # "transaction" | "rent_bill"
+    entity_id = Column(Integer, nullable=False, index=True)
+    locked_by = Column(String(100), nullable=False)
+    locked_at = Column(DateTime, nullable=False, default=func.now())
+    __table_args__ = (UniqueConstraint("entity_type", "entity_id", name="uq_edit_lock_entity"),)
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 

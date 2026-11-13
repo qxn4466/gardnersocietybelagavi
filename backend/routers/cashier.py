@@ -1,8 +1,10 @@
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from numbering import acquire_numbering_lock, ensure_free
 from datetime import date
 from typing import List, Optional
 from decimal import Decimal
@@ -221,7 +223,10 @@ def get_payment_vouchers(
 
 @router.post("/payment-vouchers", response_model=CashPaymentVoucherOut, status_code=201)
 def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depends(get_db)):
+    acquire_numbering_lock(db)
     v_no = payload.voucher_no or generate_payment_voucher_no(db, payload.date)
+    v_no = ensure_free(db, CashPaymentVoucher, CashPaymentVoucher.voucher_no, v_no,
+                       lambda: generate_payment_voucher_no(db, payload.date))
     record = CashPaymentVoucher(
         voucher_no=v_no,
         date=payload.date,
@@ -280,7 +285,11 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
         target_account_name="Sundrey A/C"
     )
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
     db.refresh(record)
     return record
 
@@ -318,7 +327,10 @@ def get_receipt_vouchers(
 
 @router.post("/receipt-vouchers", response_model=CashReceiptVoucherOut, status_code=201)
 def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depends(get_db)):
+    acquire_numbering_lock(db)
     b_no = payload.bill_no or generate_receipt_bill_no(db, payload.date)
+    b_no = ensure_free(db, CashReceiptVoucher, CashReceiptVoucher.bill_no, b_no,
+                       lambda: generate_receipt_bill_no(db, payload.date))
     record = CashReceiptVoucher(
         bill_no=b_no,
         date=payload.date,
@@ -381,7 +393,11 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         target_account_name="Sundrey A/C"
     )
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
     db.refresh(record)
     return record
 
@@ -415,10 +431,15 @@ def get_rent_bills(
 
 @router.post("/rent-bills", response_model=RentBillOut, status_code=201)
 def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
+    acquire_numbering_lock(db)
     inv_no = payload.invoice_no or generate_rent_invoice_no(db, payload.date)
+    inv_no = ensure_free(db, RentBill, RentBill.invoice_no, inv_no,
+                         lambda: generate_rent_invoice_no(db, payload.date))
+    bill_no_final = ensure_free(db, RentBill, RentBill.bill_no, payload.bill_no,
+                                lambda: generate_rent_reference_no(db, payload.date)) if payload.bill_no else None
     record = RentBill(
         invoice_no=inv_no,
-        bill_no=payload.bill_no,
+        bill_no=bill_no_final,
         date=payload.date,
         consignee_name=payload.consignee_name,
         consignee_address=payload.consignee_address,
@@ -450,7 +471,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
 
     scroll_entry = CashScrollBookEntry(
         date=payload.date,
-        voucher_no=(payload.bill_no or inv_no),
+        voucher_no=(bill_no_final or inv_no),
         from_received_paid=f"Rent Bill: {payload.consignee_name}",
         received_amount=rec_amt,
         paid_amount=Decimal("0.00"),
@@ -475,7 +496,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     sync_transaction_for_cashier_voucher(
         db=db,
         memo_no=inv_no,
-        bill_no=payload.bill_no,
+        bill_no=bill_no_final,
         v_date=payload.date,
         customer_name=payload.consignee_name,
         particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
@@ -486,7 +507,11 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         target_account_name="Rent"
     )
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
     db.refresh(record)
     return record
 
@@ -783,6 +808,7 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
     record = db.query(RentBill).filter(RentBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Rent bill not found")
+    acquire_numbering_lock(db)
     if payload.bill_no:
         db.query(CashScrollBookEntry).filter(
             CashScrollBookEntry.voucher_no.in_([record.invoice_no, record.bill_no or ""])

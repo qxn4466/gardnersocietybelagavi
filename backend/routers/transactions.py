@@ -3,13 +3,15 @@ import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date
 from typing import List, Optional
 from database import get_db
-from models import Transaction, TransactionTypeMaster, CashScrollBookEntry
+from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, EditLock
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
+from numbering import acquire_numbering_lock, ensure_free
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -137,18 +139,28 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     if not tt:
         tt = db.query(TransactionTypeMaster).first()
 
-    memo_no = generate_cash_memo_no(db, payload.date)
-
     nature = payload.entry_nature
     if tt and (not nature or tt.entry_type in ["CREDIT", "DEBIT"]):
         nature = tt.entry_type if tt.entry_type != "BOTH" else (payload.entry_nature or "CREDIT")
     nature = nature or "CREDIT"
+
+    # Serialize number allocation across worker processes (two cashiers saving at once)
+    acquire_numbering_lock(db)
+
+    memo_no = generate_cash_memo_no(db, payload.date)
+
     bill_no = payload.bill_no if nature == "CREDIT" else None
     voucher_no = payload.voucher_no if nature == "DEBIT" else None
     if nature == "CREDIT" and not bill_no:
         bill_no = generate_reference_no(db, payload.date, nature)
     if nature == "DEBIT" and not voucher_no:
         voucher_no = generate_reference_no(db, payload.date, nature)
+    if nature == "CREDIT" and bill_no:
+        bill_no = ensure_free(db, Transaction, Transaction.bill_no, bill_no,
+                              lambda: generate_reference_no(db, payload.date, "CREDIT"))
+    if nature == "DEBIT" and voucher_no:
+        voucher_no = ensure_free(db, Transaction, Transaction.voucher_no, voucher_no,
+                                 lambda: generate_reference_no(db, payload.date, "DEBIT"))
 
     txn = Transaction(
         date=payload.date,
@@ -172,7 +184,11 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     db.add(txn)
     db.flush()
     post_transaction_to_cash_scroll(db, txn)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
     db.refresh(txn)
     return txn
 
@@ -260,6 +276,10 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.query(CashScrollBookEntry).filter(
         CashScrollBookEntry.voucher_no == txn.cash_memo_no
+    ).delete(synchronize_session=False)
+    db.query(EditLock).filter(
+        EditLock.entity_type == "transaction",
+        EditLock.entity_id == txn_id,
     ).delete(synchronize_session=False)
     db.delete(txn)
     db.commit()

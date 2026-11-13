@@ -825,6 +825,13 @@ export interface MeetingNoticeCreate {
   created_by?: string;
 }
 
+export interface EditLockStatus {
+  locked: boolean;              // True = BLOCKED (another member holds a fresh lease)
+  locked_by?: string | null;
+  locked_at?: string | null;
+  seconds_remaining: number;
+}
+
 export interface DailyBalanceSummary {
   selected_date: string;
   records_empty?: boolean;
