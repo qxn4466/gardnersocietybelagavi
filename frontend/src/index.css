@@ -252,6 +252,15 @@ body {
   font-weight: 500;
 }
 
+/* ─── Header "Menu" Button: mobile-only ──────────────────────────────────────
+   The sidebar is permanently visible above 900px, so the Menu button is
+   removed from the header there. Below 900px (slide-over drawer) it shows. */
+.mobile-menu-btn { display: none; }
+
+@media (max-width: 900px) {
+  .mobile-menu-btn { display: inline-flex; }
+}
+
 /* ─── Language Switcher ───────────────────────────────────────────────────── */
 .lang-switcher {
   display: inline-flex;

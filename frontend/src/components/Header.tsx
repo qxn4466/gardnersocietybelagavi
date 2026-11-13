@@ -124,7 +124,13 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-right">
-        {/* ── Single Language Switcher, Form Translator & Keypad Trigger ── */}
+        {/* 1. Current Date */}
+        <div className="header-date">
+          <Calendar size={14} />
+          {dateStr}
+        </div>
+
+        {/* 2. Language Switcher · 3. Translate to Marathi · 4. Marathi Keypad */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <div className="lang-switcher no-print" role="group" aria-label="Language selector">
             {LANGS.map((l) => (
@@ -191,32 +197,13 @@ const Header: React.FC<HeaderProps> = ({
           onClose={() => setShowKeyboard(false)}
         />
 
-        <div className="header-date">
-          <Calendar size={14} />
-          {dateStr}
-        </div>
+        {/* 5. Page-specific Actions */}
+        {actions}
 
-        {user && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '4px 12px', background: 'rgba(30,41,59,0.7)',
-            border: '1px solid var(--border-subtle)', borderRadius: 20,
-          }}>
-            <UserIcon size={14} color="var(--blue-400)" />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {user.full_name}
-            </span>
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '1px 6px',
-              background: user.role === 'ACCOUNTS' ? 'rgba(59,130,246,0.2)' : 'rgba(251,191,36,0.2)',
-              color: user.role === 'ACCOUNTS' ? 'var(--blue-400)' : 'var(--amber-400)',
-              borderRadius: 10, textTransform: 'uppercase',
-            }}>
-              {user.role}
-            </span>
-          </div>
-        )}
+        {/* 6. Print */}
+        {showPrint && <PrintButton />}
 
+        {/* 7. Logout */}
         {onLogout && (
           <button
             onClick={onLogout}
@@ -227,9 +214,6 @@ const Header: React.FC<HeaderProps> = ({
             <LogOut size={14} /> {lang === 'mr' ? 'बाहेर पडा' : 'Logout'}
           </button>
         )}
-
-        {actions}
-        {showPrint && <PrintButton />}
       </div>
     </header>
   );
