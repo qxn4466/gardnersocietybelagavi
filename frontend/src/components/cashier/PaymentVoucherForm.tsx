@@ -10,6 +10,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import { translateToMarathi } from '../../utils/translator';
 import SearchableCombobox from '../SearchableCombobox';
+import { usePersistentOptions } from '../../hooks/useMasterLists';
 
 
 interface PaymentVoucherFormProps {
@@ -71,7 +72,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Particulars list
-  const [particularsOptions, setParticularsOptions] = useState<string[]>(PAYMENT_PARTICULARS_OPTIONS);
+  const { options: particularsOptions, addOption: addPaymentOption } = usePersistentOptions('payment_particulars', PAYMENT_PARTICULARS_OPTIONS);
 
   // Multi-item addable rows with CGST and SGST
   const [items, setItems] = useState<VoucherItemRow[]>([
@@ -175,9 +176,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
     const custom = window.prompt(lang === 'mr' ? 'नवीन बाबीचे नाव प्रविष्ट करा:' : 'Enter new payment particular name:');
     if (custom && custom.trim()) {
       const trimmed = custom.trim();
-      if (!particularsOptions.includes(trimmed)) {
-        setParticularsOptions([...particularsOptions, trimmed]);
-      }
+      void addPaymentOption(trimmed);
     }
   };
 
@@ -652,11 +651,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                                   value={row.particular}
                                   onChange={val => updateRow(idx, 'particular', val)}
                                   options={particularsOptions}
-                                  onAddNewOption={newOpt => {
-                                    if (!particularsOptions.includes(newOpt)) {
-                                      setParticularsOptions([...particularsOptions, newOpt]);
-                                    }
-                                  }}
+                                  onAddNewOption={newOpt => { void addPaymentOption(newOpt); }}
                                   lang={lang}
                                   itemTranslations={ITEM_TRANSLATIONS}
                                 />
@@ -1006,11 +1001,7 @@ const PaymentVoucherForm: React.FC<PaymentVoucherFormProps> = ({ user }) => {
                             value={row.particular}
                             onChange={val => updateRow(idx, 'particular', val)}
                             options={particularsOptions}
-                            onAddNewOption={newOpt => {
-                              if (!particularsOptions.includes(newOpt)) {
-                                setParticularsOptions([...particularsOptions, newOpt]);
-                              }
-                            }}
+                            onAddNewOption={newOpt => { void addPaymentOption(newOpt); }}
                             lang={lang}
                             itemTranslations={ITEM_TRANSLATIONS}
                           />

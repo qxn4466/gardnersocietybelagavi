@@ -8,8 +8,9 @@ import type { ShopTaxInvoice, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct, recordSale } from '../../utils/productStore';
+import { recordSale } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
+import { useProductList } from '../../hooks/useMasterLists';
 
 interface ShopTaxInvoiceFormProps {
   user?: User | null;
@@ -62,7 +63,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
   };
 
   // Dynamically manageable products list
-  const [productList, setProductList] = useState<string[]>(getStoredProducts());
+  const { productList, addProduct } = useProductList();
 
   const handleAddNewProduct = (index: number) => {
     const newProd = window.prompt(
@@ -71,8 +72,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
         : 'Enter new product name (e.g. Tata Fungicide, Urea 50kg):'
     );
     if (newProd && newProd.trim()) {
-      const updatedList = addStoredProduct(newProd.trim());
-      setProductList(updatedList);
+      void addProduct(newProd.trim());
       updateRow(index, 'product_name', newProd.trim());
     }
   };
@@ -626,8 +626,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                                 lang === 'mr' ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:' : 'Enter new product name to add to master dropdown:'
                               );
                               if (newProd && newProd.trim()) {
-                                const updatedList = addStoredProduct(newProd.trim());
-                                setProductList(updatedList);
+                                void addProduct(newProd.trim());
                                 setMsg({
                                   type: 'success',
                                   text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added: ') + newProd.trim()
@@ -706,8 +705,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                             onChange={val => updateRow(idx, 'product_name', val)}
                             options={productList}
                             onAddNewOption={newProd => {
-                              const updatedList = addStoredProduct(newProd);
-                              setProductList(updatedList);
+                              void addProduct(newProd);
                             }}
                             lang={lang}
                           />
@@ -1059,8 +1057,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                       : 'Enter new product name to add to master list:'
                   );
                   if (newProd && newProd.trim()) {
-                    const updatedList = addStoredProduct(newProd.trim());
-                    setProductList(updatedList);
+                    void addProduct(newProd.trim());
                     setMsg({
                       type: 'success',
                       text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added to master dropdown: ') + newProd.trim()
@@ -1104,8 +1101,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                         onChange={val => updateRow(idx, 'product_name', val)}
                         options={productList}
                         onAddNewOption={newProd => {
-                          const updatedList = addStoredProduct(newProd);
-                          setProductList(updatedList);
+                          void addProduct(newProd);
                         }}
                         lang={lang}
                       />
@@ -1181,8 +1177,7 @@ const ShopTaxInvoiceForm: React.FC<ShopTaxInvoiceFormProps> = ({ user }) => {
                         title="Save Row & Product"
                         onClick={() => {
                           if (row.product_name.trim()) {
-                            const updatedList = addStoredProduct(row.product_name.trim());
-                            setProductList(updatedList);
+                            void addProduct(row.product_name.trim());
                           }
                           updateRow(idx, 'isCustomText', false);
                         }}

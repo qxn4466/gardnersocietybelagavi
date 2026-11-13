@@ -10,6 +10,7 @@ import { translateToMarathi } from '../../utils/translator';
 
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import SearchableCombobox from '../SearchableCombobox';
+import { usePersistentOptions } from '../../hooks/useMasterLists';
 
 interface RentBillFormProps {
   user?: User | null;
@@ -48,7 +49,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const [consigneeName, setConsigneeName] = useState('');
   const [consigneeAddress, setConsigneeAddress] = useState('');
   const [consigneeGst, setConsigneeGst] = useState('');
-  const [particularsOptions, setParticularsOptions] = useState<string[]>(RENT_PARTICULARS_OPTIONS);
+  const { options: particularsOptions, addOption: addRentOption } = usePersistentOptions('rent_particulars', RENT_PARTICULARS_OPTIONS);
   const [particularsSelect, setParticularsSelect] = useState(RENT_PARTICULARS_OPTIONS[0]);
   const [customParticulars, setCustomParticulars] = useState('');
   const [hsnSac, setHsnSac] = useState('997212');
@@ -212,10 +213,8 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     const custom = window.prompt(lang === 'mr' ? 'नवीन बाबीचे नाव प्रविष्ट करा:' : 'Enter new rent particular name:');
     if (custom && custom.trim()) {
       const trimmed = custom.trim();
-      if (!particularsOptions.includes(trimmed)) {
-        setParticularsOptions([...particularsOptions, trimmed]);
-        setParticularsSelect(trimmed);
-      }
+      void addRentOption(trimmed);
+      setParticularsSelect(trimmed);
     }
   };
 
@@ -644,11 +643,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                               value={particularsSelect}
                               onChange={val => setParticularsSelect(val)}
                               options={particularsOptions}
-                              onAddNewOption={newOpt => {
-                                if (!particularsOptions.includes(newOpt)) {
-                                  setParticularsOptions([...particularsOptions, newOpt]);
-                                }
-                              }}
+                              onAddNewOption={newOpt => { void addRentOption(newOpt); }}
                               lang={lang}
                               itemTranslations={ITEM_TRANSLATIONS}
                             />
@@ -909,11 +904,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                         value={particularsSelect}
                         onChange={val => setParticularsSelect(val)}
                         options={particularsOptions}
-                        onAddNewOption={newOpt => {
-                          if (!particularsOptions.includes(newOpt)) {
-                            setParticularsOptions([...particularsOptions, newOpt]);
-                          }
-                        }}
+                        onAddNewOption={newOpt => { void addRentOption(newOpt); }}
                         lang={lang}
                         itemTranslations={ITEM_TRANSLATIONS}
                       />

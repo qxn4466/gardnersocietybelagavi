@@ -9,6 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ITEM_TRANSLATIONS } from '../../i18n/translations';
 import { translateToMarathi } from '../../utils/translator';
 import SearchableCombobox from '../SearchableCombobox';
+import { usePersistentOptions } from '../../hooks/useMasterLists';
 
 interface ReceiptVoucherFormProps {
   user?: User | null;
@@ -24,7 +25,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
   const [gstNo, setGstNo] = useState('29AAAAT4655K1Z1');
   const [phoneNo, setPhoneNo] = useState('2460554');
   const [receivedFrom, setReceivedFrom] = useState('');
-  const [particularsOptions, setParticularsOptions] = useState<string[]>(RECEIPT_PARTICULARS_OPTIONS);
+  const { options: particularsOptions, addOption: addReceiptOption } = usePersistentOptions('receipt_particulars', RECEIPT_PARTICULARS_OPTIONS);
   const [particularsSelect, setParticularsSelect] = useState(RECEIPT_PARTICULARS_OPTIONS[0]);
   const [customParticulars, setCustomParticulars] = useState('');
   const [loanAmount, setLoanAmount] = useState<string>('0');
@@ -177,10 +178,8 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
     const custom = window.prompt(lang === 'mr' ? 'नवीन बाबीचे नाव प्रविष्ट करा:' : 'Enter new receipt particular name:');
     if (custom && custom.trim()) {
       const trimmed = custom.trim();
-      if (!particularsOptions.includes(trimmed)) {
-        setParticularsOptions([...particularsOptions, trimmed]);
-        setParticularsSelect(trimmed);
-      }
+      void addReceiptOption(trimmed);
+      setParticularsSelect(trimmed);
     }
   };
 
@@ -607,11 +606,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
                               value={particularsSelect}
                               onChange={val => setParticularsSelect(val)}
                               options={particularsOptions}
-                              onAddNewOption={newOpt => {
-                                if (!particularsOptions.includes(newOpt)) {
-                                  setParticularsOptions([...particularsOptions, newOpt]);
-                                }
-                              }}
+                              onAddNewOption={newOpt => { void addReceiptOption(newOpt); }}
                               lang={lang}
                               itemTranslations={ITEM_TRANSLATIONS}
                             />
@@ -820,11 +815,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ user }) => {
                         value={particularsSelect}
                         onChange={val => setParticularsSelect(val)}
                         options={particularsOptions}
-                        onAddNewOption={newOpt => {
-                          if (!particularsOptions.includes(newOpt)) {
-                            setParticularsOptions([...particularsOptions, newOpt]);
-                          }
-                        }}
+                        onAddNewOption={newOpt => { void addReceiptOption(newOpt); }}
                         lang={lang}
                         itemTranslations={ITEM_TRANSLATIONS}
                       />

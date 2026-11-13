@@ -54,6 +54,11 @@ class TransactionTypeCreate(BaseModel):
     entry_type: Optional[str] = "CREDIT"  # "CREDIT", "DEBIT" or "BOTH"
 
 
+class ListOptionCreate(BaseModel):
+    category: str
+    name: str
+
+
 # ─── Account Master ─────────────────────────────────────────────────────────────
 class AccountMasterBase(BaseModel):
     account_name: str

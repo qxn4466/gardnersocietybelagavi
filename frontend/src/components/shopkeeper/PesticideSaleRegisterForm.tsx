@@ -6,8 +6,9 @@ import type { PesticideSaleEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct, recordSale } from '../../utils/productStore';
+import { recordSale } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
+import { useProductList } from '../../hooks/useMasterLists';
 
 interface PesticideSaleRegisterFormProps {
   user?: User | null;
@@ -41,7 +42,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
   const [docPath, setDocPath] = useState('');
 
   // Dynamically manageable products list
-  const [productList, setProductList] = useState<string[]>(getStoredProducts());
+  const { productList, addProduct } = useProductList();
 
   const handleAddNewProduct = () => {
     const newProd = window.prompt(
@@ -50,8 +51,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
         : 'Enter new product name (e.g. Tata Fungicide, Urea 50kg):'
     );
     if (newProd && newProd.trim()) {
-      const updatedList = addStoredProduct(newProd.trim());
-      setProductList(updatedList);
+      void addProduct(newProd.trim());
       setProductName(newProd.trim());
     }
   };
@@ -422,8 +422,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
                           onChange={val => setProductName(val)}
                           options={productList}
                           onAddNewOption={newProd => {
-                            const updatedList = addStoredProduct(newProd);
-                            setProductList(updatedList);
+                            void addProduct(newProd);
                           }}
                           lang={lang}
                         />
@@ -697,8 +696,7 @@ const PesticideSaleRegisterForm: React.FC<PesticideSaleRegisterFormProps> = ({ u
               onChange={val => setProductName(val)}
               options={productList}
               onAddNewOption={newProd => {
-                const updatedList = addStoredProduct(newProd);
-                setProductList(updatedList);
+                void addProduct(newProd);
               }}
               lang={lang}
             />

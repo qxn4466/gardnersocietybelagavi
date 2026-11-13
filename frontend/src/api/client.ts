@@ -449,6 +449,13 @@ export const fetchPesticideProducts = (): Promise<DBProductItem[]> =>
 export const createPesticideProduct = (name_en: string, name_mr?: string, category?: string): Promise<DBProductItem> =>
   api.post('/shopkeeper/products', { name_en, name_mr, category }).then(r => r.data);
 
+// Generic persisted dropdown options (rent categories, voucher particulars, ...)
+export const fetchListOptions = (category: string): Promise<string[]> =>
+  api.get('/masters/options', { params: { category } }).then(r => r.data);
+
+export const createListOption = (category: string, name: string): Promise<string[]> =>
+  api.post('/masters/options', { category, name }).then(r => r.data);
+
 // 7. Test Data Generator API
 export const generate30DaysTestData = (): Promise<{ message: string; selling_rate_entries: number; tax_invoices: number; retail_bills: number; pesticide_sales: number }> =>
   api.post('/shopkeeper/generate-30-days-test-data').then(r => r.data);

@@ -39,6 +39,16 @@ class AccountMaster(Base):
     account_name = Column(String(100), nullable=False, unique=True)
 
 
+class ListOptionMaster(Base):
+    """Generic persisted dropdown options (rent categories, voucher particulars, ...)."""
+    __tablename__ = "list_options_master"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(50), nullable=False, index=True)   # e.g. "rent", "receipt", "payment"
+    name = Column(String(200), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 

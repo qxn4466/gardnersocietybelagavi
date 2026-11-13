@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from database import get_db
-from models import OfficeMaster, TransactionTypeMaster, AccountMaster
-from schemas import OfficeMasterOut, TransactionTypeOut, TransactionTypeCreate, AccountMasterOut
+from models import OfficeMaster, TransactionTypeMaster, AccountMaster, ListOptionMaster
+from schemas import OfficeMasterOut, TransactionTypeOut, TransactionTypeCreate, AccountMasterOut, ListOptionCreate
 from typing import List
 
 router = APIRouter(prefix="/masters", tags=["masters"])
@@ -79,6 +79,47 @@ def create_transaction_type(payload: TransactionTypeCreate, db: Session = Depend
     db.commit()
     db.refresh(new_type)
     return new_type
+
+
+@router.get("/options", response_model=List[str])
+def get_list_options(category: str, db: Session = Depends(get_db)):
+    """Persisted dropdown options for a category (e.g. rent, receipt, payment particulars)."""
+    rows = (
+        db.query(ListOptionMaster)
+        .filter(ListOptionMaster.category == category)
+        .order_by(ListOptionMaster.name.asc())
+        .all()
+    )
+    return [r.name for r in rows]
+
+
+@router.post("/options", response_model=List[str])
+def create_list_option(payload: ListOptionCreate, db: Session = Depends(get_db)):
+    """Persist a new dropdown option so it appears in the list for every user after refresh."""
+    category = (payload.category or "").strip()
+    name = (payload.name or "").strip()
+    if not category or not name:
+        raise HTTPException(status_code=400, detail="category and name are required")
+
+    existing = (
+        db.query(ListOptionMaster)
+        .filter(
+            ListOptionMaster.category == category,
+            func.lower(ListOptionMaster.name) == name.lower(),
+        )
+        .first()
+    )
+    if not existing:
+        db.add(ListOptionMaster(category=category, name=name))
+        db.commit()
+
+    rows = (
+        db.query(ListOptionMaster)
+        .filter(ListOptionMaster.category == category)
+        .order_by(ListOptionMaster.name.asc())
+        .all()
+    )
+    return [r.name for r in rows]
 
 
 # ─── Account Master ─────────────────────────────────────────────────────────────

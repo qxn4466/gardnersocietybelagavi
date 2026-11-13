@@ -9,8 +9,8 @@ import type { ShopSellingRateEntry, User } from '../../types';
 import { PESTICIDE_PRODUCT_LIST } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateToMarathi, getMarathiItem } from '../../utils/translator';
-import { getStoredProducts, addStoredProduct } from '../../utils/productStore';
 import SearchableCombobox from '../SearchableCombobox';
+import { useProductList } from '../../hooks/useMasterLists';
 
 
 interface SellingRateBookFormProps {
@@ -67,7 +67,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
   };
 
   // Dynamically manageable products list
-  const [productList, setProductList] = useState<string[]>(getStoredProducts());
+  const { productList, addProduct } = useProductList();
 
   const handleAddNewProduct = (index: number) => {
     const newProd = window.prompt(
@@ -76,8 +76,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
         : 'Enter new product name (e.g. Tata Fungicide, Urea 50kg):'
     );
     if (newProd && newProd.trim()) {
-      const updatedList = addStoredProduct(newProd.trim());
-      setProductList(updatedList);
+      void addProduct(newProd.trim());
       updateRow(index, 'particulars', newProd.trim());
     }
   };
@@ -636,8 +635,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                                 lang === 'mr' ? 'यादीत जोडण्यासाठी नवीन उत्पादनाचे नाव प्रविष्ट करा:' : 'Enter new product name to add to master dropdown:'
                               );
                               if (newProd && newProd.trim()) {
-                                const updatedList = addStoredProduct(newProd.trim());
-                                setProductList(updatedList);
+                                void addProduct(newProd.trim());
                                 setMsg({
                                   type: 'success',
                                   text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added: ') + newProd.trim()
@@ -716,8 +714,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                             onChange={val => updateRow(idx, 'particulars', val)}
                             options={productList}
                             onAddNewOption={newProd => {
-                              const updatedList = addStoredProduct(newProd);
-                              setProductList(updatedList);
+                              void addProduct(newProd);
                             }}
                             lang={lang}
                           />
@@ -1065,8 +1062,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                           : 'Enter new product name to add to master list:'
                       );
                       if (newProd && newProd.trim()) {
-                        const updatedList = addStoredProduct(newProd.trim());
-                        setProductList(updatedList);
+                        void addProduct(newProd.trim());
                         setMsg({
                           type: 'success',
                           text: (lang === 'mr' ? 'नवीन उत्पादन यादीत जोडले: ' : 'New product added to master dropdown: ') + newProd.trim()
@@ -1113,8 +1109,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                             onChange={val => updateRow(idx, 'particulars', val)}
                             options={productList}
                             onAddNewOption={newProd => {
-                              const updatedList = addStoredProduct(newProd);
-                              setProductList(updatedList);
+                              void addProduct(newProd);
                             }}
                             lang={lang}
                           />
@@ -1246,8 +1241,7 @@ const SellingRateBookForm: React.FC<SellingRateBookFormProps> = ({ user }) => {
                             title="Save Row & Product"
                             onClick={() => {
                               if (row.particulars.trim()) {
-                                const updatedList = addStoredProduct(row.particulars.trim());
-                                setProductList(updatedList);
+                                void addProduct(row.particulars.trim());
                               }
                               updateRow(idx, 'isCustomText', false);
                             }}
