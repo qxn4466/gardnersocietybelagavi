@@ -4,7 +4,7 @@ import {
   Hash, Phone, Building2, CreditCard,
   PlusCircle, Trash2, FileEdit, FolderOpen,
   RefreshCw, Edit3, Filter, Table, List, Printer, User as UserIcon, Sparkles, Languages, Loader2,
-  Calendar, BookOpen, FileText, Paperclip, X
+  Calendar, BookOpen, FileText, Paperclip, X, Download, Maximize2
 } from 'lucide-react';
 import Header from '../components/Header';
 import ReceiptModal from '../components/ReceiptModal';
@@ -160,6 +160,87 @@ const rowAmount = (r: ParticularRow) =>
 
 const gridInput: React.CSSProperties = { padding: '7px 10px', fontSize: 13 };
 
+// ─── Attachment Preview Modal ────────────────────────────────────────────────
+const AttachmentPreviewModal: React.FC<{
+  doc: { path: string; name: string };
+  onClose: () => void;
+}> = ({ doc, onClose }) => {
+  const { lang } = useTranslation();
+  const fileUrl = getFileUrl(doc.path);
+  const isImage =
+    /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(doc.name) ||
+    /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(doc.path) ||
+    doc.path.startsWith('data:image');
+
+  return (
+    <div
+      className="no-print"
+      onClick={onClose}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 24 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: '#fff', width: 'min(920px, 94vw)', maxHeight: '92vh', borderRadius: 12, boxShadow: '0 24px 60px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <Paperclip size={16} color="#2563eb" />
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {doc.name}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <a
+              href={fileUrl}
+              download={doc.name}
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#166534', borderColor: '#bbf7d0', background: '#f0fdf4', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              title="Download"
+            >
+              <Download size={14} /> {lang === 'mr' ? 'डाउनलोड' : 'Download'}
+            </a>
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              title={lang === 'mr' ? 'नवीन टॅबमध्ये उघडा' : 'Open in new tab'}
+            >
+              <Maximize2 size={14} /> {lang === 'mr' ? 'नवीन टॅब' : 'New Tab'}
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            >
+              <X size={14} /> {lang === 'mr' ? 'बंद करा' : 'Close'}
+            </button>
+          </div>
+        </div>
+
+        {/* Body — images render inline; PDFs, text and other types in an embedded viewer */}
+        <div style={{ flex: 1, overflow: 'auto', background: '#f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: 14 }}>
+          {isImage ? (
+            <img
+              src={fileUrl}
+              alt={doc.name}
+              style={{ maxWidth: '100%', maxHeight: 'calc(92vh - 130px)', borderRadius: 8, boxShadow: '0 4px 14px rgba(0,0,0,0.12)', background: '#fff' }}
+            />
+          ) : (
+            <iframe
+              src={fileUrl}
+              title={doc.name}
+              style={{ width: '100%', height: 'calc(92vh - 150px)', border: 'none', borderRadius: 8, background: '#fff' }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface CreditAccountFormProps {
   user?: User | null;
   onLogout?: () => void;
@@ -178,6 +259,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<{ path: string; name: string } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
@@ -785,9 +867,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
               }}
             >
               {a.status === 'ready' && a.path ? (
-                <a href={getFileUrl(a.path)} target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' }}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc({ path: a.path as string, name: a.name })}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontWeight: 600, padding: 0, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  title={lang === 'mr' ? 'प्रीव्ह्यू पहा' : 'Show preview'}
+                >
                   ✓ {a.name}
-                </a>
+                </button>
               ) : (
                 <span style={{ color: a.status === 'error' ? '#b91c1c' : '#475569', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   {a.status === 'uploading' && <Loader2 size={12} className="spinner" />}
@@ -2475,15 +2562,15 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               return (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                                   {atts.map((a, ai) => (
-                                    <a
+                                    <button
                                       key={`h-att-${txn.id}-${ai}`}
-                                      href={getFileUrl(a.path)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '1px 8px', textDecoration: 'none' }}
+                                      type="button"
+                                      onClick={() => setPreviewDoc({ path: a.path, name: a.name || 'Attachment' })}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '1px 8px', cursor: 'pointer' }}
+                                      title={lang === 'mr' ? 'प्रीव्ह्यू पहा' : 'Show preview'}
                                     >
                                       <Paperclip size={10} /> {a.name || 'Attachment'}
-                                    </a>
+                                    </button>
                                   ))}
                                 </div>
                               );
@@ -2656,6 +2743,14 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
           office={office}
           onClose={() => setShowStatementModal(false)}
         />
+
+        {/* ── Attachment Preview Modal ── */}
+        {previewDoc && (
+          <AttachmentPreviewModal
+            doc={previewDoc}
+            onClose={() => setPreviewDoc(null)}
+          />
+        )}
 
       </div>
     </div>
