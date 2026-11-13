@@ -52,7 +52,8 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const [particularsSelect, setParticularsSelect] = useState(RENT_PARTICULARS_OPTIONS[0]);
   const [customParticulars, setCustomParticulars] = useState('');
   const [hsnSac, setHsnSac] = useState('997212');
-  const [gstRate, setGstRate] = useState<number>(18);
+  const [cgstPct, setCgstPct] = useState<string>('9');
+  const [sgstPct, setSgstPct] = useState<string>('9');
   const [qty, setQty] = useState<string>('1');
   const [rate, setRate] = useState<string>('');
   const [per, setPer] = useState('Month');
@@ -117,8 +118,10 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     const base = q * r;
     setBaseAmount(base);
 
-    const sgst = base * 0.09;
-    const cgst = base * 0.09;
+    const cg = parseFloat(cgstPct) || 0;
+    const sg = parseFloat(sgstPct) || 0;
+    const cgst = base * cg / 100;
+    const sgst = base * sg / 100;
     setSgstAmount(sgst);
     setCgstAmount(cgst);
     setIgstAmount(0);
@@ -126,7 +129,17 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     const grand = base + sgst + cgst;
     setTotalAmount(grand);
     setTaxWords(numberToWords(grand));
-  }, [qty, rate, gstRate]);
+  }, [qty, rate, cgstPct, sgstPct]);
+
+  // Combined GST rate (editable CGST% + SGST%) used in the payload & summary
+  const gstRate = (parseFloat(cgstPct) || 0) + (parseFloat(sgstPct) || 0);
+
+  // Percent label for the printed invoice, derived from the stored amounts
+  const pctLabel = (taxAmount: number) => {
+    const base = Number(selectedBill?.amount) || 0;
+    if (!base) return '9';
+    return String(Math.round((Number(taxAmount) / base) * 10000) / 100);
+  };
 
   const loadNextInvoiceNo = async (d: string) => {
     try {
@@ -181,6 +194,13 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     setHsnSac(b.hsn_sac || '997212');
     setQty(String(b.qty || 1));
     setRate(String(b.rate || ''));
+    {
+      const base = Number(b.amount) || 0;
+      const cg = base > 0 ? Math.round((Number(b.cgst_amount) / base) * 10000) / 100 : 9;
+      const sg = base > 0 ? Math.round((Number(b.sgst_amount) / base) * 10000) / 100 : 9;
+      setCgstPct(String(cg));
+      setSgstPct(String(sg));
+    }
     setPaymentMode((b.payment_mode || 'CASH') as 'CASH' | 'CHEQUE');
     setChequeNo(b.cheque_no || '');
     setChequeDate(b.cheque_date || today);
@@ -207,6 +227,8 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     setParticularsSelect(particularsOptions[0]);
     setCustomParticulars('');
     setRate('');
+    setCgstPct('9');
+    setSgstPct('9');
     setPaymentMode('CASH');
     setChequeNo('');
     setChequeDate(today);
@@ -316,7 +338,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                   : (lang === 'mr' ? '३. भाडे बिल व कर इनव्हॉईस (Rent Bill & Tax Invoice)' : '3. Rent Bill & Tax Invoice')}
               </h3>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                {lang === 'mr' ? 'गाळा व व्यापारी गाळे भाडे, जीएसटी कर इनव्हॉईस आणि भाडे वसुली नोंदणी' : 'Stall/Shop Rent Tax Invoice generation with auto-calculated GST (9% CGST + 9% SGST)'}
+                {lang === 'mr' ? 'गाळा व व्यापारी गाळे भाडे, जीएसटी कर इनव्हॉईस आणि भाडे वसुली नोंदणी' : 'Stall/Shop Rent Tax Invoice generation with editable CGST & SGST rates (default 9% + 9%)'}
               </p>
             </div>
           </div>
@@ -711,10 +733,36 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                           <span>{lang === 'mr' ? 'मूळ रक्कम व जीएसटी (Base & Taxes)' : 'Base & Tax Breakdown'}</span>
                         </td>
                         <td className="excel-col-input">
-                          <div style={{ fontSize: 13, display: 'flex', gap: 16 }}>
+                          <div style={{ fontSize: 13, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                             <span>Subtotal: <strong>₹{baseAmount.toFixed(2)}</strong></span>
-                            <span>SGST (9%): <strong>₹{sgstAmount.toFixed(2)}</strong></span>
-                            <span>CGST (9%): <strong>₹{cgstAmount.toFixed(2)}</strong></span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              CGST:
+                              <input
+                                type="number"
+                                min="0"
+                                max="50"
+                                step="0.5"
+                                className="form-input"
+                                value={cgstPct}
+                                onChange={e => setCgstPct(e.target.value)}
+                                style={{ width: 74, padding: '5px 8px', textAlign: 'right' }}
+                              />%
+                              <strong style={{ marginLeft: 4 }}>₹{cgstAmount.toFixed(2)}</strong>
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              SGST:
+                              <input
+                                type="number"
+                                min="0"
+                                max="50"
+                                step="0.5"
+                                className="form-input"
+                                value={sgstPct}
+                                onChange={e => setSgstPct(e.target.value)}
+                                style={{ width: 74, padding: '5px 8px', textAlign: 'right' }}
+                              />%
+                              <strong style={{ marginLeft: 4 }}>₹{sgstAmount.toFixed(2)}</strong>
+                            </span>
                           </div>
                         </td>
                         <td className="excel-col-tools">
@@ -924,13 +972,33 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                         <span style={{ color: 'var(--text-secondary)' }}>Subtotal: </span>
                         <strong>₹{baseAmount.toFixed(2)}</strong>
                       </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>SGST (9%): </span>
-                        <strong>₹{sgstAmount.toFixed(2)}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>CGST (9%): </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>CGST: </span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="50"
+                          step="0.5"
+                          className="form-input"
+                          value={cgstPct}
+                          onChange={e => setCgstPct(e.target.value)}
+                          style={{ width: 74, padding: '5px 8px', textAlign: 'right' }}
+                        />%
                         <strong>₹{cgstAmount.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>SGST: </span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="50"
+                          step="0.5"
+                          className="form-input"
+                          value={sgstPct}
+                          onChange={e => setSgstPct(e.target.value)}
+                          style={{ width: 74, padding: '5px 8px', textAlign: 'right' }}
+                        />%
+                        <strong>₹{sgstAmount.toFixed(2)}</strong>
                       </div>
                       <div>
                         <span style={{ color: 'var(--text-secondary)' }}>Grand Total: </span>
@@ -1220,11 +1288,11 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                     <span>₹{Number(selectedBill.amount).toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span>SGST 9%:</span>
+                    <span>SGST {pctLabel(Number(selectedBill.sgst_amount))}%:</span>
                     <span>₹{Number(selectedBill.sgst_amount).toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span>CGST 9%:</span>
+                    <span>CGST {pctLabel(Number(selectedBill.cgst_amount))}%:</span>
                     <span>₹{Number(selectedBill.cgst_amount).toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', borderTop: '1px solid #000', paddingTop: 4, marginTop: 4 }}>
