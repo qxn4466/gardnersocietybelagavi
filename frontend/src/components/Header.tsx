@@ -99,7 +99,6 @@ const Header: React.FC<HeaderProps> = ({
               borderRadius: 8,
               padding: '6px 10px',
               cursor: 'pointer',
-              display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
               fontSize: 13,
