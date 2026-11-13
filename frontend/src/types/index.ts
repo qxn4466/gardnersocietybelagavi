@@ -399,9 +399,21 @@ export const PAYMENT_PARTICULARS_OPTIONS = [
 ];
 
 
+export interface LedgerEntry {
+  date: string;
+  bill_no?: string | null;
+  voucher_no?: string | null;
+  cash_memo_no: string;
+  customer_name: string;
+  nature?: string;
+  amount: number;
+  particulars?: string | null;
+}
+
 export interface RentBill {
   id: number;
   invoice_no: string;
+  bill_no?: string | null;
   date: string;
   consignee_name: string;
   consignee_address?: string | null;
@@ -815,6 +827,7 @@ export interface MeetingNoticeCreate {
 
 export interface DailyBalanceSummary {
   selected_date: string;
+  records_empty?: boolean;
   initial_opening_balance: number;
   initial_balance_date: string;
   is_locked: boolean;

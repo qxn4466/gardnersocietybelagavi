@@ -7,6 +7,7 @@ import type {
   TransactionCreate,
   CashBookRow,
   LedgerRow,
+  LedgerEntry,
   AccountMaster,
 } from '../types';
 
@@ -455,6 +456,14 @@ export const fetchListOptions = (category: string): Promise<string[]> =>
 
 export const createListOption = (category: string, name: string): Promise<string[]> =>
   api.post('/masters/options', { category, name }).then(r => r.data);
+
+// Rent bill B.No./V.No. generator (financial-year serial)
+export const fetchRentNextReference = (date: string): Promise<{ reference_no: string }> =>
+  api.get('/cashier/rent-next-reference', { params: { v_date: date } }).then(r => r.data);
+
+// Per-account ledger entries for the drill-down (with bill/voucher numbers)
+export const fetchLedgerEntries = (account: string, year?: number): Promise<LedgerEntry[]> =>
+  api.get('/ledger/entries', { params: { account, year } }).then(r => r.data);
 
 // 7. Test Data Generator API
 export const generate30DaysTestData = (): Promise<{ message: string; selling_rate_entries: number; tax_invoices: number; retail_bills: number; pesticide_sales: number }> =>

@@ -241,6 +241,7 @@ class CashReceiptVoucherOut(CashReceiptVoucherCreate):
 class RentBillCreate(BaseModel):
     date: date
     invoice_no: Optional[str] = None
+    bill_no: Optional[str] = None
     consignee_name: str
     consignee_address: Optional[str] = None
     particulars: Optional[str] = None
@@ -504,6 +505,7 @@ class DailyBalanceSummary(BaseModel):
     initial_opening_balance: Decimal
     initial_balance_date: date
     is_locked: bool
+    records_empty: bool = False
     opening_balance: Decimal
     today_receipts: Decimal
     today_payments: Decimal

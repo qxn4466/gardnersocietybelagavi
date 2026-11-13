@@ -3,8 +3,8 @@ import { RefreshCw, BookMarked, TrendingUp, TrendingDown, ArrowRightLeft, Wallet
 import Header from '../components/Header';
 import PrintButton from '../components/PrintButton';
 import PrintHeader from '../components/PrintHeader';
-import { fetchLedger, fetchAccounts, fetchDailyBalance } from '../api/client';
-import type { LedgerRow, AccountMaster, User, DailyBalanceSummary } from '../types';
+import { fetchLedger, fetchAccounts, fetchDailyBalance, fetchLedgerEntries } from '../api/client';
+import type { LedgerRow, LedgerEntry, AccountMaster, User, DailyBalanceSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { getTxnHeadMarathi } from '../utils/translator';
 import DailyBalanceBar from '../components/DailyBalanceBar';
@@ -40,6 +40,45 @@ type AccountGroup = {
   totalReceivable: number;
 };
 
+const LedgerEntriesPanel: React.FC<{ state: LedgerEntry[] | 'loading'; lang: string }> = ({ state, lang }) => {
+  if (state === 'loading') {
+    return (
+      <tr style={{ background: '#f0fdf4', fontSize: 12 }}>
+        <td />
+        <td colSpan={6} style={{ paddingLeft: 44, fontStyle: 'italic', color: '#64748b' }}>
+          {lang === 'mr' ? 'नोंदी लोड होत आहेत…' : 'Loading entries…'}
+        </td>
+      </tr>
+    );
+  }
+  return (
+    <React.Fragment>
+      {(state || []).map((e, ei) => (
+        <tr key={`entry-${ei}`} style={{ background: '#f0fdf4', fontSize: 11, borderLeft: '3px solid #86efac' }}>
+          <td />
+          <td colSpan={5} style={{ paddingLeft: 44, paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontFamily: 'monospace', color: '#166534', fontWeight: 700 }}>
+              {e.date}
+            </span>
+            <span style={{ fontFamily: 'monospace', color: '#1d4ed8', marginLeft: 8, fontWeight: 700 }}>
+              {e.bill_no ? `B.No. ${e.bill_no}` : e.voucher_no ? `V.No. ${e.voucher_no}` : e.cash_memo_no}
+            </span>
+            <span style={{ color: '#334155', marginLeft: 8, fontWeight: 600 }}>
+              {e.customer_name}
+            </span>
+            <span style={{ color: '#64748b', marginLeft: 8 }}>
+              {e.particulars || ''}
+            </span>
+          </td>
+          <td style={{ textAlign: 'right', fontFamily: 'monospace', color: e.nature === 'DEBIT' ? '#b91c1c' : '#15803d' }}>
+            {e.nature === 'DEBIT' ? '-' : '+'}{fmtPos(e.amount)}
+          </td>
+        </tr>
+      ))}
+    </React.Fragment>
+  );
+};
+
 const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleMobileMenu }) => {
   const { t, lang } = useTranslation();
   const now = new Date();
@@ -50,6 +89,22 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
+  const [entries, setEntries] = useState<Record<string, LedgerEntry[] | 'loading'>>({});
+
+  const toggleAccount = (grp: AccountGroup) => {
+    const key = `${grp.account}|${year}`;
+    if (expandedAccount === grp.account) {
+      setExpandedAccount(null);
+      return;
+    }
+    setExpandedAccount(grp.account);
+    if (!entries[key]) {
+      setEntries(prev => ({ ...prev, [key]: 'loading' }));
+      fetchLedgerEntries(grp.account, year ? parseInt(year, 10) : undefined)
+        .then(list => setEntries(prev => ({ ...prev, [key]: list })))
+        .catch(() => setEntries(prev => ({ ...prev, [key]: [] })));
+    }
+  };
 
   useEffect(() => {
     fetchAccounts().then(setAccounts).catch(() => {});
@@ -285,7 +340,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                       <React.Fragment key={grp.account}>
                         {/* Account summary row */}
                         <tr
-                          onClick={() => setExpandedAccount(isOpen ? null : grp.account)}
+                          onClick={() => toggleAccount(grp)}
                           style={{
                             cursor: 'pointer',
                             background: gi % 2 === 0 ? '#ffffff' : '#f8fafc',
@@ -356,6 +411,9 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                             <td />
                           </tr>
                         ))}
+
+                        {/* Expanded: individual entries with Bill/Voucher numbers */}
+                        {isOpen && <LedgerEntriesPanel state={entries[`${grp.account}|${year}`] || 'loading'} lang={lang} />}
                       </React.Fragment>
                     );
                   })}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages, Landmark, Loader2, Table, List } from 'lucide-react';
-import { fetchNextRentInvoiceNo, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import { fetchNextRentInvoiceNo, fetchRentNextReference, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { RentBill, User } from '../../types';
 
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
@@ -46,6 +46,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
   const [date, setDate] = useState(today);
   const [invoiceNo, setInvoiceNo] = useState('');
+  const [billNo, setBillNo] = useState('');
   const [consigneeName, setConsigneeName] = useState('');
   const [consigneeAddress, setConsigneeAddress] = useState('');
   const [consigneeGst, setConsigneeGst] = useState('');
@@ -142,6 +143,16 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     return String(Math.round((Number(taxAmount) / base) * 10000) / 100);
   };
 
+  const generateReference = async () => {
+    try {
+      const res = await fetchRentNextReference(date);
+      setBillNo(res.reference_no);
+      setMsg({ type: 'success', text: (lang === 'mr' ? 'बिल क्र. तयार केला: ' : 'Bill/Voucher No. generated: ') + res.reference_no });
+    } catch {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'क्रमांक तयार करता आला नाही.' : 'Could not generate the reference number.' });
+    }
+  };
+
   const loadNextInvoiceNo = async (d: string) => {
     try {
       const res = await fetchNextRentInvoiceNo(d);
@@ -188,6 +199,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     setEditingId(b.id);
     setDate(b.date);
     setInvoiceNo(b.invoice_no);
+    setBillNo(b.bill_no || '');
     setConsigneeName(b.consignee_name);
     setConsigneeAddress(b.consignee_address || '');
     setParticularsSelect(particularsOptions[0]);
@@ -221,6 +233,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const handleReset = () => {
     setEditingId(null);
     setDate(today);
+    setBillNo('');
     setConsigneeName('');
     setConsigneeAddress('');
     setParticularsSelect(particularsOptions[0]);
@@ -257,6 +270,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
       const payload = {
         date,
         invoice_no: invoiceNo,
+        bill_no: billNo.trim() || undefined,
         consignee_name: consigneeName.trim(),
         consignee_address: consigneeAddress.trim(),
         particulars: finalParticulars,
@@ -502,6 +516,23 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                         </td>
                         <td className="excel-col-tools">
                           <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{invoiceNo}</span>
+                        </td>
+                      </tr>
+
+                      {/* Row 1b: Bill No. / Voucher No. */}
+                      <tr>
+                        <td className="excel-row-idx">1b</td>
+                        <td className="excel-col-label">
+                          <span>{lang === 'mr' ? 'बिल क्र. / व्हाऊचर क्र. (B.No. / V.No.)' : 'Bill No. (B.No.) / Voucher No.'}</span>
+                        </td>
+                        <td className="excel-col-input">
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <input type="text" className="form-input" placeholder="e.g. 0001" value={billNo} onChange={e => setBillNo(e.target.value)} style={{ maxWidth: 300, height: 38 }} />
+                            <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>Generate</button>
+                          </div>
+                        </td>
+                        <td className="excel-col-tools">
+                          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{billNo || '—'}</span>
                         </td>
                       </tr>
 
@@ -809,6 +840,17 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                       {lang === 'mr' ? 'इनव्हॉईस क्र. (Invoice No.):' : 'Invoice No.:'} <span className="required">*</span>
                     </label>
                     <input type="text" className="form-input" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required style={{ width: '100%', maxWidth: 300, height: 38 }} />
+                  </div>
+
+                  {/* Bill No. / Voucher No. with Generate */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ width: 220, fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                      {lang === 'mr' ? 'बिल क्र. / व्हाऊचर क्र. (B.No. / V.No.):' : 'Bill No. (B.No.) / Voucher No.:'}
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, flex: 1, maxWidth: 420 }}>
+                      <input type="text" className="form-input" placeholder="e.g. 0001" value={billNo} onChange={e => setBillNo(e.target.value)} style={{ flex: 1, height: 38 }} />
+                      <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>Generate</button>
+                    </div>
                   </div>
 
                   {/* Row 2: Date */}
@@ -1121,6 +1163,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                     <thead>
                       <tr>
                         <th style={{ width: 140 }}>{lang === 'mr' ? 'इनव्हॉईस क्र.' : 'Invoice No.'}</th>
+                        <th style={{ width: 110 }}>{lang === 'mr' ? 'बिल/व्हाऊचर क्र.' : 'B.No. / V.No.'}</th>
                         <th style={{ width: 110 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                         <th>{lang === 'mr' ? 'भाडेकरू (Consignee / Rentee)' : 'Consignee / Rentee'}</th>
                         <th style={{ width: 120 }}>{lang === 'mr' ? 'प्रकार' : 'Mode'}</th>
@@ -1142,6 +1185,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                           }}
                         >
                           <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.invoice_no}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#166534' }}>{row.bill_no || '—'}</td>
                           <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
                           <td style={{ fontWeight: 600 }}>{row.consignee_name}</td>
                           <td>
@@ -1228,7 +1272,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 13 }}>
-                <div><strong>No.:</strong> {selectedBill.invoice_no}</div>
+                <div><strong>No.:</strong> {selectedBill.invoice_no}{selectedBill.bill_no ? ` · B.No. ${selectedBill.bill_no}` : ''}</div>
                 <div><strong>Date:</strong> {selectedBill.date}</div>
               </div>
 

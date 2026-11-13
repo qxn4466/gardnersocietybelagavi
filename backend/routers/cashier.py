@@ -42,6 +42,7 @@ def sync_transaction_for_cashier_voucher(
     total_amount: Decimal,
     remarks: str,
     created_by: str,
+    bill_no: Optional[str] = None,
     status: str = "POSTED",
     target_account_name: Optional[str] = None
 ):
@@ -86,12 +87,14 @@ def sync_transaction_for_cashier_voucher(
         existing.amount_rs = Decimal(str(amt_rs))
         existing.amount_ps = Decimal(str(amt_ps))
         existing.remarks = remarks
+        existing.bill_no = bill_no or existing.bill_no
         existing.created_by = created_by
         existing.status = status
     else:
         new_txn = Transaction(
             date=v_date,
             cash_memo_no=memo_no,
+            bill_no=bill_no,
             customer_name=customer_name,
             particulars=particulars,
             transaction_type_id=tt_id,
@@ -108,6 +111,26 @@ def sync_transaction_for_cashier_voucher(
 def delete_transaction_for_cashier_voucher(db: Session, memo_no: str):
     """Delete corresponding transaction when cashier voucher/bill is deleted."""
     db.query(Transaction).filter(Transaction.cash_memo_no == memo_no).delete(synchronize_session=False)
+
+
+def generate_rent_reference_no(db: Session, txn_date: date) -> str:
+    """Financial-year based B.No./V.No. serial for rent bills (April-March)."""
+    start_year = txn_date.year if txn_date.month >= 4 else txn_date.year - 1
+    fy_start, fy_end = date(start_year, 4, 1), date(start_year + 1, 4, 1)
+    references = (
+        db.query(RentBill.bill_no)
+        .filter(RentBill.date >= fy_start, RentBill.date < fy_end, RentBill.bill_no.isnot(None))
+        .all()
+    )
+    highest = max((int(v[0]) for v in references if str(v[0]).isdigit()), default=0)
+    return str(highest + 1).zfill(4)
+
+
+@router.get("/rent-next-reference")
+def get_rent_next_reference(v_date: Optional[str] = None, db: Session = Depends(get_db)):
+    """Preview the next financial-year Bill/Voucher serial for rent bills."""
+    d = date.fromisoformat(v_date) if v_date else date.today()
+    return {"reference_no": generate_rent_reference_no(db, d)}
 
 
 # Upload Directory for Cashier Receipts
@@ -395,6 +418,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     inv_no = payload.invoice_no or generate_rent_invoice_no(db, payload.date)
     record = RentBill(
         invoice_no=inv_no,
+        bill_no=payload.bill_no,
         date=payload.date,
         consignee_name=payload.consignee_name,
         consignee_address=payload.consignee_address,
@@ -426,7 +450,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
 
     scroll_entry = CashScrollBookEntry(
         date=payload.date,
-        voucher_no=inv_no,
+        voucher_no=(payload.bill_no or inv_no),
         from_received_paid=f"Rent Bill: {payload.consignee_name}",
         received_amount=rec_amt,
         paid_amount=Decimal("0.00"),
@@ -451,6 +475,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     sync_transaction_for_cashier_voucher(
         db=db,
         memo_no=inv_no,
+        bill_no=payload.bill_no,
         v_date=payload.date,
         customer_name=payload.consignee_name,
         particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
@@ -758,6 +783,14 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
     record = db.query(RentBill).filter(RentBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Rent bill not found")
+    if payload.bill_no:
+        db.query(CashScrollBookEntry).filter(
+            CashScrollBookEntry.voucher_no.in_([record.invoice_no, record.bill_no or ""])
+        ).update({"voucher_no": payload.bill_no}, synchronize_session=False)
+        db.query(Transaction).filter(
+            Transaction.cash_memo_no == record.invoice_no
+        ).update({"bill_no": payload.bill_no}, synchronize_session=False)
+    record.bill_no = payload.bill_no
     record.consignee_name = payload.consignee_name
     record.consignee_address = payload.consignee_address
     record.particulars = payload.particulars
@@ -1053,6 +1086,7 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
             initial_opening_balance=Decimal("0.00"),
             initial_balance_date=target_date,
             is_locked=False,
+            records_empty=True,
             opening_balance=Decimal("0.00"),
             today_receipts=Decimal("0.00"),
             today_payments=Decimal("0.00"),
@@ -1062,7 +1096,8 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
 
     init_bal = setting.initial_opening_balance or Decimal("0.00")
     init_date = setting.initial_balance_date or target_date
-    effective_locked = setting.is_locked if not allow_edit else False
+    records_empty = db.query(func.count(Transaction.id)).scalar() == 0
+    effective_locked = setting.is_locked if (not allow_edit and not records_empty) else False
 
     # Calculate prior accumulated net (from init_date up to target_date - 1)
     if target_date > init_date:
@@ -1104,6 +1139,7 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
         initial_opening_balance=init_bal,
         initial_balance_date=init_date,
         is_locked=effective_locked,
+        records_empty=records_empty,
         opening_balance=opening_balance,
         today_receipts=today_rec,
         today_payments=today_paid,
@@ -1116,8 +1152,9 @@ def get_daily_balance(v_date: Optional[str] = None, db: Session = Depends(get_db
 def set_initial_opening_balance(payload: SystemBalanceSettingCreate, db: Session = Depends(get_db)):
     setting = db.query(SystemBalanceSetting).order_by(SystemBalanceSetting.id.asc()).first()
     allow_edit = is_opening_balance_edit_allowed()
+    records_empty = db.query(func.count(Transaction.id)).scalar() == 0
 
-    if setting and setting.is_locked and not allow_edit:
+    if setting and setting.is_locked and not allow_edit and not records_empty:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Initial Opening Balance is locked. Set ALLOW_OPENING_BALANCE_EDIT=enable in .env to allow re-editing."

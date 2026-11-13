@@ -173,6 +173,7 @@ class RentBill(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     invoice_no = Column(String(50), nullable=False, unique=True, index=True)
+    bill_no = Column(String(50), nullable=True, index=True)  # B.No. / V.No. entered on the rent bill
     date = Column(Date, nullable=False, default=date.today)
     consignee_name = Column(String(250), nullable=False)
     consignee_address = Column(Text, nullable=True)

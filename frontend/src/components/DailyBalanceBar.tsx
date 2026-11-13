@@ -48,9 +48,13 @@ export const DailyBalanceBar: React.FC<DailyBalanceBarProps> = ({ selectedDate, 
       return;
     }
 
-    const confirmMsg = lang === 'mr'
-      ? `तुम्ही प्रारंभिक शिल्लक ₹${val.toFixed(2)} म्हणून जतन करू इच्छिता का? हे एकदाच भरता येईल व नंतर कायमस्वरूपी लॉक होईल!`
-      : `Save ₹${val.toFixed(2)} as the Initial Opening Balance? This can only be set ONCE and will be permanently locked!`;
+    const confirmMsg = summary?.records_empty
+      ? (lang === 'mr'
+          ? `तुम्ही प्रारंभिक शिल्लक ₹${val.toFixed(2)} म्हणून जतन करू इच्छिता का? (नोंदी रिक्त असल्यामुळे नंतरही बदलू शकता.)`
+          : `Save ₹${val.toFixed(2)} as the Initial Opening Balance? (Records are empty — you can change it again later.)`)
+      : (lang === 'mr'
+          ? `तुम्ही प्रारंभिक शिल्लक ₹${val.toFixed(2)} म्हणून जतन करू इच्छिता का? हे एकदाच भरता येईल व नंतर कायमस्वरूपी लॉक होईल!`
+          : `Save ₹${val.toFixed(2)} as the Initial Opening Balance? This can only be set ONCE and will be permanently locked!`);
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -65,9 +69,9 @@ export const DailyBalanceBar: React.FC<DailyBalanceBarProps> = ({ selectedDate, 
       setInitialInput(updated.initial_opening_balance.toString());
       setMsg({
         type: 'success',
-        text: lang === 'mr'
-          ? 'प्रारंभिक शिल्लक जतन केली आणि कायमस्वरूपी लॉक झाली!'
-          : 'Initial Opening Balance saved and permanently locked!'
+        text: summary?.records_empty
+          ? (lang === 'mr' ? 'प्रारंभिक शिल्लक जतन केली! (नोंदी रिक्त असताना संपादन करता येईल.)' : 'Initial Opening Balance saved! (Editable while records are empty.)')
+          : (lang === 'mr' ? 'प्रारंभिक शिल्लक जतन केली आणि कायमस्वरूपी लॉक झाली!' : 'Initial Opening Balance saved and permanently locked!')
       });
       if (onBalanceUpdate) onBalanceUpdate(updated);
     } catch (err: any) {

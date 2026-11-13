@@ -15,6 +15,37 @@ MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
+@router.get("/entries")
+def get_ledger_entries(
+    account: str,
+    year: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Individual POSTED entries for one ledger account (with B.No./V.No.) for the drill-down view."""
+    q = (
+        db.query(Transaction)
+        .join(TransactionTypeMaster, Transaction.transaction_type_id == TransactionTypeMaster.id)
+        .filter(Transaction.status == "POSTED")
+        .filter(func.lower(TransactionTypeMaster.ledger_account) == account.lower())
+    )
+    if year:
+        q = q.filter(extract("year", Transaction.date) == year)
+    q = q.order_by(Transaction.date.asc(), Transaction.id.asc())
+    return [
+        {
+            "date": str(t.date),
+            "bill_no": t.bill_no,
+            "voucher_no": t.voucher_no,
+            "cash_memo_no": t.cash_memo_no,
+            "customer_name": t.customer_name,
+            "nature": t.entry_nature,
+            "amount": float(t.amount_rs or 0) + float(t.amount_ps or 0) / 100,
+            "particulars": t.particulars,
+        }
+        for t in q.all()
+    ]
+
+
 @router.get("/", response_model=List[LedgerRow])
 def get_ledger(
     month: Optional[int] = None,
