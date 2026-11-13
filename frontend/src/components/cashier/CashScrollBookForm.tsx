@@ -1,31 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Save, Plus, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, Languages, BookOpen, Loader2, Table, List } from 'lucide-react';
-import { createCashScrollEntry, fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import { Printer, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, BookOpen, Loader2, Info } from 'lucide-react';
+import { fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
 import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateToMarathi } from '../../utils/translator';
 import DailyBalanceBar from '../DailyBalanceBar';
 
 interface CashScrollBookFormProps {
   user?: User | null;
 }
 
-const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
+/**
+ * Cash Scroll Book — Register only (no manual entry form).
+ * Entries are auto-filled from:
+ *   1. Credit-Debit Account Form (POSTED transactions; CASH -> Received/Paid, CHEQUE -> Cheque column)
+ *   2. Rent Bill Form (cash rent receipts; cheque rent bills go to the Cheque column)
+ * This book therefore contains CASH transactions only and cannot be typed into manually.
+ */
+const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
   const { lang } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  const [viewMode, setViewMode] = useState<'excel' | 'vertical'>(() => {
-    return (localStorage.getItem('bgs_cashier_scroll_view_mode') as 'excel' | 'vertical') || 'excel';
-  });
-
-  const [date, setDate] = useState(today);
-  const [pageNo, setPageNo] = useState('');
-  const [voucherNo, setVoucherNo] = useState('');
-  const [particulars, setParticulars] = useState('');
-  const [receivedAmount, setReceivedAmount] = useState<string>('0');
-  const [paidAmount, setPaidAmount] = useState<string>('0');
-  const [chequeAmount, setChequeAmount] = useState<string>('0');
 
   // Date Filter & Search
   const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
@@ -33,7 +27,6 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [translating, setTranslating] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [history, setHistory] = useState<CashScrollBookEntry[]>([]);
@@ -63,82 +56,6 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
     }
   };
 
-  const handleTranslateParticulars = async () => {
-    if (!particulars.trim()) return;
-    setTranslating(true);
-    setMsg({
-      type: 'info',
-      text: lang === 'mr' ? '⏳ मराठीत भाषांतर करत आहे, कृपया वाट पहा...' : '⏳ Translating text to Marathi, please wait...'
-    });
-    try {
-      const tr = await translateToMarathi(particulars);
-      setParticulars(tr);
-      setMsg({
-        type: 'success',
-        text: lang === 'mr' ? 'मराठीत भाषांतर यशस्वीरित्या पूर्ण झाले!' : 'Successfully translated to Marathi!'
-      });
-    } catch {
-      setMsg({
-        type: 'error',
-        text: lang === 'mr' ? 'भाषांतर करताना अडचण आली.' : 'Translation failed.'
-      });
-    } finally {
-      setTranslating(false);
-    }
-  };
-
-  const handleReset = () => {
-    setPageNo('');
-    setVoucherNo('');
-    setParticulars('');
-    setReceivedAmount('0');
-    setPaidAmount('0');
-    setChequeAmount('0');
-    setMsg(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!particulars.trim()) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया जमा/नावे तपशील प्रविष्ट करा.' : 'Please enter particulars (From Received and Paid).' });
-      return;
-    }
-    const rec = parseFloat(receivedAmount) || 0;
-    const paid = parseFloat(paidAmount) || 0;
-    const chq = parseFloat(chequeAmount) || 0;
-
-    if (rec === 0 && paid === 0 && chq === 0) {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'कृपया जमा, नावे किंवा चेकची रक्कम प्रविष्ट करा.' : 'Please enter Received, Paid, or Cheque amount.' });
-      return;
-    }
-
-    setLoading(true);
-    setMsg(null);
-    try {
-      await createCashScrollEntry({
-        date,
-        page_no: pageNo.trim() || undefined,
-        voucher_no: voucherNo.trim() || undefined,
-        from_received_paid: particulars.trim(),
-        received_amount: rec,
-        paid_amount: paid,
-        cheque_amount: chq,
-        created_by: user?.username || 'cashier',
-      });
-
-      setMsg({
-        type: 'success',
-        text: lang === 'mr' ? 'रोख स्क्रोल नोंद यशस्वीरित्या जतन केली!' : 'Cash scroll book entry saved successfully!'
-      });
-      loadHistory();
-      handleReset();
-    } catch {
-      setMsg({ type: 'error', text: lang === 'mr' ? 'स्क्रोल नोंद जतन करताना त्रुटी आली.' : 'Error saving cash scroll entry.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async (id: number) => {
     if (!window.confirm(lang === 'mr' ? 'तुम्हाला ही नोंद हटवायची आहे का?' : 'Are you sure you want to delete this entry?')) return;
     try {
@@ -149,89 +66,45 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
     }
   };
 
+  const filteredHistory = history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()));
+
   const totalReceived = history.reduce((s, r) => s + Number(r.received_amount || 0), 0);
   const totalPaid = history.reduce((s, r) => s + Number(r.paid_amount || 0), 0);
   const totalCheque = history.reduce((s, r) => s + Number(r.cheque_amount || 0), 0);
 
   return (
     <div>
-      <DailyBalanceBar selectedDate={date} />
+      <DailyBalanceBar selectedDate={endDateFilter} />
 
-      {/* Form Entry Card */}
-      <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 16px rgba(79, 70, 229, 0.08)', marginBottom: 28 }}>
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+      {msg && (
+        <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
+          {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {msg.text}
+        </div>
+      )}
+
+      {/* General Ledger Card Table */}
+      <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 24px rgba(79, 70, 229, 0.1)', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', background: '#fff', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ background: '#dbeafe', padding: 8, borderRadius: 8, color: '#1e40af', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <BookOpen size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                {lang === 'mr' ? '४. रोख स्क्रोल पुस्तक नोंद (Cash Scroll Book Entry)' : '4. Cash Scroll Book Entry'}
-              </h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                {lang === 'mr' ? 'व्हाऊचर, बिल व इनव्हॉईसमधून स्वयंचलित अपडेट होणारे दैनिक रोख स्क्रोल नोंदवही' : 'Daily Cash Scroll Register auto-updated from Vouchers, Bills & Invoices'}
-              </p>
+              <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                {lang === 'mr' ? 'रोख स्क्रोल पुस्तक नोंदवही' : 'Cash Scroll Book Register'}
+              </h4>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {lang === 'mr' ? 'फक्त रोख व्यवहार — स्वयंचलित नोंदी' : 'Cash transactions only — auto-filled entries'}
+              </span>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* View Mode Switcher */}
-            <div style={{
-              display: 'inline-flex',
-              background: '#f1f5f9',
-              padding: '3px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              gap: 3
-            }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('excel');
-                  localStorage.setItem('bgs_cashier_scroll_view_mode', 'excel');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: viewMode === 'excel' ? '#4f46e5' : 'transparent',
-                  color: viewMode === 'excel' ? '#ffffff' : '#64748b',
-                  boxShadow: viewMode === 'excel' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <Table size={13} /> {lang === 'mr' ? 'एक्सेल ग्रिड' : 'Excel Grid'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('vertical');
-                  localStorage.setItem('bgs_cashier_scroll_view_mode', 'vertical');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: viewMode === 'vertical' ? '#4f46e5' : 'transparent',
-                  color: viewMode === 'vertical' ? '#ffffff' : '#64748b',
-                  boxShadow: viewMode === 'vertical' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <List size={13} /> {lang === 'mr' ? 'उभे लेआउट' : 'Vertical Stack'}
-              </button>
+            <div className="filter-bar-group" style={{ fontSize: 13, gap: 16 }}>
+              <div>Rec: <strong style={{ color: '#16a34a', fontFamily: 'monospace' }}>₹{totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
+              <div>Paid: <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
+              <div>Cheque: <strong style={{ color: '#2563eb', fontFamily: 'monospace' }}>₹{totalCheque.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
             </div>
 
             <button
@@ -284,331 +157,23 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
               <Printer size={14} /> {lang === 'mr' ? 'स्क्रोल प्रिंट' : 'Print Scroll'}
             </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
-              <Plus size={14} /> {lang === 'mr' ? 'नवीन फॉर्म' : 'New Form'}
-            </button>
           </div>
         </div>
 
-        <div className="card-body">
-          {msg && (
-            <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
-              {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-              {msg.text}
-            </div>
-          )}
-
-          {/* Form Content */}
-          <form onSubmit={handleSubmit}>
-            {viewMode === 'excel' ? (
-              /* Excel Grid Table Mode */
-              <div className="excel-form-container" style={{ marginBottom: 20 }}>
-                <table className="excel-form-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '50px', textAlign: 'center' }}>#</th>
-                      <th style={{ width: '250px' }}>{lang === 'mr' ? 'फील्ड / तपशील' : 'Field / Description'}</th>
-                      <th>{lang === 'mr' ? 'नोंद / माहिती' : 'Data Entry / Input Value'}</th>
-                      <th style={{ width: '220px' }}>{lang === 'mr' ? 'स्थिती / संकेत' : 'Validation & Info'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Row 1: Date */}
-                    <tr>
-                      <td className="row-num">1</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span style={{ color: '#dc2626' }}>*</span>
-                      </td>
-                      <td>
-                        <input
-                          type="date"
-                          className="form-input"
-                          style={{ maxWidth: 220 }}
-                          value={date}
-                          onChange={e => setDate(e.target.value)}
-                          required
-                        />
-                      </td>
-                      <td className="field-info">{lang === 'mr' ? 'आवश्यक तारीख' : 'Transaction Date'}</td>
-                    </tr>
-
-                    {/* Row 2: Page No */}
-                    <tr>
-                      <td className="row-num">2</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'पान क्र. (Page No.)' : 'Page No.'}
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ maxWidth: 220 }}
-                          placeholder="e.g. 662"
-                          value={pageNo}
-                          onChange={e => setPageNo(e.target.value)}
-                        />
-                      </td>
-                      <td className="field-info">{lang === 'mr' ? 'वैकल्पिक लेजर पृष्ठ' : 'Scroll Register Page'}</td>
-                    </tr>
-
-                    {/* Row 3: Voucher / B Cash No */}
-                    <tr>
-                      <td className="row-num">3</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'व्हाऊचर / B कॅश क्र.' : 'V. / B Cash No.'}
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ maxWidth: 260 }}
-                          placeholder="e.g. PV-001"
-                          value={voucherNo}
-                          onChange={e => setVoucherNo(e.target.value)}
-                        />
-                      </td>
-                      <td className="field-info">{lang === 'mr' ? 'व्हाऊचर अथवा कॅश संदर्भ क्र.' : 'Voucher or Cash Ref No.'}</td>
-                    </tr>
-
-                    {/* Row 4: Particulars */}
-                    <tr>
-                      <td className="row-num">4</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'} <span style={{ color: '#dc2626' }}>*</span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            className="form-input"
-                            style={{ maxWidth: 460 }}
-                            placeholder={lang === 'mr' ? 'तपशील / खाते नाव' : 'Particulars / Member or Vendor Name'}
-                            value={particulars}
-                            onChange={e => setParticulars(e.target.value)}
-                            required
-                          />
-                          <button
-                            type="button"
-                            onClick={handleTranslateParticulars}
-                            disabled={translating}
-                            className="btn btn-secondary btn-sm"
-                            style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                          >
-                            {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
-                            {translating ? (lang === 'mr' ? '...' : '...') : (lang === 'mr' ? 'मराठी' : 'Translate')}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="field-info">{lang === 'mr' ? 'खातेदार अथवा पक्षकाराचे नाव' : 'Party or Ledger Name'}</td>
-                    </tr>
-
-                    {/* Row 5: Received Amount */}
-                    <tr>
-                      <td className="row-num">5</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          style={{ maxWidth: 240, fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }}
-                          value={receivedAmount}
-                          onChange={e => setReceivedAmount(e.target.value)}
-                        />
-                      </td>
-                      <td className="field-info" style={{ color: '#16a34a', fontWeight: 600 }}>{lang === 'mr' ? 'कॅश जमा' : 'Cash Inflow'}</td>
-                    </tr>
-
-                    {/* Row 6: Paid Amount */}
-                    <tr>
-                      <td className="row-num">6</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          style={{ maxWidth: 240, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}
-                          value={paidAmount}
-                          onChange={e => setPaidAmount(e.target.value)}
-                        />
-                      </td>
-                      <td className="field-info" style={{ color: '#dc2626', fontWeight: 600 }}>{lang === 'mr' ? 'कॅश खर्च / नावे' : 'Cash Outflow'}</td>
-                    </tr>
-
-                    {/* Row 7: Cheque Amount */}
-                    <tr>
-                      <td className="row-num">7</td>
-                      <td className="field-label">
-                        {lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          style={{ maxWidth: 240, fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }}
-                          value={chequeAmount}
-                          onChange={e => setChequeAmount(e.target.value)}
-                        />
-                      </td>
-                      <td className="field-info" style={{ color: '#2563eb', fontWeight: 600 }}>{lang === 'mr' ? 'चेक द्वारे व्यवहार' : 'Cheque In/Out'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              /* Vertical Stack Mode */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 840, marginBottom: 20 }}>
-                {/* Date */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'दिनांक (Date)' : 'Date'} <span style={{ color: '#dc2626' }}>*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{ maxWidth: 220 }}
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Page No */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'पान क्र. (Page No.)' : 'Page No.'}
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ maxWidth: 220 }}
-                    placeholder="e.g. 662"
-                    value={pageNo}
-                    onChange={e => setPageNo(e.target.value)}
-                  />
-                </div>
-
-                {/* Voucher / B Cash No */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'व्हाऊचर / B कॅश क्र.' : 'V. / B Cash No.'}
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ maxWidth: 260 }}
-                    placeholder="e.g. PV-001"
-                    value={voucherNo}
-                    onChange={e => setVoucherNo(e.target.value)}
-                  />
-                </div>
-
-                {/* Particulars */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'कोणाकडून आले व दिले (From Received and Paid)' : 'From Received and Paid'} <span style={{ color: '#dc2626' }}>*</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1, maxWidth: 460 }}>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={lang === 'mr' ? 'तपशील / खाते नाव' : 'Particulars / Member or Vendor Name'}
-                      value={particulars}
-                      onChange={e => setParticulars(e.target.value)}
-                      required
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleTranslateParticulars}
-                      disabled={translating}
-                      className="btn btn-secondary btn-sm"
-                      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                    >
-                      {translating ? <Loader2 size={13} className="spinner" /> : <Languages size={13} />}
-                      {translating ? (lang === 'mr' ? '...' : '...') : (lang === 'mr' ? 'मराठी' : 'Translate')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Received Amount */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'जमा आलेली रक्कम ₹ (Received Amount)' : 'Received Amount (₹)'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    style={{ maxWidth: 240, fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }}
-                    value={receivedAmount}
-                    onChange={e => setReceivedAmount(e.target.value)}
-                  />
-                </div>
-
-                {/* Paid Amount */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'नावे दिलेली रक्कम ₹ (Paid Amount)' : 'Paid Amount (₹)'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    style={{ maxWidth: 240, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}
-                    value={paidAmount}
-                    onChange={e => setPaidAmount(e.target.value)}
-                  />
-                </div>
-
-                {/* Cheque Amount */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ width: 220, minWidth: 220, fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
-                    {lang === 'mr' ? 'चेक रक्कम ₹ (Cheque Amount)' : 'Cheque Amount (₹)'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    style={{ maxWidth: 240, fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }}
-                    value={chequeAmount}
-                    onChange={e => setChequeAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', paddingTop: 8, borderTop: '1px solid #e2e8f0' }}>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                <Save size={15} /> {loading ? (lang === 'mr' ? 'जतन होत आहे...' : 'Saving...') : (lang === 'mr' ? 'नोंद जोडा' : 'Add Entry')}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={handleReset}>
-                {lang === 'mr' ? 'रीसेट' : 'Reset'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Date Filter & Totals Bar */}
-      {/* General Ledger Card Table */}
-      <div className="card" style={{ borderTop: '4px solid #4f46e5', boxShadow: '0 4px 24px rgba(79, 70, 229, 0.1)', overflow: 'hidden', marginTop: 16 }}>
-        <div style={{ padding: '14px 18px', background: '#fff', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            {lang === 'mr' ? 'रोख स्क्रोल पुस्तक नोंदवही' : 'Cash Scroll Book Register'}
-          </h4>
-          <div className="filter-bar-group" style={{ fontSize: 13, gap: 16 }}>
-            <div>Rec: <strong style={{ color: '#16a34a', fontFamily: 'monospace' }}>₹{totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
-            <div>Paid: <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
-            <div>Cheque: <strong style={{ color: '#2563eb', fontFamily: 'monospace' }}>₹{totalCheque.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></div>
-          </div>
+        <div className="no-print" style={{
+          padding: '12px 18px',
+          background: '#eff6ff',
+          borderBottom: '1px solid var(--border-subtle)',
+          display: 'flex',
+          gap: 10,
+          alignItems: 'flex-start'
+        }}>
+          <Info size={16} color="#1d4ed8" style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: 12.5, color: '#1e40af', fontWeight: 600, lineHeight: 1.5 }}>
+            {lang === 'mr'
+              ? 'हे नोंदवही फक्त रोख (Cash) व्यवहारांसाठी आहे. येथे फील्ड मॅन्युअली भरली जात नाहीत — नोंदी स्वयंचलितपणे खालील फॉर्ममधून येतात: १) जमा-नावे खाते फॉर्म (Credit-Debit Account Form) २) भाडे बिल फॉर्म (Rent Bill). रोख जमा "जमा" रकान्यात, रोख नावे "नावे" रकान्यात व चेक व्यवहार "चेक" रकान्यात दिसतात.'
+              : 'This register is for CASH transactions only — fields are not typed in manually. Entries are auto-filled from: 1) the Credit-Debit Account Form and 2) the Rent Bill Form. Cash receipts appear under Received, cash payments under Paid, and cheque transactions under the Cheque column.'}
+          </span>
         </div>
 
         <div className="no-print" style={{
@@ -634,7 +199,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
         </div>
 
         <div className="table-wrapper">
-          {history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+          {filteredHistory.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-title">
                 {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत' : 'No cash scroll entries found for this date'}
@@ -655,30 +220,28 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {history
-                  .filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()))
-                  .map((row, idx) => (
-                    <tr
-                      key={row.id}
-                      style={{
-                        background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
-                        borderLeft: '3px solid #4f46e5',
-                      }}
-                    >
-                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
-                      <td style={{ fontFamily: 'monospace' }}>{row.page_no || '—'}</td>
-                      <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.voucher_no || '—'}</td>
-                      <td style={{ fontWeight: 600 }}>{row.from_received_paid}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Entry">
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                {filteredHistory.map((row, idx) => (
+                  <tr
+                    key={row.id}
+                    style={{
+                      background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                      borderLeft: '3px solid #4f46e5',
+                    }}
+                  >
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{row.page_no || '—'}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.voucher_no || '—'}</td>
+                    <td style={{ fontWeight: 600 }}>{row.from_received_paid}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(row.id)} title="Delete Entry">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
               {history.length > 0 && (
                 <tfoot>
@@ -736,7 +299,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = ({ user }) => {
                   CASH SCROLL BOOK REGISTER
                 </div>
                 <div style={{ fontSize: 13, fontStyle: 'italic', marginTop: 4 }}>
-                  Date: {date}
+                  Period: {startDateFilter} to {endDateFilter}
                 </div>
               </div>
 

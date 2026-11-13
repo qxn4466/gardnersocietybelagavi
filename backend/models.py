@@ -53,6 +53,8 @@ class Transaction(Base):
     particulars = Column(Text, nullable=True)
     transaction_type_id = Column(Integer, ForeignKey("transaction_type_master.id"), nullable=False)
     entry_nature = Column(String(10), nullable=False, default="CREDIT")  # "CREDIT" or "DEBIT"
+    payment_mode = Column(String(20), nullable=False, default="CASH")  # "CASH" or "CHEQUE"
+    attachments = Column(Text, nullable=True)  # JSON array of {path, name} for uploaded documents
     amount_rs = Column(Numeric(12, 2), nullable=False, default=0)
     amount_ps = Column(Numeric(4, 2), nullable=False, default=0)
     remarks = Column(Text, nullable=True)

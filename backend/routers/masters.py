@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from database import get_db
 from models import OfficeMaster, TransactionTypeMaster, AccountMaster
-from schemas import OfficeMasterOut, TransactionTypeOut, AccountMasterOut
+from schemas import OfficeMasterOut, TransactionTypeOut, TransactionTypeCreate, AccountMasterOut
 from typing import List
 
 router = APIRouter(prefix="/masters", tags=["masters"])
@@ -46,6 +47,38 @@ def get_transaction_types(db: Session = Depends(get_db)):
         seed()
         types = db.query(TransactionTypeMaster).order_by(TransactionTypeMaster.display_order).all()
     return types
+
+
+@router.post("/transaction-types", response_model=TransactionTypeOut)
+def create_transaction_type(payload: TransactionTypeCreate, db: Session = Depends(get_db)):
+    """Create a new transaction type / account head so it appears in dropdowns everywhere."""
+    name = (payload.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Transaction type name is required")
+
+    existing = (
+        db.query(TransactionTypeMaster)
+        .filter(func.lower(TransactionTypeMaster.name) == name.lower())
+        .first()
+    )
+    if existing:
+        return existing
+
+    entry_type = (payload.entry_type or "CREDIT").upper()
+    if entry_type not in {"CREDIT", "DEBIT", "BOTH"}:
+        entry_type = "CREDIT"
+
+    new_type = TransactionTypeMaster(
+        name=name,
+        cash_book_column="sundary_ac",
+        ledger_account=name,
+        entry_type=entry_type,
+        display_order=99,
+    )
+    db.add(new_type)
+    db.commit()
+    db.refresh(new_type)
+    return new_type
 
 
 # ─── Account Master ─────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import {
   Hash, Phone, Building2, CreditCard,
   PlusCircle, Trash2, FileEdit, FolderOpen,
   RefreshCw, Edit3, Filter, Table, List, Printer, User as UserIcon, Sparkles, Languages, Loader2,
-  Calendar, BookOpen, FileText
+  Calendar, BookOpen, FileText, Paperclip, X
 } from 'lucide-react';
 import Header from '../components/Header';
 import ReceiptModal from '../components/ReceiptModal';
@@ -25,6 +25,9 @@ import {
   seedJuneTestData,
   clearJuneTestData,
   translateText,
+  createTransactionType,
+  uploadTransactionAttachment,
+  getFileUrl,
 } from '../api/client';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 import { RECEIPT_PARTICULARS_OPTIONS, PAYMENT_PARTICULARS_OPTIONS } from '../types';
@@ -121,6 +124,7 @@ interface FormState {
   customer_name: string;
   transaction_type_id: string;
   entry_nature: 'CREDIT' | 'DEBIT';
+  payment_mode: 'CASH' | 'CHEQUE';
   remarks: string;
   cgst_pct: string;   // CGST percentage, e.g. "2.5" means 2.5%
   sgst_pct: string;   // SGST percentage, e.g. "2.5" means 2.5%
@@ -136,6 +140,7 @@ const INITIAL_FORM: FormState = {
   customer_name: '',
   transaction_type_id: '',
   entry_nature: 'CREDIT',
+  payment_mode: 'CASH',
   remarks: '',
   cgst_pct: '2.5',
   sgst_pct: '2.5',
@@ -164,6 +169,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [nextMemo, setNextMemo] = useState<string>('—');
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
+  const [existingAttachments, setExistingAttachments] = useState<{ path: string; name: string }[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
@@ -378,6 +385,40 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
   };
 
+  // ── Attachments (for both CREDIT & DEBIT entries) ───────────────────────────
+  const handleAddFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
+    setNewFiles(prev => [...prev, ...Array.from(fileList)]);
+  };
+  const removeNewFile = (idx: number) => setNewFiles(prev => prev.filter((_, i) => i !== idx));
+  const removeExistingAttachment = (idx: number) => setExistingAttachments(prev => prev.filter((_, i) => i !== idx));
+
+  // ── Add New Transaction Type / Account Head (saved to DB + dropdown refreshed) ──
+  const handleAddNewAccountHead = async (rawName: string) => {
+    const trimmed = rawName.trim();
+    if (!trimmed) return;
+    try {
+      await createTransactionType({ name: trimmed, entry_type: form.entry_nature || 'BOTH' });
+      const refreshed = await fetchTransactionTypes();
+      setTxnTypes(refreshed);
+      const created = refreshed.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
+      if (created) {
+        setForm(prev => ({ ...prev, transaction_type_id: String(created.id) }));
+      }
+      setAlert({
+        type: 'success',
+        msg: lang === 'mr'
+          ? `नवीन खाते शीर्ष "${trimmed}" जोडले गेले व ड्रॉपडाउनमध्ये दिसू लागले.`
+          : `New account head "${trimmed}" saved and refreshed in the dropdown.`,
+      });
+    } catch {
+      setAlert({
+        type: 'error',
+        msg: lang === 'mr' ? 'नवीन खाते शीर्ष जोडताना त्रुटी आली.' : 'Failed to add the new account head.',
+      });
+    }
+  };
+
   // ── Particulars grid ────────────────────────────────────────────────────────
   const addRow = () => setRows(prev => [...prev, newRow()]);
   const removeRow = (id: number) =>
@@ -469,6 +510,24 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
     setLoading(true);
     try {
+      // Upload newly attached files first so their server paths can be persisted
+      const uploadedAttachments = [...existingAttachments];
+      for (const f of newFiles) {
+        try {
+          const res = await uploadTransactionAttachment(f);
+          uploadedAttachments.push({ path: res.filepath, name: f.name });
+        } catch {
+          setAlert({
+            type: 'error',
+            msg: lang === 'mr'
+              ? `सोबतचा दस्तऐवज "${f.name}" अपलोड करता आला नाही.`
+              : `Attachment "${f.name}" could not be uploaded.`
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       let parsedTypeId = parseInt(form.transaction_type_id || '1');
       if (isNaN(parsedTypeId) || !parsedTypeId) {
         const matched = txnTypes.find(t => t.name.toLowerCase() === form.transaction_type_id.trim().toLowerCase());
@@ -486,6 +545,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         particulars: [particularsText, taxNote].filter(Boolean).join(' — '),
         transaction_type_id: parsedTypeId,
         entry_nature: form.entry_nature,
+        payment_mode: form.payment_mode,
+        attachments: uploadedAttachments.length ? JSON.stringify(uploadedAttachments) : undefined,
         amount_rs: grandRs,
         amount_ps: grandPs,
         remarks: form.remarks,
@@ -542,6 +603,8 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
+    setExistingAttachments([]);
+    setNewFiles([]);
     if (clearAlertAndMemo === true) {
       setAlert(null);
       setSavedMemo(null);
@@ -572,11 +635,26 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       customer_name: custName,
       transaction_type_id: String(d.transaction_type_id),
       entry_nature: (d.entry_nature as 'CREDIT' | 'DEBIT') || 'CREDIT',
+      payment_mode: (d.payment_mode as 'CASH' | 'CHEQUE') || 'CASH',
       remarks: d.remarks || '',
       cgst_pct: '2.5',
       sgst_pct: '2.5',
       created_by: d.created_by || '',
     });
+
+    try {
+      const parsedAtt = d.attachments ? JSON.parse(d.attachments) : [];
+      setExistingAttachments(
+        Array.isArray(parsedAtt)
+          ? parsedAtt
+              .filter((a: { path?: string }) => a && a.path)
+              .map((a: { path: string; name?: string }) => ({ path: a.path, name: a.name || a.path.split('/').pop() || 'Attachment' }))
+          : []
+      );
+    } catch {
+      setExistingAttachments([]);
+    }
+    setNewFiles([]);
 
     if (d.particulars) {
       const parts = d.particulars.split(' — ')[0].split(' | ');
@@ -652,6 +730,65 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   // ─────────────────────────────────────────────────────────────────────────
   const colGrid = '1fr 140px 100px 40px';
+
+  const AttachmentPicker = () => (
+    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+      <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Paperclip size={13} />
+        {lang === 'mr' ? 'सोबतचे दस्तऐवज (जमा व नावे दोन्ही नोंदीसाठी)' : 'Attachments (for both Credit & Debit entries)'}
+      </label>
+      <input
+        type="file"
+        multiple
+        className="form-input"
+        style={{ maxWidth: 520 }}
+        onChange={e => { handleAddFiles(e.target.files); e.target.value = ''; }}
+      />
+      {(existingAttachments.length > 0 || newFiles.length > 0) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {existingAttachments.map((a, idx) => (
+            <span
+              key={`att-ex-${idx}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 14, padding: '3px 10px', fontSize: 12 }}
+            >
+              <a href={getFileUrl(a.path)} target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' }}>
+                {a.name}
+              </a>
+              <button
+                type="button"
+                title={lang === 'mr' ? 'काढा' : 'Remove'}
+                onClick={() => removeExistingAttachment(idx)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, display: 'flex' }}
+              >
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+          {newFiles.map((f, idx) => (
+            <span
+              key={`att-nw-${idx}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '3px 10px', fontSize: 12 }}
+            >
+              <span style={{ color: '#1e40af', fontWeight: 600 }}>{f.name}</span>
+              <button
+                type="button"
+                title={lang === 'mr' ? 'काढा' : 'Remove'}
+                onClick={() => removeNewFile(idx)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, display: 'flex' }}
+              >
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, display: 'block' }}>
+        {lang === 'mr'
+          ? 'बिल / पावती / दस्तऐवजाचे स्कॅन जोडा (एकापेक्षा अधिक फाईल निवडू शकता).'
+          : 'Attach bill / voucher / receipt scans (multiple files allowed).'}
+      </span>
+    </div>
+  );
 
   const ColHeader = ({ label, align = 'left' }: { label: string; align?: 'left' | 'right' | 'center' }) => (
     <span style={{
@@ -1079,27 +1216,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               .map(t => t.name)
                           ]))}
                           allowCustom={true}
-                          onAddNewOption={newOpt => {
-                            const trimmed = newOpt.trim();
-                            if (trimmed) {
-                              const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
-                              if (!exists) {
-                                const newType: TransactionType = {
-                                  id: Date.now(),
-                                  name: trimmed,
-                                  cash_book_column: 'sundary_ac',
-                                  ledger_account: trimmed,
-                                  entry_type: form.entry_nature || 'BOTH',
-                                  display_order: 99,
-                                };
-                                setTxnTypes(prev => [...prev, newType]);
-                                setForm(prev => ({
-                                  ...prev,
-                                  transaction_type_id: String(newType.id),
-                                }));
-                              }
-                            }
-                          }}
+                          onAddNewOption={handleAddNewAccountHead}
                           lang={lang}
                           placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
                         />
@@ -1138,6 +1255,36 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                         return null;
                       })()}
                     </div>
+
+                    {/* 6b. Payment Mode (CASH entries auto-post to Cash Scroll Book) */}
+                    <div className="form-group">
+                      <label className="form-label">
+                        {lang === 'mr' ? 'पेमेंट माध्यम (रोख / चेक)' : 'Payment Mode (Cash / Cheque)'}
+                      </label>
+                      <div className="nature-pill-container" style={{ width: '100%', display: 'flex' }}>
+                        <button
+                          type="button"
+                          className={`nature-pill-btn ${form.payment_mode === 'CASH' ? 'credit-active' : ''}`}
+                          style={{ flex: 1, textAlign: 'center' }}
+                          onClick={() => setForm(prev => ({ ...prev, payment_mode: 'CASH' }))}
+                        >
+                          {lang === 'mr' ? 'रोख (Cash)' : 'CASH'}
+                        </button>
+                        <button
+                          type="button"
+                          className={`nature-pill-btn ${form.payment_mode === 'CHEQUE' ? 'debit-active' : ''}`}
+                          style={{ flex: 1, textAlign: 'center' }}
+                          onClick={() => setForm(prev => ({ ...prev, payment_mode: 'CHEQUE' }))}
+                        >
+                          {lang === 'mr' ? 'चेक (Cheque)' : 'CHEQUE'}
+                        </button>
+                      </div>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, display: 'block' }}>
+                        {lang === 'mr'
+                          ? 'रोख नोंदी रोख स्क्रोल पुस्तकात स्वयंचलित नोंदवल्या जातात; चेक नोंदी चेक रकान्यात जातात.'
+                          : 'CASH entries auto-post to the Cash Scroll Book; CHEQUE entries post to its Cheque column.'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* ── 7. Remarks (Spans full width across both columns) ── */}
@@ -1147,6 +1294,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                       placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
                       value={form.remarks} onChange={handleChange('remarks')} style={{ width: '100%' }} />
                   </div>
+
+                  {/* ── 8. Attachments (for both CREDIT & DEBIT entries) ── */}
+                  <AttachmentPicker />
 
                 </div>
               )}
@@ -1334,6 +1484,32 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           </td>
                         </tr>
 
+                        {/* Row 5b: Payment Mode */}
+                        <tr>
+                          <td className="excel-row-idx">5b</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'पेमेंट माध्यम (रोख / चेक)' : 'Payment Mode (Cash / Cheque)'}</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <div className="nature-pill-container" style={{ width: 'fit-content' }}>
+                              <button
+                                type="button"
+                                className={`nature-pill-btn ${form.payment_mode === 'CASH' ? 'credit-active' : ''}`}
+                                onClick={() => setForm(prev => ({ ...prev, payment_mode: 'CASH' }))}
+                              >
+                                {lang === 'mr' ? 'रोख (Cash)' : 'CASH'}
+                              </button>
+                              <button
+                                type="button"
+                                className={`nature-pill-btn ${form.payment_mode === 'CHEQUE' ? 'debit-active' : ''}`}
+                                onClick={() => setForm(prev => ({ ...prev, payment_mode: 'CHEQUE' }))}
+                              >
+                                {lang === 'mr' ? 'चेक (Cheque)' : 'CHEQUE'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
                         {/* Row 6: Transaction Type / Head */}
                         <tr>
                           <td className="excel-row-idx">6</td>
@@ -1365,27 +1541,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                   .map(t => t.name)
                               ]))}
                               allowCustom={true}
-                              onAddNewOption={newOpt => {
-                                const trimmed = newOpt.trim();
-                                if (trimmed) {
-                                  const exists = txnTypes.find(t => t.name.toLowerCase() === trimmed.toLowerCase());
-                                  if (!exists) {
-                                    const newType: TransactionType = {
-                                      id: Date.now(),
-                                      name: trimmed,
-                                      cash_book_column: 'sundary_ac',
-                                      ledger_account: trimmed,
-                                      entry_type: form.entry_nature || 'BOTH',
-                                      display_order: 99,
-                                    };
-                                    setTxnTypes(prev => [...prev, newType]);
-                                    setForm(prev => ({
-                                      ...prev,
-                                      transaction_type_id: String(newType.id),
-                                    }));
-                                  }
-                                }
-                              }}
+                              onAddNewOption={handleAddNewAccountHead}
                               lang={lang}
                               placeholder={lang === 'mr' ? `${form.entry_nature === 'CREDIT' ? 'जमा' : 'नावे'} खाते शोधा किंवा निवडा` : `Search or select ${form.entry_nature} Head`}
                             />
@@ -1459,6 +1615,17 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                             <input id="remarks-excel" type="text" className="form-input"
                               placeholder={lang === 'mr' ? 'पर्यायी शेरा' : 'Optional remarks'}
                               value={form.remarks} onChange={handleChange('remarks')} style={{ width: '100%', height: 38 }} />
+                          </td>
+                        </tr>
+
+                        {/* Row 9: Attachments (for both CREDIT & DEBIT entries) */}
+                        <tr>
+                          <td className="excel-row-idx">9</td>
+                          <td className="excel-col-label">
+                            <span>{lang === 'mr' ? 'सोबतचे दस्तऐवज' : 'Attachments'}</span>
+                          </td>
+                          <td className="excel-col-input" colSpan={2}>
+                            <AttachmentPicker />
                           </td>
                         </tr>
 
@@ -2263,6 +2430,29 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                                 {expandedParticularsId === txn.id ? (lang === 'mr' ? '▲ कमी करा' : '▲ Collapse') : (lang === 'mr' ? '▼ अधिक पहा' : '▼ Expand Items')}
                               </span>
                             )}
+                            {(() => {
+                              let atts: { path: string; name: string }[] = [];
+                              try {
+                                const parsed = txn.attachments ? JSON.parse(txn.attachments) : [];
+                                if (Array.isArray(parsed)) atts = parsed.filter((a: { path?: string }) => a && a.path);
+                              } catch { /* ignore malformed attachments */ }
+                              if (atts.length === 0) return null;
+                              return (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                                  {atts.map((a, ai) => (
+                                    <a
+                                      key={`h-att-${txn.id}-${ai}`}
+                                      href={getFileUrl(a.path)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '1px 8px', textDecoration: 'none' }}
+                                    >
+                                      <Paperclip size={10} /> {a.name || 'Attachment'}
+                                    </a>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#15803d' }}>
                             {nature === 'CREDIT' ? `₹ ${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}

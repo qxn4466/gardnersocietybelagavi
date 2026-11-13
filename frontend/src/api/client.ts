@@ -53,6 +53,10 @@ export const fetchOffice = (): Promise<OfficeMaster> =>
 export const fetchTransactionTypes = (): Promise<TransactionType[]> =>
   api.get('/masters/transaction-types').then(r => r.data);
 
+// Create a new Transaction Type / Account Head (persisted, appears in dropdowns after refresh)
+export const createTransactionType = (payload: { name: string; entry_type?: string }): Promise<TransactionType> =>
+  api.post('/masters/transaction-types', payload).then(r => r.data);
+
 export const fetchAccounts = (): Promise<AccountMaster[]> =>
   api.get('/masters/accounts').then(r => r.data);
 
@@ -62,6 +66,15 @@ export const fetchNextMemo = (date?: string): Promise<{ cash_memo_no: string }> 
 
 export const fetchNextReference = (date: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ reference_no: string }> =>
   api.get('/transactions/next-reference', { params: { txn_date: date, entry_nature: entryNature } }).then(r => r.data);
+
+// Upload an attachment for a Credit/Debit transaction entry
+export const uploadTransactionAttachment = (file: File): Promise<{ filename: string; filepath: string; original_name?: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/transactions/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(r => r.data);
+};
 
 export const createTransaction = (payload: TransactionCreate): Promise<Transaction> =>
   api.post('/transactions/', payload).then(r => r.data);

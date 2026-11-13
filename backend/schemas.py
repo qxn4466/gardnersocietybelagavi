@@ -49,6 +49,11 @@ class TransactionTypeOut(TransactionTypeBase):
     id: int
 
 
+class TransactionTypeCreate(BaseModel):
+    name: str
+    entry_type: Optional[str] = "CREDIT"  # "CREDIT", "DEBIT" or "BOTH"
+
+
 # ─── Account Master ─────────────────────────────────────────────────────────────
 class AccountMasterBase(BaseModel):
     account_name: str
@@ -70,6 +75,8 @@ class TransactionCreate(BaseModel):
     particulars: Optional[str] = None
     transaction_type_id: Optional[int] = 1
     entry_nature: Optional[str] = "CREDIT"
+    payment_mode: Optional[str] = "CASH"
+    attachments: Optional[str] = None
     amount_rs: Decimal
     amount_ps: Decimal = Decimal("0.00")
     remarks: Optional[str] = None

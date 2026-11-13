@@ -72,6 +72,8 @@ export interface Transaction {
   particulars: string | null;
   transaction_type_id: number;
   entry_nature?: string; // "CREDIT" or "DEBIT"
+  payment_mode?: string; // "CASH" or "CHEQUE"
+  attachments?: string | null; // JSON array of {path, name}
   amount_rs: number;
   amount_ps: number;
   remarks: string | null;
@@ -91,6 +93,8 @@ export interface TransactionCreate {
   particulars?: string;
   transaction_type_id: number;
   entry_nature?: string; // "CREDIT" or "DEBIT"
+  payment_mode?: string; // "CASH" or "CHEQUE"
+  attachments?: string; // JSON array of {path, name}
   amount_rs: number;
   amount_ps?: number;
   remarks?: string;

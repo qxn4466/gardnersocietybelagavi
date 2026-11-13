@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import uuid
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date
 from typing import List, Optional
 from database import get_db
-from models import Transaction, TransactionTypeMaster
+from models import Transaction, TransactionTypeMaster, CashScrollBookEntry
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -36,6 +40,60 @@ def generate_reference_no(db: Session, txn_date: date, entry_nature: str) -> str
     )
     highest = max((int(value[0]) for value in references if str(value[0]).isdigit()), default=0)
     return str(highest + 1).zfill(4)
+
+
+# Upload Directory for Transaction Attachments (Credit-Debit Account Form)
+TRANSACTION_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "transaction_attachments")
+os.makedirs(TRANSACTION_UPLOAD_DIR, exist_ok=True)
+
+
+def post_transaction_to_cash_scroll(db: Session, txn: Transaction):
+    """Auto-post a POSTED transaction into the Cash Scroll Book (cash transactions only).
+
+    CREDIT + CASH -> received_amount; DEBIT + CASH -> paid_amount; CHEQUE -> cheque_amount.
+    Deduplicated by voucher_no == cash_memo_no so edits never create double entries.
+    """
+    if (txn.status or "POSTED") != "POSTED":
+        return
+    already = db.query(CashScrollBookEntry).filter(
+        CashScrollBookEntry.voucher_no == txn.cash_memo_no
+    ).first()
+    if already:
+        return
+    amount = Decimal(str(txn.amount_rs or 0)) + (Decimal(str(txn.amount_ps or 0)) / Decimal("100"))
+    is_cheque = (txn.payment_mode or "CASH").upper() == "CHEQUE"
+    if is_cheque:
+        received_amt, paid_amt, cheque_amt = Decimal("0.00"), Decimal("0.00"), amount
+    elif (txn.entry_nature or "CREDIT").upper() == "DEBIT":
+        received_amt, paid_amt, cheque_amt = Decimal("0.00"), amount, Decimal("0.00")
+    else:
+        received_amt, paid_amt, cheque_amt = amount, Decimal("0.00"), Decimal("0.00")
+    prefix = "Paid To" if (txn.entry_nature or "CREDIT").upper() == "DEBIT" else "Received From"
+    db.add(CashScrollBookEntry(
+        date=txn.date,
+        voucher_no=txn.cash_memo_no,
+        from_received_paid=f"{prefix}: {txn.customer_name}"[:250],
+        received_amount=received_amt,
+        paid_amount=paid_amt,
+        cheque_amount=cheque_amt,
+        created_by=txn.created_by,
+    ))
+
+
+@router.post("/upload")
+async def upload_transaction_attachment(file: UploadFile = File(...)):
+    """Upload an attachment (bill, voucher scan, receipt photo) for Credit/Debit entries."""
+    try:
+        ext = os.path.splitext(file.filename)[1] if file.filename else ".pdf"
+        filename = f"txn_{uuid.uuid4().hex[:12]}{ext}"
+        filepath = os.path.join(TRANSACTION_UPLOAD_DIR, filename)
+        with open(filepath, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        relative_path = f"/uploads/transaction_attachments/{filename}"
+        return {"filename": filename, "filepath": relative_path, "original_name": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload attachment: {str(e)}")
 
 
 @router.get("/next-memo", response_model=NextMemoResponse)
@@ -105,11 +163,15 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         entry_nature=nature,
         amount_rs=payload.amount_rs,
         amount_ps=payload.amount_ps,
+        payment_mode=(payload.payment_mode or "CASH").upper(),
+        attachments=payload.attachments,
         remarks=payload.remarks,
         created_by=payload.created_by,
         status=payload.status or "POSTED",
     )
     db.add(txn)
+    db.flush()
+    post_transaction_to_cash_scroll(db, txn)
     db.commit()
     db.refresh(txn)
     return txn
@@ -143,12 +205,16 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     txn.entry_nature = nature or "CREDIT"
     txn.amount_rs = payload.amount_rs
     txn.amount_ps = payload.amount_ps
+    txn.payment_mode = (payload.payment_mode or "CASH").upper()
+    txn.attachments = payload.attachments
     txn.remarks = payload.remarks
     txn.created_by = payload.created_by
     txn.status = payload.status or "POSTED"
 
     db.commit()
     db.refresh(txn)
+    post_transaction_to_cash_scroll(db, txn)
+    db.commit()
     return txn
 
 
@@ -192,6 +258,9 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
     txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    db.query(CashScrollBookEntry).filter(
+        CashScrollBookEntry.voucher_no == txn.cash_memo_no
+    ).delete(synchronize_session=False)
     db.delete(txn)
     db.commit()
 
