@@ -112,6 +112,14 @@ interface ParticularRow {
   amount_ps: string;
 }
 
+interface AttachmentItem {
+  id: number;
+  name: string;
+  path?: string;      // set once uploaded to the server
+  file?: File;        // kept so a failed upload can be retried
+  status: 'ready' | 'uploading' | 'error';
+}
+
 let _rowId = 1;
 const newRow = (): ParticularRow => ({ id: _rowId++, description: '', amount_rs: '', amount_ps: '00' });
 
@@ -169,8 +177,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [nextMemo, setNextMemo] = useState<string>('—');
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
-  const [existingAttachments, setExistingAttachments] = useState<{ path: string; name: string }[]>([]);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; msg: string } | null>(null);
@@ -385,13 +392,37 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
   };
 
-  // ── Attachments (for both CREDIT & DEBIT entries) ───────────────────────────
-  const handleAddFiles = (fileList: FileList | null) => {
-    if (!fileList) return;
-    setNewFiles(prev => [...prev, ...Array.from(fileList)]);
+  // ── Attachments (for both CREDIT & DEBIT entries) — uploaded at selection time ──
+  const handleAddFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    const stamp = Date.now();
+    setAttachments(prev => [
+      ...prev,
+      ...files.map((f, i) => ({ id: stamp + i, name: f.name, file: f, status: 'uploading' as const })),
+    ]);
+    for (let i = 0; i < files.length; i++) {
+      const itemId = stamp + i;
+      try {
+        const res = await uploadTransactionAttachment(files[i]);
+        setAttachments(prev => prev.map(a => (a.id === itemId ? { ...a, path: res.filepath, status: 'ready' } : a)));
+      } catch {
+        setAttachments(prev => prev.map(a => (a.id === itemId ? { ...a, status: 'error' } : a)));
+      }
+    }
   };
-  const removeNewFile = (idx: number) => setNewFiles(prev => prev.filter((_, i) => i !== idx));
-  const removeExistingAttachment = (idx: number) => setExistingAttachments(prev => prev.filter((_, i) => i !== idx));
+  const removeAttachment = (id: number) => setAttachments(prev => prev.filter(a => a.id !== id));
+  const retryAttachment = async (id: number) => {
+    const item = attachments.find(a => a.id === id);
+    if (!item || !item.file) return;
+    setAttachments(prev => prev.map(a => (a.id === id ? { ...a, status: 'uploading' } : a)));
+    try {
+      const res = await uploadTransactionAttachment(item.file);
+      setAttachments(prev => prev.map(a => (a.id === id ? { ...a, path: res.filepath, status: 'ready' } : a)));
+    } catch {
+      setAttachments(prev => prev.map(a => (a.id === id ? { ...a, status: 'error' } : a)));
+    }
+  };
 
   // ── Add New Transaction Type / Account Head (saved to DB + dropdown refreshed) ──
   const handleAddNewAccountHead = async (rawName: string) => {
@@ -510,23 +541,18 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
     setLoading(true);
     try {
-      // Upload newly attached files first so their server paths can be persisted
-      const uploadedAttachments = [...existingAttachments];
-      for (const f of newFiles) {
-        try {
-          const res = await uploadTransactionAttachment(f);
-          uploadedAttachments.push({ path: res.filepath, name: f.name });
-        } catch {
-          setAlert({
-            type: 'error',
-            msg: lang === 'mr'
-              ? `सोबतचा दस्तऐवज "${f.name}" अपलोड करता आला नाही.`
-              : `Attachment "${f.name}" could not be uploaded.`
-          });
-          setLoading(false);
-          return;
-        }
+      // Attachments upload at selection time — block save until every chip is ready
+      if (attachments.some(a => a.status !== 'ready')) {
+        setAlert({
+          type: 'error',
+          msg: lang === 'mr'
+            ? 'एखादा दस्तऐवज अजून अपलोड होत आहे किंवा अपलोड अयशस्वी झाला आहे — तो काढा किंवा ↻ दाबून पुन्हा प्रयत्न करा.'
+            : 'An attachment is still uploading or has failed — remove it or press ↻ to retry.'
+        });
+        setLoading(false);
+        return;
       }
+      const uploadedAttachments = attachments.map(a => ({ path: a.path as string, name: a.name }));
 
       let parsedTypeId = parseInt(form.transaction_type_id || '1');
       if (isNaN(parsedTypeId) || !parsedTypeId) {
@@ -603,8 +629,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
-    setExistingAttachments([]);
-    setNewFiles([]);
+    setAttachments([]);
     if (clearAlertAndMemo === true) {
       setAlert(null);
       setSavedMemo(null);
@@ -644,17 +669,21 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
     try {
       const parsedAtt = d.attachments ? JSON.parse(d.attachments) : [];
-      setExistingAttachments(
+      setAttachments(
         Array.isArray(parsedAtt)
           ? parsedAtt
               .filter((a: { path?: string }) => a && a.path)
-              .map((a: { path: string; name?: string }) => ({ path: a.path, name: a.name || a.path.split('/').pop() || 'Attachment' }))
+              .map((a: { path: string; name?: string }, i: number) => ({
+                id: Date.now() + i,
+                path: a.path,
+                name: a.name || a.path.split('/').pop() || 'Attachment',
+                status: 'ready' as const,
+              }))
           : []
       );
     } catch {
-      setExistingAttachments([]);
+      setAttachments([]);
     }
-    setNewFiles([]);
 
     if (d.particulars) {
       const parts = d.particulars.split(' — ')[0].split(' | ');
@@ -744,36 +773,42 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
         style={{ maxWidth: 520 }}
         onChange={e => { handleAddFiles(e.target.files); e.target.value = ''; }}
       />
-      {(existingAttachments.length > 0 || newFiles.length > 0) && (
+      {attachments.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-          {existingAttachments.map((a, idx) => (
+          {attachments.map(a => (
             <span
-              key={`att-ex-${idx}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 14, padding: '3px 10px', fontSize: 12 }}
+              key={a.id}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 14, padding: '3px 10px', fontSize: 12,
+                background: a.status === 'error' ? '#fee2e2' : a.status === 'uploading' ? '#f1f5f9' : '#eff6ff',
+                border: a.status === 'error' ? '1px solid #fca5a5' : a.status === 'uploading' ? '1px solid #cbd5e1' : '1px solid #bfdbfe',
+              }}
             >
-              <a href={getFileUrl(a.path)} target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' }}>
-                {a.name}
-              </a>
+              {a.status === 'ready' && a.path ? (
+                <a href={getFileUrl(a.path)} target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' }}>
+                  ✓ {a.name}
+                </a>
+              ) : (
+                <span style={{ color: a.status === 'error' ? '#b91c1c' : '#475569', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {a.status === 'uploading' && <Loader2 size={12} className="spinner" />}
+                  {a.status === 'uploading' ? (lang === 'mr' ? 'अपलोड होत आहे…' : 'Uploading…') : (lang === 'mr' ? 'अपलोड अयशस्वी' : 'Upload failed')}
+                  {' · '}{a.name}
+                </span>
+              )}
+              {a.status === 'error' && a.file && (
+                <button
+                  type="button"
+                  title={lang === 'mr' ? 'पुन्हा प्रयत्न करा' : 'Retry upload'}
+                  onClick={() => retryAttachment(a.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b45309', padding: 0, display: 'flex', fontWeight: 800, fontSize: 13 }}
+                >
+                  ↻
+                </button>
+              )}
               <button
                 type="button"
                 title={lang === 'mr' ? 'काढा' : 'Remove'}
-                onClick={() => removeExistingAttachment(idx)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, display: 'flex' }}
-              >
-                <X size={13} />
-              </button>
-            </span>
-          ))}
-          {newFiles.map((f, idx) => (
-            <span
-              key={`att-nw-${idx}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '3px 10px', fontSize: 12 }}
-            >
-              <span style={{ color: '#1e40af', fontWeight: 600 }}>{f.name}</span>
-              <button
-                type="button"
-                title={lang === 'mr' ? 'काढा' : 'Remove'}
-                onClick={() => removeNewFile(idx)}
+                onClick={() => removeAttachment(a.id)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, display: 'flex' }}
               >
                 <X size={13} />
