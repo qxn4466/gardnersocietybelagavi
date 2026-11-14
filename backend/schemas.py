@@ -63,6 +63,7 @@ class EditLockRequest(BaseModel):
     entity_type: str
     entity_id: int
     locked_by: str = "unknown"
+    session_id: Optional[str] = ""
 
 
 class EditLockStatus(BaseModel):

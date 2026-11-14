@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from numbering import acquire_numbering_lock, ensure_free
+from numbering import acquire_numbering_lock, ensure_free, reserve_sequential
 from datetime import date
 from typing import List, Optional
 from decimal import Decimal
 
 from database import get_db
 from models import (
+    NumberReservation,
     CashPaymentVoucher,
     CashReceiptVoucher,
     RentBill,
@@ -129,10 +130,22 @@ def generate_rent_reference_no(db: Session, txn_date: date) -> str:
 
 
 @router.get("/rent-next-reference")
-def get_rent_next_reference(v_date: Optional[str] = None, db: Session = Depends(get_db)):
-    """Preview the next financial-year Bill/Voucher serial for rent bills."""
+def get_rent_next_reference(
+    v_date: Optional[str] = None,
+    session_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Preview the next financial-year Bill/Voucher serial for rent bills.
+    The number is reserved for this browser session, so two members never get the same one."""
     d = date.fromisoformat(v_date) if v_date else date.today()
-    return {"reference_no": generate_rent_reference_no(db, d)}
+    number = reserve_sequential(
+        db,
+        kind="rent_bill",
+        session_id=session_id or "",
+        start=generate_rent_reference_no(db, d),
+        is_taken=lambda n: db.query(RentBill.id).filter(RentBill.bill_no == n).first() is not None,
+    )
+    return {"reference_no": number}
 
 
 # Upload Directory for Cashier Receipts
@@ -512,6 +525,12 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
+    if bill_no_final:
+        db.query(NumberReservation).filter(
+            NumberReservation.kind == "rent_bill",
+            NumberReservation.number == bill_no_final,
+        ).delete(synchronize_session=False)
+        db.commit()
     db.refresh(record)
     return record
 

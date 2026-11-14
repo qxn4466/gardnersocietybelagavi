@@ -31,6 +31,7 @@ import {
   acquireEditLock,
   releaseEditLock,
 } from '../api/client';
+import { getSessionId } from '../utils/session';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 import { RECEIPT_PARTICULARS_OPTIONS, PAYMENT_PARTICULARS_OPTIONS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -464,7 +465,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const generateReference = async () => {
     try {
-      const { reference_no } = await fetchNextReference(form.date, form.entry_nature);
+      const { reference_no } = await fetchNextReference(form.date, form.entry_nature, getSessionId());
       setForm(prev => form.entry_nature === 'CREDIT'
         ? { ...prev, bill_no: reference_no }
         : { ...prev, voucher_no: reference_no }
@@ -667,9 +668,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       if (editingDraftId) {
         saved = await updateTransaction(editingDraftId, payload);
         if (isDraft) {
-          void acquireEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+          void acquireEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
         } else {
-          void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+          void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
         }
       } else {
         saved = await createTransaction(payload);
@@ -715,7 +716,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const handleReset = (clearAlertAndMemo: boolean = true) => {
     if (editingDraftId) {
-      void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown').catch(() => {});
+      void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
     }
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
@@ -733,7 +734,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const openForEdit = async (d: Transaction) => {
     if (d.id) {
       try {
-        const res = await acquireEditLock('transaction', d.id, user?.username || 'unknown');
+        const res = await acquireEditLock('transaction', d.id, user?.username || 'unknown', getSessionId());
         if (res.locked) {
           setAlert({
             type: 'error',

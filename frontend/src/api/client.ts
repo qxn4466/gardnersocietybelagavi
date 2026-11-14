@@ -66,8 +66,8 @@ export const fetchAccounts = (): Promise<AccountMaster[]> =>
 export const fetchNextMemo = (date?: string): Promise<{ cash_memo_no: string }> =>
   api.get('/transactions/next-memo', { params: { txn_date: date } }).then(r => r.data);
 
-export const fetchNextReference = (date: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ reference_no: string }> =>
-  api.get('/transactions/next-reference', { params: { txn_date: date, entry_nature: entryNature } }).then(r => r.data);
+export const fetchNextReference = (date: string, entryNature: 'CREDIT' | 'DEBIT', sessionId?: string): Promise<{ reference_no: string }> =>
+  api.get('/transactions/next-reference', { params: { txn_date: date, entry_nature: entryNature, session_id: sessionId } }).then(r => r.data);
 
 // Upload an attachment for a Credit/Debit transaction entry
 export const uploadTransactionAttachment = (file: File): Promise<{ filename: string; filepath: string; original_name?: string }> => {
@@ -459,19 +459,19 @@ export const createListOption = (category: string, name: string): Promise<string
   api.post('/masters/options', { category, name }).then(r => r.data);
 
 // Rent bill B.No./V.No. generator (financial-year serial)
-export const fetchRentNextReference = (date: string): Promise<{ reference_no: string }> =>
-  api.get('/cashier/rent-next-reference', { params: { v_date: date } }).then(r => r.data);
+export const fetchRentNextReference = (date: string, sessionId?: string): Promise<{ reference_no: string }> =>
+  api.get('/cashier/rent-next-reference', { params: { v_date: date, session_id: sessionId } }).then(r => r.data);
 
 // Per-account ledger entries for the drill-down (with bill/voucher numbers)
 export const fetchLedgerEntries = (account: string, year?: number): Promise<LedgerEntry[]> =>
   api.get('/ledger/entries', { params: { account, year } }).then(r => r.data);
 
 // Edit leases — one member edits a record at a time
-export const acquireEditLock = (entityType: string, entityId: number, lockedBy: string): Promise<EditLockStatus> =>
-  api.post('/edit-locks/acquire', { entity_type: entityType, entity_id: entityId, locked_by: lockedBy }).then(r => r.data);
+export const acquireEditLock = (entityType: string, entityId: number, lockedBy: string, sessionId?: string): Promise<EditLockStatus> =>
+  api.post('/edit-locks/acquire', { entity_type: entityType, entity_id: entityId, locked_by: lockedBy, session_id: sessionId }).then(r => r.data);
 
-export const releaseEditLock = (entityType: string, entityId: number, lockedBy: string): Promise<EditLockStatus> =>
-  api.post('/edit-locks/release', { entity_type: entityType, entity_id: entityId, locked_by: lockedBy }).then(r => r.data);
+export const releaseEditLock = (entityType: string, entityId: number, lockedBy: string, sessionId?: string): Promise<EditLockStatus> =>
+  api.post('/edit-locks/release', { entity_type: entityType, entity_id: entityId, locked_by: lockedBy, session_id: sessionId }).then(r => r.data);
 
 // 7. Test Data Generator API
 export const generate30DaysTestData = (): Promise<{ message: string; selling_rate_entries: number; tax_invoices: number; retail_bills: number; pesticide_sales: number }> =>

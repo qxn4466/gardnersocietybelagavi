@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages, Landmark, Loader2, Table, List } from 'lucide-react';
 import { fetchNextRentInvoiceNo, fetchRentNextReference, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData, acquireEditLock, releaseEditLock } from '../../api/client';
+import { getSessionId } from '../../utils/session';
 import type { RentBill, User } from '../../types';
 
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
@@ -145,7 +146,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
   const generateReference = async () => {
     try {
-      const res = await fetchRentNextReference(date);
+      const res = await fetchRentNextReference(date, getSessionId());
       setBillNo(res.reference_no);
       setMsg({ type: 'success', text: (lang === 'mr' ? 'बिल क्र. तयार केला: ' : 'Bill/Voucher No. generated: ') + res.reference_no });
     } catch {
@@ -198,7 +199,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   // ── One member edits a rent bill at a time (edit lease) ─────────────────────
   const openRentBillForEdit = async (b: RentBill) => {
     try {
-      const res = await acquireEditLock('rent_bill', b.id, user?.username || 'unknown');
+      const res = await acquireEditLock('rent_bill', b.id, user?.username || 'unknown', getSessionId());
       if (res.locked) {
         setMsg({
           type: 'error',
@@ -251,7 +252,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
   const handleReset = () => {
     if (editingId) {
-      void releaseEditLock('rent_bill', editingId, user?.username || 'unknown').catch(() => {});
+      void releaseEditLock('rent_bill', editingId, user?.username || 'unknown', getSessionId()).catch(() => {});
     }
     setEditingId(null);
     setDate(today);
@@ -316,7 +317,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
       if (editingId) {
         const updated = await updateRentBill(editingId, payload);
-        void releaseEditLock('rent_bill', editingId, user?.username || 'unknown').catch(() => {});
+        void releaseEditLock('rent_bill', editingId, user?.username || 'unknown', getSessionId()).catch(() => {});
         setMsg({
           type: 'success',
           text: lang === 'mr' ? `भाडे बिल ${updated.invoice_no} अपडेट केले!` : `Rent Bill ${updated.invoice_no} updated successfully!`

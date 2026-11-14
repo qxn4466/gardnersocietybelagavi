@@ -9,9 +9,9 @@ from sqlalchemy import func
 from datetime import date
 from typing import List, Optional
 from database import get_db
-from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, EditLock
+from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, EditLock, NumberReservation
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
-from numbering import acquire_numbering_lock, ensure_free
+from numbering import acquire_numbering_lock, ensure_free, reserve_sequential
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -109,14 +109,24 @@ def get_next_memo(txn_date: Optional[str] = None, db: Session = Depends(get_db))
 def get_next_reference(
     txn_date: Optional[str] = None,
     entry_nature: str = "CREDIT",
+    session_id: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """Preview the next financial-year Bill or Voucher serial number."""
+    """Preview the next financial-year Bill or Voucher serial number.
+    The number is reserved for this browser session, so two members never get the same one."""
     nature = entry_nature.upper()
     if nature not in {"CREDIT", "DEBIT"}:
         raise HTTPException(status_code=400, detail="entry_nature must be CREDIT or DEBIT")
     txn_date_value = date.fromisoformat(txn_date) if txn_date else date.today()
-    return {"reference_no": generate_reference_no(db, txn_date_value, nature)}
+    column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
+    number = reserve_sequential(
+        db,
+        kind=f"txn_{nature.lower()}",
+        session_id=session_id or "",
+        start=generate_reference_no(db, txn_date_value, nature),
+        is_taken=lambda n: db.query(Transaction.id).filter(column == n).first() is not None,
+    )
+    return {"reference_no": number}
 
 
 @router.get("/drafts", response_model=List[TransactionOut])
@@ -189,6 +199,13 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
+    used_ref = bill_no if nature == "CREDIT" else voucher_no
+    if used_ref:
+        db.query(NumberReservation).filter(
+            NumberReservation.kind == f"txn_{nature.lower()}",
+            NumberReservation.number == used_ref,
+        ).delete(synchronize_session=False)
+        db.commit()
     db.refresh(txn)
     return txn
 

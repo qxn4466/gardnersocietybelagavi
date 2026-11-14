@@ -24,6 +24,13 @@ def _find(db, entity_type: str, entity_id: int):
     ).first()
 
 
+def _same_holder(row, payload) -> bool:
+    """Same browser session (not just the same username) holds the lease."""
+    if payload.session_id:
+        return (row.session_id or "") == payload.session_id
+    return row.locked_by == payload.locked_by
+
+
 @router.post("/acquire", response_model=EditLockStatus)
 def acquire_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
     """Try to become THE editor of a record. Returns locked=True (blocked) when
@@ -36,6 +43,7 @@ def acquire_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
             entity_type=payload.entity_type,
             entity_id=payload.entity_id,
             locked_by=payload.locked_by,
+            session_id=payload.session_id or "",
             locked_at=now,
         )
         db.add(row)
@@ -48,7 +56,8 @@ def acquire_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
             if row is None:
                 raise HTTPException(status_code=500, detail="Could not create edit lock")
 
-    if row.locked_by == payload.locked_by:
+    if _same_holder(row, payload):
+        row.locked_by = payload.locked_by
         row.locked_at = now
         db.commit()
         return EditLockStatus(locked=False, locked_by=payload.locked_by,
@@ -57,6 +66,7 @@ def acquire_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
     age = (now - row.locked_at).total_seconds() if row.locked_at else TTL_SECONDS + 1
     if age > TTL_SECONDS:
         row.locked_by = payload.locked_by
+        row.session_id = payload.session_id or ""
         row.locked_at = now
         db.commit()
         return EditLockStatus(locked=False, locked_by=payload.locked_by,
@@ -70,7 +80,7 @@ def acquire_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
 def release_edit_lock(payload: EditLockRequest, db: Session = Depends(get_db)):
     """Release your own lease (called on save/cancel). Another member's lease is not touched."""
     row = _find(db, payload.entity_type, payload.entity_id)
-    if row and row.locked_by == payload.locked_by:
+    if row and _same_holder(row, payload):
         db.delete(row)
         db.commit()
     return EditLockStatus(locked=False, locked_by=payload.locked_by,

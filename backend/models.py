@@ -50,15 +50,28 @@ class ListOptionMaster(Base):
 
 
 class EditLock(Base):
-    """Advisory edit lease — one member edits a record at a time (5-minute TTL, stealable)."""
+    """Advisory edit lease — one member/browser edits a record at a time (5-min TTL, stealable)."""
     __tablename__ = "edit_locks"
 
     id = Column(Integer, primary_key=True, index=True)
     entity_type = Column(String(30), nullable=False, index=True)  # "transaction" | "rent_bill"
     entity_id = Column(Integer, nullable=False, index=True)
-    locked_by = Column(String(100), nullable=False)
+    locked_by = Column(String(100), nullable=False)               # display name
+    session_id = Column(String(64), nullable=True, index=True)    # per-browser identity
     locked_at = Column(DateTime, nullable=False, default=func.now())
     __table_args__ = (UniqueConstraint("entity_type", "entity_id", name="uq_edit_lock_entity"),)
+
+
+class NumberReservation(Base):
+    """Short-lived reservation of a generated B.No./V.No. so two members never see the same preview."""
+    __tablename__ = "number_reservations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    kind = Column(String(40), nullable=False, index=True)   # "rent_bill" | "txn_credit" | "txn_debit"
+    number = Column(String(50), nullable=False, index=True)
+    session_id = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    __table_args__ = (UniqueConstraint("kind", "number", name="uq_number_reservation"),)
 
 
 class Transaction(Base):
