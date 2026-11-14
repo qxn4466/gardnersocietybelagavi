@@ -59,18 +59,6 @@ class ListOptionCreate(BaseModel):
     name: str
 
 
-class EditLockRequest(BaseModel):
-    entity_type: str
-    entity_id: int
-    locked_by: str = "unknown"
-    session_id: Optional[str] = ""
-
-
-class EditLockStatus(BaseModel):
-    locked: bool                 # True = BLOCKED (someone else holds a fresh lease)
-    locked_by: Optional[str] = None
-    locked_at: Optional[datetime] = None
-    seconds_remaining: int = 0
 
 
 # ─── Account Master ─────────────────────────────────────────────────────────────

@@ -5,13 +5,13 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import date
+from sqlalchemy import func, and_
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 from database import get_db
-from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, EditLock, NumberReservation
+from models import Transaction, TransactionTypeMaster, CashScrollBookEntry
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
-from numbering import acquire_numbering_lock, ensure_free, reserve_sequential
+from numbering import acquire_numbering_lock, ensure_free
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -105,28 +105,75 @@ def get_next_memo(txn_date: Optional[str] = None, db: Session = Depends(get_db))
     return NextMemoResponse(cash_memo_no=generate_cash_memo_no(db, d))
 
 
-@router.get("/next-reference")
-def get_next_reference(
-    txn_date: Optional[str] = None,
-    entry_nature: str = "CREDIT",
-    session_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """Preview the next financial-year Bill or Voucher serial number.
-    The number is reserved for this browser session, so two members never get the same one."""
-    nature = entry_nature.upper()
+@router.post("/reference/reserve")
+def reserve_reference(payload: dict, db: Session = Depends(get_db)):
+    """Generate the next B.No./V.No. and IMMEDIATELY persist a DRAFT placeholder row so the
+    number is consumed and unique. Saving later fills/updates the row matching the number."""
+    nature = str(payload.get("entry_nature", "CREDIT")).upper()
     if nature not in {"CREDIT", "DEBIT"}:
         raise HTTPException(status_code=400, detail="entry_nature must be CREDIT or DEBIT")
-    txn_date_value = date.fromisoformat(txn_date) if txn_date else date.today()
+    d_raw = payload.get("txn_date")
+    d = date.fromisoformat(d_raw) if d_raw else date.today()
+
+    acquire_numbering_lock(db)
+
+    # purge stale reserved placeholders (older than 24 h)
+    stale_cutoff = datetime.utcnow() - timedelta(hours=24)
+    db.query(Transaction).filter(
+        Transaction.status == "DRAFT",
+        Transaction.customer_name == "(reserved)",
+        Transaction.created_at < stale_cutoff,
+    ).delete(synchronize_session=False)
+    db.commit()
+
     column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
-    number = reserve_sequential(
-        db,
-        kind=f"txn_{nature.lower()}",
-        session_id=session_id or "",
-        start=generate_reference_no(db, txn_date_value, nature),
-        is_taken=lambda n: db.query(Transaction.id).filter(column == n).first() is not None,
+
+    def taken(n: str) -> bool:
+        return db.query(Transaction.id).filter(column == n).first() is not None
+
+    number = generate_reference_no(db, d, nature)
+    guard = 0
+    while taken(number) and guard < 200:
+        number = generate_reference_no(db, d, nature)
+        guard += 1
+
+    memo_no = generate_cash_memo_no(db, d)
+    txn = Transaction(
+        date=d,
+        cash_memo_no=memo_no,
+        bill_no=number if nature == "CREDIT" else None,
+        voucher_no=number if nature == "DEBIT" else None,
+        customer_name="(reserved)",
+        transaction_type_id=1,
+        entry_nature=nature,
+        amount_rs=Decimal("0"),
+        amount_ps=Decimal("0"),
+        status="DRAFT",
+        created_by="reference-reservation",
     )
-    return {"reference_no": number}
+    db.add(txn)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict — please click Generate again.")
+    return {"reference_no": number, "draft_id": txn.id}
+
+
+@router.post("/reference/release")
+def release_reference(payload: dict, db: Session = Depends(get_db)):
+    """Remove an unused reserved placeholder (called on Reset)."""
+    number = str(payload.get("number") or "").strip()
+    nature = str(payload.get("entry_nature", "CREDIT")).upper()
+    if number:
+        column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
+        db.query(Transaction).filter(
+            column == number,
+            Transaction.status == "DRAFT",
+            Transaction.customer_name == "(reserved)",
+        ).delete(synchronize_session=False)
+        db.commit()
+    return {"released": True}
 
 
 @router.get("/drafts", response_model=List[TransactionOut])
@@ -134,7 +181,10 @@ def get_drafts(db: Session = Depends(get_db)):
     """Return all saved draft transactions"""
     return (
         db.query(Transaction)
-        .filter(Transaction.status == "DRAFT")
+        .filter(
+            Transaction.status == "DRAFT",
+            Transaction.customer_name != "(reserved)",
+        )
         .order_by(Transaction.created_at.desc())
         .all()
     )
@@ -165,6 +215,47 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         bill_no = generate_reference_no(db, payload.date, nature)
     if nature == "DEBIT" and not voucher_no:
         voucher_no = generate_reference_no(db, payload.date, nature)
+    # If this Bill/Voucher No. was generated earlier, a DRAFT placeholder row already
+    # exists — fill/update THAT row instead of creating a new one.
+    placeholder = None
+    if nature == "CREDIT" and payload.bill_no:
+        placeholder = db.query(Transaction).filter(
+            Transaction.bill_no == payload.bill_no,
+            Transaction.status == "DRAFT",
+        ).first()
+    if nature == "DEBIT" and payload.voucher_no:
+        placeholder = db.query(Transaction).filter(
+            Transaction.voucher_no == payload.voucher_no,
+            Transaction.status == "DRAFT",
+        ).first()
+
+    if placeholder:
+        placeholder.date = payload.date
+        placeholder.customer_id = payload.customer_id
+        placeholder.mobile_no = payload.mobile_no
+        placeholder.customer_name = payload.customer_name
+        placeholder.particulars = payload.particulars
+        placeholder.transaction_type_id = tt.id if tt else type_id
+        placeholder.entry_nature = nature
+        placeholder.amount_rs = payload.amount_rs
+        placeholder.amount_ps = payload.amount_ps
+        placeholder.payment_mode = (payload.payment_mode or "CASH").upper()
+        placeholder.attachments = payload.attachments
+        placeholder.remarks = payload.remarks
+        placeholder.created_by = payload.created_by
+        placeholder.status = payload.status or "POSTED"
+        txn = placeholder
+        db.flush()
+        if (txn.status or "POSTED") == "POSTED":
+            post_transaction_to_cash_scroll(db, txn)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Could not save — please retry.")
+        db.refresh(txn)
+        return txn
+
     if nature == "CREDIT" and bill_no:
         bill_no = ensure_free(db, Transaction, Transaction.bill_no, bill_no,
                               lambda: generate_reference_no(db, payload.date, "CREDIT"))
@@ -199,13 +290,6 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
-    used_ref = bill_no if nature == "CREDIT" else voucher_no
-    if used_ref:
-        db.query(NumberReservation).filter(
-            NumberReservation.kind == f"txn_{nature.lower()}",
-            NumberReservation.number == used_ref,
-        ).delete(synchronize_session=False)
-        db.commit()
     db.refresh(txn)
     return txn
 
@@ -244,6 +328,17 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     txn.created_by = payload.created_by
     txn.status = payload.status or "POSTED"
 
+    # If the new Bill/Voucher No. came from a Generate reservation, consume its placeholder
+    ref_value = txn.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else txn.voucher_no
+    if ref_value:
+        ref_column = Transaction.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else Transaction.voucher_no
+        db.query(Transaction).filter(
+            ref_column == ref_value,
+            Transaction.status == "DRAFT",
+            Transaction.id != txn.id,
+            Transaction.customer_name == "(reserved)",
+        ).delete(synchronize_session=False)
+
     db.commit()
     db.refresh(txn)
     post_transaction_to_cash_scroll(db, txn)
@@ -260,7 +355,12 @@ def list_transactions(
     status: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    q = db.query(Transaction)
+    q = db.query(Transaction).filter(
+        ~and_(
+            Transaction.status == "DRAFT",
+            Transaction.customer_name == "(reserved)",
+        )
+    )
     if start_date:
         q = q.filter(Transaction.date >= date.fromisoformat(start_date))
     if end_date:
@@ -293,10 +393,6 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.query(CashScrollBookEntry).filter(
         CashScrollBookEntry.voucher_no == txn.cash_memo_no
-    ).delete(synchronize_session=False)
-    db.query(EditLock).filter(
-        EditLock.entity_type == "transaction",
-        EditLock.entity_id == txn_id,
     ).delete(synchronize_session=False)
     db.delete(txn)
     db.commit()

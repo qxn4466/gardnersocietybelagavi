@@ -3,15 +3,14 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from numbering import acquire_numbering_lock, ensure_free, reserve_sequential
-from datetime import date
+from sqlalchemy import func, or_
+from numbering import acquire_numbering_lock, ensure_free
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
 
 from database import get_db
 from models import (
-    NumberReservation,
     CashPaymentVoucher,
     CashReceiptVoucher,
     RentBill,
@@ -129,23 +128,73 @@ def generate_rent_reference_no(db: Session, txn_date: date) -> str:
     return str(highest + 1).zfill(4)
 
 
-@router.get("/rent-next-reference")
-def get_rent_next_reference(
-    v_date: Optional[str] = None,
-    session_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """Preview the next financial-year Bill/Voucher serial for rent bills.
-    The number is reserved for this browser session, so two members never get the same one."""
-    d = date.fromisoformat(v_date) if v_date else date.today()
-    number = reserve_sequential(
-        db,
-        kind="rent_bill",
-        session_id=session_id or "",
-        start=generate_rent_reference_no(db, d),
-        is_taken=lambda n: db.query(RentBill.id).filter(RentBill.bill_no == n).first() is not None,
+@router.post("/rent-reference/reserve")
+def reserve_rent_reference(payload: dict, db: Session = Depends(get_db)):
+    """Generate the next B.No./V.No. and IMMEDIATELY persist a DRAFT placeholder rent bill
+    row so the number is consumed and unique. Saving later fills the matching row."""
+    acquire_numbering_lock(db)
+
+    d_raw = payload.get("v_date")
+    d = date.fromisoformat(d_raw) if d_raw else date.today()
+
+    # purge stale reserved placeholders (older than 24 h)
+    stale_cutoff = datetime.utcnow() - timedelta(hours=24)
+    db.query(RentBill).filter(
+        RentBill.status == "DRAFT",
+        RentBill.consignee_name == "",
+        RentBill.created_at < stale_cutoff,
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    def taken(n: str) -> bool:
+        return db.query(RentBill.id).filter(RentBill.bill_no == n).first() is not None
+
+    bill_no = generate_rent_reference_no(db, d)
+    guard = 0
+    while taken(bill_no) and guard < 200:
+        bill_no = generate_rent_reference_no(db, d)
+        guard += 1
+
+    inv_no = generate_rent_invoice_no(db, d)
+    while db.query(RentBill.id).filter(RentBill.invoice_no == inv_no).first() is not None:
+        inv_no = generate_rent_invoice_no(db, d)
+
+    record = RentBill(
+        invoice_no=inv_no,
+        bill_no=bill_no,
+        date=d,
+        consignee_name="",
+        status="DRAFT",
+        gst_rate=Decimal("0"),
+        qty=Decimal("0"),
+        rate=Decimal("0"),
+        amount=Decimal("0"),
+        igst_amount=Decimal("0"),
+        sgst_amount=Decimal("0"),
+        cgst_amount=Decimal("0"),
+        total_amount=Decimal("0"),
     )
-    return {"reference_no": number}
+    db.add(record)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Numbering conflict — please click Generate again.")
+    return {"reference_no": bill_no, "invoice_no": inv_no}
+
+
+@router.post("/rent-reference/release")
+def release_rent_reference(payload: dict, db: Session = Depends(get_db)):
+    """Remove an unused reserved placeholder (called on Reset)."""
+    bill_no = str(payload.get("bill_no") or "").strip()
+    if bill_no:
+        db.query(RentBill).filter(
+            RentBill.bill_no == bill_no,
+            RentBill.status == "DRAFT",
+            RentBill.consignee_name == "",
+        ).delete(synchronize_session=False)
+        db.commit()
+    return {"released": True}
 
 
 # Upload Directory for Cashier Receipts
@@ -434,7 +483,12 @@ def get_rent_bills(
     end_date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(RentBill)
+    query = db.query(RentBill).filter(
+        or_(
+            RentBill.status != "DRAFT",
+            RentBill.consignee_name != "",
+        )
+    )
     if start_date:
         query = query.filter(RentBill.date >= date.fromisoformat(start_date))
     if end_date:
@@ -445,15 +499,55 @@ def get_rent_bills(
 @router.post("/rent-bills", response_model=RentBillOut, status_code=201)
 def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     acquire_numbering_lock(db)
+
+    # If this Bill/Voucher No. was generated earlier, a DRAFT placeholder row already
+    # exists — fill/update THAT row instead of creating a new one.
+    placeholder = None
+    if payload.bill_no:
+        placeholder = db.query(RentBill).filter(
+            RentBill.bill_no == payload.bill_no,
+            RentBill.status == "DRAFT",
+        ).first()
+
     inv_no = payload.invoice_no or generate_rent_invoice_no(db, payload.date)
-    inv_no = ensure_free(db, RentBill, RentBill.invoice_no, inv_no,
-                         lambda: generate_rent_invoice_no(db, payload.date))
-    bill_no_final = ensure_free(db, RentBill, RentBill.bill_no, payload.bill_no,
-                                lambda: generate_rent_reference_no(db, payload.date)) if payload.bill_no else None
-    record = RentBill(
-        invoice_no=inv_no,
-        bill_no=bill_no_final,
-        date=payload.date,
+    if not placeholder:
+        inv_no = ensure_free(db, RentBill, RentBill.invoice_no, inv_no,
+                             lambda: generate_rent_invoice_no(db, payload.date))
+
+    is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
+    rec_amt = payload.total_amount if not is_cheque else Decimal("0.00")
+    cheque_amt = payload.total_amount if is_cheque else Decimal("0.00")
+
+    if placeholder:
+        placeholder.invoice_no = inv_no
+        placeholder.date = payload.date
+        placeholder.consignee_name = payload.consignee_name
+        placeholder.consignee_address = payload.consignee_address
+        placeholder.particulars = payload.particulars
+        placeholder.hsn_sac = payload.hsn_sac or "997212"
+        placeholder.gst_rate = payload.gst_rate
+        placeholder.qty = payload.qty
+        placeholder.rate = payload.rate
+        placeholder.per = payload.per or "Month"
+        placeholder.amount = payload.amount
+        placeholder.igst_amount = payload.igst_amount
+        placeholder.sgst_amount = payload.sgst_amount
+        placeholder.cgst_amount = payload.cgst_amount
+        placeholder.total_amount = payload.total_amount
+        placeholder.tax_amount_words = payload.tax_amount_words
+        placeholder.payment_mode = payload.payment_mode or "CASH"
+        placeholder.cheque_no = payload.cheque_no
+        placeholder.cheque_date = payload.cheque_date
+        placeholder.bank_name = payload.bank_name
+        placeholder.created_by = payload.created_by
+        placeholder.status = payload.status or "POSTED"
+        record = placeholder
+        db.flush()
+    else:
+        record = RentBill(
+            invoice_no=inv_no,
+            bill_no=payload.bill_no,
+            date=payload.date,
         consignee_name=payload.consignee_name,
         consignee_address=payload.consignee_address,
         particulars=payload.particulars,
@@ -472,65 +566,56 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         cheque_no=payload.cheque_no,
         cheque_date=payload.cheque_date,
         bank_name=payload.bank_name,
-        created_by=payload.created_by,
-        status=payload.status or "POSTED"
-    )
-    db.add(record)
+            created_by=payload.created_by,
+            status=payload.status or "POSTED"
+        )
+        db.add(record)
 
-    # ── Auto-Post to Cash Scroll Book ──────────────────────────────────────────
-    is_cheque = (payload.payment_mode or "CASH").upper() == "CHEQUE"
-    rec_amt = payload.total_amount if not is_cheque else Decimal("0.00")
-    cheque_amt = payload.total_amount if is_cheque else Decimal("0.00")
-
-    scroll_entry = CashScrollBookEntry(
-        date=payload.date,
-        voucher_no=(bill_no_final or inv_no),
-        from_received_paid=f"Rent Bill: {payload.consignee_name}",
-        received_amount=rec_amt,
-        paid_amount=Decimal("0.00"),
-        cheque_amount=cheque_amt,
-        created_by=payload.created_by
-    )
-    db.add(scroll_entry)
-
-    # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────────
-    if is_cheque and payload.cheque_no:
-        cheque_entry = ChequeIssueBookEntry(
-            issue_date=payload.cheque_date or payload.date,
-            name_to_whom_issued=payload.consignee_name,
-            cheque_no=payload.cheque_no,
-            amount_rs=payload.total_amount,
-            remarks=payload.particulars or f"Rent Bill {inv_no}",
+    # ── Auto-Post to Cash Scroll Book (only when the bill is being posted) ─────
+    if (payload.status or "POSTED") != "DRAFT":
+        scroll_entry = CashScrollBookEntry(
+            date=payload.date,
+            voucher_no=(payload.bill_no or inv_no),
+            from_received_paid=f"Rent Bill: {payload.consignee_name}",
+            received_amount=rec_amt,
+            paid_amount=Decimal("0.00"),
+            cheque_amount=cheque_amt,
             created_by=payload.created_by
         )
-        db.add(cheque_entry)
+        db.add(scroll_entry)
 
-    # ── Auto-Post to Main Transactions Table (Updates Credit Book & General Ledger)
-    sync_transaction_for_cashier_voucher(
-        db=db,
-        memo_no=inv_no,
-        bill_no=bill_no_final,
-        v_date=payload.date,
-        customer_name=payload.consignee_name,
-        particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
-        nature="CREDIT",
-        total_amount=payload.total_amount,
-        remarks=f"Rent Invoice {inv_no}",
-        created_by=payload.created_by,
-        target_account_name="Rent"
-    )
+        # ── Auto-Post to Cheque Issue Book if Cheque Mode ──────────────────────
+        if is_cheque and payload.cheque_no:
+            cheque_entry = ChequeIssueBookEntry(
+                issue_date=payload.cheque_date or payload.date,
+                name_to_whom_issued=payload.consignee_name,
+                cheque_no=payload.cheque_no,
+                amount_rs=payload.total_amount,
+                remarks=payload.particulars or f"Rent Bill {inv_no}",
+                created_by=payload.created_by
+            )
+            db.add(cheque_entry)
+
+        # ── Auto-Post to Main Transactions Table ───────────────────────────────
+        sync_transaction_for_cashier_voucher(
+            db=db,
+            memo_no=inv_no,
+            bill_no=payload.bill_no,
+            v_date=payload.date,
+            customer_name=payload.consignee_name,
+            particulars=f"Rent Bill: {payload.particulars or 'Building Rent'}",
+            nature="CREDIT",
+            total_amount=payload.total_amount,
+            remarks=f"Rent Invoice {inv_no}",
+            created_by=payload.created_by,
+            target_account_name="Rent"
+        )
 
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Numbering conflict with another user — please save again.")
-    if bill_no_final:
-        db.query(NumberReservation).filter(
-            NumberReservation.kind == "rent_bill",
-            NumberReservation.number == bill_no_final,
-        ).delete(synchronize_session=False)
-        db.commit()
     db.refresh(record)
     return record
 
@@ -835,6 +920,12 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
         db.query(Transaction).filter(
             Transaction.cash_memo_no == record.invoice_no
         ).update({"bill_no": payload.bill_no}, synchronize_session=False)
+        db.query(RentBill).filter(
+            RentBill.bill_no == payload.bill_no,
+            RentBill.status == "DRAFT",
+            RentBill.consignee_name == "",
+            RentBill.id != record.id,
+        ).delete(synchronize_session=False)
     record.bill_no = payload.bill_no
     record.consignee_name = payload.consignee_name
     record.consignee_address = payload.consignee_address
