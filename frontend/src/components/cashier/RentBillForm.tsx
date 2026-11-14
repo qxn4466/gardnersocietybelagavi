@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Printer, Save, Plus, Trash2, Edit, CheckCircle2, AlertCircle, Banknote, CreditCard, Zap, Calendar, Search, Languages, Landmark, Loader2, Table, List } from 'lucide-react';
-import { fetchNextRentInvoiceNo, fetchRentNextReference, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData, acquireEditLock, releaseEditLock } from '../../api/client';
-import { getSessionId } from '../../utils/session';
+import { fetchNextRentInvoiceNo, createRentBill, updateRentBill, fetchRentBills, deleteRentBill, generate30DaysCashierTestData, delete30DaysCashierTestData, reserveRentReference, releaseRentReference } from '../../api/client';
 import type { RentBill, User } from '../../types';
 
 import { RENT_PARTICULARS_OPTIONS } from '../../types';
@@ -48,6 +47,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
   const [date, setDate] = useState(today);
   const [invoiceNo, setInvoiceNo] = useState('');
   const [billNo, setBillNo] = useState('');
+  const [generatedRef, setGeneratedRef] = useState<string | null>(null);
   const [consigneeName, setConsigneeName] = useState('');
   const [consigneeAddress, setConsigneeAddress] = useState('');
   const [consigneeGst, setConsigneeGst] = useState('');
@@ -110,7 +110,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
       const numericId = parseInt(editParam);
       const match = history.find(h => h.id === numericId);
       if (match) {
-        void openRentBillForEdit(match);
+        handleEdit(match);
       }
     }
   }, [editParam, history]);
@@ -146,9 +146,10 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
   const generateReference = async () => {
     try {
-      const res = await fetchRentNextReference(date, getSessionId());
+      const res = await reserveRentReference(date);
+      setGeneratedRef(res.reference_no);
       setBillNo(res.reference_no);
-      setMsg({ type: 'success', text: (lang === 'mr' ? 'बिल क्र. तयार केला: ' : 'Bill/Voucher No. generated: ') + res.reference_no });
+      setMsg({ type: 'success', text: (lang === 'mr' ? 'बिल क्र. तयार केला व राखीव ठेवला: ' : 'Bill/Voucher No. generated and reserved: ') + res.reference_no });
     } catch {
       setMsg({ type: 'error', text: lang === 'mr' ? 'क्रमांक तयार करता आला नाही.' : 'Could not generate the reference number.' });
     }
@@ -196,25 +197,6 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
     }
   };
 
-  // ── One member edits a rent bill at a time (edit lease) ─────────────────────
-  const openRentBillForEdit = async (b: RentBill) => {
-    try {
-      const res = await acquireEditLock('rent_bill', b.id, user?.username || 'unknown', getSessionId());
-      if (res.locked) {
-        setMsg({
-          type: 'error',
-          text: lang === 'mr'
-            ? `हे भाडे बिल सध्या ${res.locked_by} संपादनात आहे — ${Math.ceil((res.seconds_remaining || 0) / 60)} मिनिटांत पुन्हा प्रयत्न करा.`
-            : `This rent bill is currently being edited by ${res.locked_by} — try again in ${Math.ceil((res.seconds_remaining || 0) / 60)} min.`,
-        });
-        return;
-      }
-    } catch {
-      // lock service unavailable — allow editing
-    }
-    handleEdit(b);
-  };
-
   const handleEdit = (b: RentBill) => {
     setEditingId(b.id);
     setDate(b.date);
@@ -252,7 +234,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
   const handleReset = () => {
     if (editingId) {
-      void releaseEditLock('rent_bill', editingId, user?.username || 'unknown', getSessionId()).catch(() => {});
+        setGeneratedRef(null);
     }
     setEditingId(null);
     setDate(today);
@@ -317,13 +299,17 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
 
       if (editingId) {
         const updated = await updateRentBill(editingId, payload);
-        void releaseEditLock('rent_bill', editingId, user?.username || 'unknown', getSessionId()).catch(() => {});
+    if (billNo && !editingId) {
+      void releaseRentReference(billNo).catch(() => {});
+    }
+    setGeneratedRef(null);
         setMsg({
           type: 'success',
           text: lang === 'mr' ? `भाडे बिल ${updated.invoice_no} अपडेट केले!` : `Rent Bill ${updated.invoice_no} updated successfully!`
         });
       } else {
         const created = await createRentBill(payload);
+        setGeneratedRef(null);
         const modeNote = paymentMode === 'CHEQUE'
           ? (lang === 'mr' ? ' स्क्रोल पुस्तक व चेक बुकमध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll & Cheque Book!')
           : (lang === 'mr' ? ' स्क्रोल पुस्तक (जमा/Received) मध्ये स्वयंचलित नोंदवली!' : ' Auto-updated in Cash Scroll Book!');
@@ -1225,7 +1211,7 @@ const RentBillForm: React.FC<RentBillFormProps> = ({ user }) => {
                             ₹{Number(row.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <button className="btn btn-secondary btn-sm" onClick={() => void openRentBillForEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Rent Bill">
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(row)} style={{ marginRight: 4, background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Edit Rent Bill">
                               <Edit size={13} /> {lang === 'mr' ? 'संपादित करा' : 'Edit'}
                             </button>
                             <button className="btn btn-secondary btn-sm" onClick={() => handlePrint(row)} style={{ marginRight: 4 }} title="Print Invoice">

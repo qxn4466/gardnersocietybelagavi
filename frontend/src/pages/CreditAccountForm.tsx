@@ -14,7 +14,6 @@ import {
   fetchOffice,
   fetchTransactionTypes,
   fetchNextMemo,
-  fetchNextReference,
   createTransaction,
   updateTransaction,
   fetchTransaction,
@@ -28,10 +27,9 @@ import {
   createTransactionType,
   uploadTransactionAttachment,
   getFileUrl,
-  acquireEditLock,
-  releaseEditLock,
+  reserveTransactionReference,
+  releaseTransactionReference,
 } from '../api/client';
-import { getSessionId } from '../utils/session';
 import type { OfficeMaster, TransactionType, Transaction, User, Customer } from '../types';
 import { RECEIPT_PARTICULARS_OPTIONS, PAYMENT_PARTICULARS_OPTIONS } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -262,6 +260,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [generatedRef, setGeneratedRef] = useState<{ nature: 'CREDIT' | 'DEBIT'; number: string } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ path: string; name: string } | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -424,7 +423,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     if (editId) {
       fetchTransaction(parseInt(editId))
         .then(t => {
-          void openForEdit(t);
+loadDraftIntoForm(t);
         })
         .catch(() => setAlert({ type: 'error', msg: 'Failed to load transaction for editing.' }));
     } else if (custId || custName) {
@@ -465,12 +464,13 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
 
   const generateReference = async () => {
     try {
-      const { reference_no } = await fetchNextReference(form.date, form.entry_nature, getSessionId());
+      const { reference_no } = await reserveTransactionReference(form.date, form.entry_nature);
       setForm(prev => form.entry_nature === 'CREDIT'
         ? { ...prev, bill_no: reference_no }
         : { ...prev, voucher_no: reference_no }
       );
-      setAlert({ type: 'success', msg: `${form.entry_nature === 'CREDIT' ? 'Bill' : 'Voucher'} number ${reference_no} generated.` });
+setGeneratedRef({ nature: form.entry_nature, number: reference_no });
+      setAlert({ type: 'success', msg: `${form.entry_nature === 'CREDIT' ? 'Bill' : 'Voucher'} number ${reference_no} generated and reserved.` });
     } catch {
       setAlert({ type: 'error', msg: 'Could not generate the reference number. Check backend connection.' });
     }
@@ -667,14 +667,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
       let saved: Transaction;
       if (editingDraftId) {
         saved = await updateTransaction(editingDraftId, payload);
-        if (isDraft) {
-          void acquireEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
-        } else {
-          void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
-        }
       } else {
         saved = await createTransaction(payload);
       }
+      setGeneratedRef(null);
 
       setSavedMemo(saved.cash_memo_no);
       setLastSavedTxn(saved);
@@ -715,9 +711,10 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   };
 
   const handleReset = (clearAlertAndMemo: boolean = true) => {
-    if (editingDraftId) {
-      void releaseEditLock('transaction', editingDraftId, user?.username || 'unknown', getSessionId()).catch(() => {});
+    if (generatedRef) {
+      void releaseTransactionReference(generatedRef.number, generatedRef.nature).catch(() => {});
     }
+    setGeneratedRef(null);
     localStorage.removeItem('bgs_credit_form_draft');
     setForm(INITIAL_FORM);
     setRows([newRow()]);
@@ -728,27 +725,6 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     }
     setEditingDraftId(null);
     refreshMemo(INITIAL_FORM.date);
-  };
-
-  // ── One member edits a record at a time (edit lease) ────────────────────────
-  const openForEdit = async (d: Transaction) => {
-    if (d.id) {
-      try {
-        const res = await acquireEditLock('transaction', d.id, user?.username || 'unknown', getSessionId());
-        if (res.locked) {
-          setAlert({
-            type: 'error',
-            msg: lang === 'mr'
-              ? `ही नोंद सध्या ${res.locked_by} संपादनात आहे — ${Math.ceil((res.seconds_remaining || 0) / 60)} मिनिटांत पुन्हा प्रयत्न करा.`
-              : `This record is currently being edited by ${res.locked_by} — try again in ${Math.ceil((res.seconds_remaining || 0) / 60)} min.`,
-          });
-          return;
-        }
-      } catch {
-        // lock service unavailable — allow editing
-      }
-    }
-    loadDraftIntoForm(d);
   };
 
   // ── Load draft/transaction into form for editing ─────────────────────────────
@@ -2635,7 +2611,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                               </button>
                               <button
                                 type="button"
-                                onClick={() => void openForEdit(txn)}
+onClick={() => loadDraftIntoForm(txn)}
                                 style={{ background: 'none', border: 'none', color: 'var(--blue-600)', cursor: 'pointer', padding: 4 }}
                                 title={lang === 'mr' ? 'व्यवहार संपादन करा' : 'Edit Transaction'}
                               >
@@ -2736,7 +2712,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
                           </button>
                           <button
                             className="btn btn-primary btn-sm"
-                            onClick={() => void openForEdit(d)}
+onClick={() => loadDraftIntoForm(d)}
                           >
                             {lang === 'mr' ? 'लोड करा' : 'Load Draft'}
                           </button>
