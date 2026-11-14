@@ -19,10 +19,14 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 def generate_cash_memo_no(db: Session, txn_date: date) -> str:
     """Generate a sequential cash memo number: BGS-YYYYMMDD-XXXX"""
     prefix = f"BGS-{txn_date.strftime('%Y%m%d')}-"
-    count = db.query(func.count(Transaction.id)).filter(
+    existing = db.query(Transaction.cash_memo_no).filter(
         Transaction.cash_memo_no.like(f"{prefix}%")
-    ).scalar() or 0
-    return f"{prefix}{str(count + 1).zfill(4)}"
+    ).all()
+    highest = max(
+        (int(memo[0].removeprefix(prefix)) for memo in existing if memo[0].removeprefix(prefix).isdigit()),
+        default=0,
+    )
+    return f"{prefix}{str(highest + 1).zfill(4)}"
 
 
 def financial_year_bounds(txn_date: date) -> tuple[date, date]:
@@ -137,6 +141,13 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db)):
         number = generate_reference_no(db, d, nature)
         guard += 1
 
+    # Use a VALID account-head id — hardcoding 1 breaks when the master's ids don't start at 1
+    tt = db.query(TransactionTypeMaster).order_by(TransactionTypeMaster.id.asc()).first()
+    if tt is None:
+        # No account heads exist yet: return the number without a placeholder row
+        # (save-time ensure_free still guarantees uniqueness)
+        return {"reference_no": number, "draft_id": None}
+
     memo_no = generate_cash_memo_no(db, d)
     txn = Transaction(
         date=d,
@@ -144,7 +155,7 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db)):
         bill_no=number if nature == "CREDIT" else None,
         voucher_no=number if nature == "DEBIT" else None,
         customer_name="(reserved)",
-        transaction_type_id=1,
+        transaction_type_id=tt.id,
         entry_nature=nature,
         amount_rs=Decimal("0"),
         amount_ps=Decimal("0"),
