@@ -47,7 +47,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=payload.username.strip()).first()
     password = payload.password.strip()
     if not user or not verify_password(password, user.password) or (
-        user.role == "CASHIER" and password == "pass123"
+        user.role == "CASHIER" and user.password == "pass123"
     ):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
