@@ -302,9 +302,9 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
     try {
       let updatedCount = 0;
 
-      // 1. Translate Customer Name, Accountant Name & Remarks
+      // 1. Translate Customer Name & Remarks
       const formUpdates: Partial<FormState> = {};
-      for (const field of ['customer_name', 'created_by', 'remarks'] as const) {
+      for (const field of ['customer_name', 'remarks'] as const) {
         const val = form[field] ? String(form[field]).trim() : '';
         if (val) {
           const tr = await translateToMarathi(val);
@@ -388,19 +388,26 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
   // ── Auto-save draft in localStorage for CreditAccountForm ──
-  const CREDIT_DRAFT_KEY = 'bgs_credit_form_draft';
+  const legacyDraftKey = 'bgs_credit_form_draft';
+  const creditDraftKey = `${legacyDraftKey}:${user?.username || 'guest'}`;
+  const createdBy = editingDraftId ? form.created_by || '—' : user?.username || '';
 
   useEffect(() => {
     if (form.customer_name.trim() || rows.some(r => r.description.trim() !== '')) {
-      localStorage.setItem(CREDIT_DRAFT_KEY, JSON.stringify({ form, rows, editingDraftId }));
+      localStorage.setItem(creditDraftKey, JSON.stringify({ form, rows, editingDraftId }));
     }
-  }, [form, rows, editingDraftId]);
+  }, [form, rows, editingDraftId, creditDraftKey]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(CREDIT_DRAFT_KEY);
-    if (saved) {
+    const saved = localStorage.getItem(creditDraftKey);
+    const legacyDraft = !saved && user?.username === 'accountant' ? localStorage.getItem(legacyDraftKey) : null;
+    if (legacyDraft) {
+      localStorage.setItem(creditDraftKey, legacyDraft);
+      localStorage.removeItem(legacyDraftKey);
+    }
+    if (saved || legacyDraft) {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed = JSON.parse(saved || legacyDraft || '');
         if (parsed.form && parsed.rows && parsed.rows.length > 0) {
           setForm(parsed.form);
           setRows(parsed.rows);
@@ -660,7 +667,6 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
         amount_rs: grandRs,
         amount_ps: grandPs,
         remarks: form.remarks,
-        created_by: form.created_by,
         status: isDraft ? 'DRAFT' : 'POSTED',
       };
 
@@ -687,8 +693,8 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
             : `Draft saved successfully! (Memo: ${saved.cash_memo_no})`
         });
         setEditingDraftId(saved.id);
+        setForm(prev => ({ ...prev, created_by: saved.created_by_user_id ? saved.created_by || '' : '' }));
       } else {
-        localStorage.removeItem('bgs_credit_form_draft');
         setSavedMemo(saved.cash_memo_no);
         setLastSavedTxn(saved);
         setAlert({
@@ -715,7 +721,7 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
       void releaseTransactionReference(generatedRef.number, generatedRef.nature).catch(() => {});
     }
     setGeneratedRef(null);
-    localStorage.removeItem('bgs_credit_form_draft');
+    localStorage.removeItem(creditDraftKey);
     setForm(INITIAL_FORM);
     setRows([newRow()]);
     setAttachments([]);
@@ -753,7 +759,7 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
       remarks: d.remarks || '',
       cgst_pct: '2.5',
       sgst_pct: '2.5',
-      created_by: d.created_by || '',
+      created_by: d.created_by_user_id ? d.created_by || '' : '',
     });
 
     try {
@@ -1252,10 +1258,9 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* 4. Accountant */}
                     <div className="form-group">
-                      <label className="form-label">{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</label>
+                      <label className="form-label" htmlFor="created-by">{lang === 'mr' ? 'नोंद करणारा वापरकर्ता' : 'Created By'}</label>
                       <input id="created-by" type="text" className="form-input"
-                        placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
-                        value={form.created_by} onChange={handleChange('created_by')} style={{ width: '100%' }} />
+                        value={createdBy} readOnly style={{ width: '100%' }} />
                     </div>
 
                     {/* 5. Entry Nature Toggle Switcher */}
@@ -1523,15 +1528,14 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                         <tr>
                           <td className="excel-row-idx">3</td>
                           <td className="excel-col-label">
-                            <span>{lang === 'mr' ? 'लेखापालाचे नाव' : 'Accountant Name'}</span>
+                            <span>{lang === 'mr' ? 'नोंद करणारा वापरकर्ता' : 'Created By'}</span>
                           </td>
                           <td className="excel-col-input">
                             <input id="created-by-excel" type="text" className="form-input"
-                              placeholder={lang === 'mr' ? 'लेखापाल / कारकूनाचे नाव' : 'Accountant / clerk name'}
-                              value={form.created_by} onChange={handleChange('created_by')} style={{ maxWidth: 360, height: 38 }} />
+                              aria-label={lang === 'mr' ? 'नोंद करणारा वापरकर्ता' : 'Created By'}
+                              value={createdBy} readOnly style={{ maxWidth: 360, height: 38 }} />
                           </td>
                           <td className="excel-col-tools">
-                            <span style={{ fontSize: 11, color: '#64748b' }}>Clerk / Accountant</span>
                           </td>
                         </tr>
 
@@ -2519,6 +2523,7 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                        <th style={{ textAlign: 'right', color: '#15803d' }}>{lang === 'mr' ? 'जमा रक्कम' : 'Credit Amt (Rs.Ps)'}</th>
                        <th style={{ textAlign: 'right', color: '#b91c1c' }}>{lang === 'mr' ? 'नावे रक्कम' : 'Debit Amt (Rs.Ps)'}</th>
                       <th>{lang === 'mr' ? 'स्थिती' : 'Status'}</th>
+                      <th>{lang === 'mr' ? 'नोंद करणारा वापरकर्ता' : 'Created By'}</th>
                       <th>{lang === 'mr' ? 'क्रिया' : 'Actions'}</th>
                     </tr>
                   </thead>
@@ -2599,6 +2604,7 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                               {txn.status === 'POSTED' ? (lang === 'mr' ? 'पोस्ट केलेले' : 'POSTED') : (lang === 'mr' ? 'मसुदा' : 'DRAFT')}
                             </span>
                           </td>
+                          <td>{txn.created_by_user_id ? txn.created_by : '—'}</td>
                           <td>
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button
@@ -2640,7 +2646,7 @@ onClick={() => loadDraftIntoForm(txn)}
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: '#b91c1c' }}>
                         ₹ {historyDebitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td colSpan={2} />
+                      <td colSpan={3} />
                     </tr>
                   </tfoot>
                 </table>

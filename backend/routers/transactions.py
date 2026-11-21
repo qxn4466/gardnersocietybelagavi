@@ -9,9 +9,10 @@ from sqlalchemy import func, and_
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 from database import get_db
-from models import Transaction, TransactionTypeMaster, CashScrollBookEntry
+from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, User
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
 from numbering import acquire_numbering_lock, ensure_free
+from routers.auth import require_transaction_user
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -110,7 +111,7 @@ def get_next_memo(txn_date: Optional[str] = None, db: Session = Depends(get_db))
 
 
 @router.post("/reference/reserve")
-def reserve_reference(payload: dict, db: Session = Depends(get_db)):
+def reserve_reference(payload: dict, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     """Generate the next B.No./V.No. and IMMEDIATELY persist a DRAFT placeholder row so the
     number is consumed and unique. Saving later fills/updates the row matching the number."""
     nature = str(payload.get("entry_nature", "CREDIT")).upper()
@@ -128,8 +129,6 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db)):
         Transaction.customer_name == "(reserved)",
         Transaction.created_at < stale_cutoff,
     ).delete(synchronize_session=False)
-    db.commit()
-
     column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
 
     def taken(n: str) -> bool:
@@ -160,7 +159,8 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db)):
         amount_rs=Decimal("0"),
         amount_ps=Decimal("0"),
         status="DRAFT",
-        created_by="reference-reservation",
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
     db.add(txn)
     try:
@@ -172,7 +172,7 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/reference/release")
-def release_reference(payload: dict, db: Session = Depends(get_db)):
+def release_reference(payload: dict, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     """Remove an unused reserved placeholder (called on Reset)."""
     number = str(payload.get("number") or "").strip()
     nature = str(payload.get("entry_nature", "CREDIT")).upper()
@@ -182,6 +182,7 @@ def release_reference(payload: dict, db: Session = Depends(get_db)):
             column == number,
             Transaction.status == "DRAFT",
             Transaction.customer_name == "(reserved)",
+            Transaction.created_by_user_id == user.id,
         ).delete(synchronize_session=False)
         db.commit()
     return {"released": True}
@@ -202,7 +203,7 @@ def get_drafts(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=TransactionOut, status_code=201)
-def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     type_id = payload.transaction_type_id or 1
     tt = db.query(TransactionTypeMaster).filter(
         TransactionTypeMaster.id == type_id
@@ -240,7 +241,9 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
             Transaction.status == "DRAFT",
         ).first()
 
-    if placeholder:
+    if placeholder and placeholder.customer_name == "(reserved)":
+        if placeholder.created_by_user_id is not None and placeholder.created_by_user_id != user.id:
+            raise HTTPException(status_code=409, detail="This reference was reserved by another user")
         placeholder.date = payload.date
         placeholder.customer_id = payload.customer_id
         placeholder.mobile_no = payload.mobile_no
@@ -253,7 +256,8 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         placeholder.payment_mode = (payload.payment_mode or "CASH").upper()
         placeholder.attachments = payload.attachments
         placeholder.remarks = payload.remarks
-        placeholder.created_by = payload.created_by
+        placeholder.created_by = user.username
+        placeholder.created_by_user_id = user.id
         placeholder.status = payload.status or "POSTED"
         txn = placeholder
         db.flush()
@@ -290,7 +294,8 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         payment_mode=(payload.payment_mode or "CASH").upper(),
         attachments=payload.attachments,
         remarks=payload.remarks,
-        created_by=payload.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         status=payload.status or "POSTED",
     )
     db.add(txn)
@@ -306,10 +311,12 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
 
 
 @router.put("/{txn_id}", response_model=TransactionOut)
-def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = Depends(get_db)):
+def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    if txn.customer_name == "(reserved)":
+        raise HTTPException(status_code=409, detail="Save reserved references through transaction creation")
 
     type_id = payload.transaction_type_id or 1
     tt = db.query(TransactionTypeMaster).filter(
@@ -336,19 +343,22 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     txn.payment_mode = (payload.payment_mode or "CASH").upper()
     txn.attachments = payload.attachments
     txn.remarks = payload.remarks
-    txn.created_by = payload.created_by
     txn.status = payload.status or "POSTED"
 
     # If the new Bill/Voucher No. came from a Generate reservation, consume its placeholder
     ref_value = txn.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else txn.voucher_no
     if ref_value:
         ref_column = Transaction.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else Transaction.voucher_no
-        db.query(Transaction).filter(
+        reservation = db.query(Transaction).filter(
             ref_column == ref_value,
             Transaction.status == "DRAFT",
             Transaction.id != txn.id,
             Transaction.customer_name == "(reserved)",
-        ).delete(synchronize_session=False)
+        ).first()
+        if reservation:
+            if reservation.created_by_user_id is not None and reservation.created_by_user_id != user.id:
+                raise HTTPException(status_code=409, detail="This reference was reserved by another user")
+            db.delete(reservation)
 
     db.commit()
     db.refresh(txn)
@@ -398,10 +408,12 @@ def get_transaction(txn_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{txn_id}", status_code=204)
-def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
+def delete_transaction(txn_id: int, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    if txn.customer_name == "(reserved)" and txn.created_by_user_id != user.id:
+        raise HTTPException(status_code=403, detail="This reference was reserved by another user")
     db.query(CashScrollBookEntry).filter(
         CashScrollBookEntry.voucher_no == txn.cash_memo_no
     ).delete(synchronize_session=False)
@@ -409,13 +421,13 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-@router.post("/seed-june-test-data")
+@router.post("/seed-june-test-data", dependencies=[Depends(require_transaction_user)])
 def trigger_seed_june_test_data():
     from seed_june_test_data import seed_june_data
     return seed_june_data()
 
 
-@router.delete("/clear-june-test-data")
+@router.delete("/clear-june-test-data", dependencies=[Depends(require_transaction_user)])
 def trigger_clear_june_test_data():
     from clear_june_test_data import clear_june_data
     return clear_june_data()

@@ -20,6 +20,10 @@ class UserOut(BaseModel):
     role: str
 
 
+class LoginResponse(UserOut):
+    access_token: str
+    expires_at: datetime
+
 
 # ─── Office Master ─────────────────────────────────────────────────────────────
 class OfficeMasterBase(BaseModel):
@@ -87,7 +91,6 @@ class TransactionCreate(BaseModel):
     amount_rs: Decimal
     amount_ps: Decimal = Decimal("0.00")
     remarks: Optional[str] = None
-    created_by: Optional[str] = None
     status: Optional[str] = "POSTED"
 
 
@@ -97,6 +100,8 @@ class TransactionOut(TransactionCreate):
     cash_memo_no: str
     status: str = "POSTED"
     created_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    created_by_user_id: Optional[int] = None
     transaction_type: Optional[TransactionTypeOut] = None
 
 

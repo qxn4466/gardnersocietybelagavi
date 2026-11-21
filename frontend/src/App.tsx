@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import CreditAccountForm from './pages/CreditAccountForm';
@@ -17,31 +17,36 @@ import CashierDashboard from './pages/CashierDashboard';
 import ShopkeeperDashboard from './pages/ShopkeeperDashboard';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
-import type { User } from './types';
+import type { LoginSession } from './types';
+import { getSavedSession, logoutUser } from './api/client';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './index.css';
 
 const AppContent: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem('user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(getSavedSession);
 
   const [showLoginScreen, setShowLoginScreen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLoginSuccess = (loggedInUser: User) => {
-    localStorage.setItem('user', JSON.stringify(loggedInUser));
+  useEffect(() => {
+    const expireSession = () => {
+      sessionStorage.removeItem('user');
+      setUser(null);
+      setShowLoginScreen(true);
+    };
+    window.addEventListener('session-expired', expireSession);
+    return () => window.removeEventListener('session-expired', expireSession);
+  }, []);
+
+  const handleLoginSuccess = (loggedInUser: LoginSession) => {
+    sessionStorage.setItem('user', JSON.stringify(loggedInUser));
     setUser(loggedInUser);
     setShowLoginScreen(false);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    if (user) void logoutUser(user.access_token).catch(() => {});
+    sessionStorage.removeItem('user');
     setUser(null);
     setShowLoginScreen(false);
   };

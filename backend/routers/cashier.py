@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from numbering import acquire_numbering_lock, ensure_free
+from routers.auth import require_transaction_user
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
@@ -18,7 +19,8 @@ from models import (
     ChequeIssueBookEntry,
     Transaction,
     TransactionTypeMaster,
-    SystemBalanceSetting
+    SystemBalanceSetting,
+    User,
 )
 from schemas import (
     CashPaymentVoucherCreate, CashPaymentVoucherOut,
@@ -46,7 +48,8 @@ def sync_transaction_for_cashier_voucher(
     created_by: str,
     bill_no: Optional[str] = None,
     status: str = "POSTED",
-    target_account_name: Optional[str] = None
+    target_account_name: Optional[str] = None,
+    created_by_user_id: Optional[int] = None,
 ):
     """Auto-post or update transaction in main Transactions table so Credit Book, Debit Book & General Ledger update immediately."""
     tt_query = db.query(TransactionTypeMaster)
@@ -90,7 +93,6 @@ def sync_transaction_for_cashier_voucher(
         existing.amount_ps = Decimal(str(amt_ps))
         existing.remarks = remarks
         existing.bill_no = bill_no or existing.bill_no
-        existing.created_by = created_by
         existing.status = status
     else:
         new_txn = Transaction(
@@ -105,6 +107,7 @@ def sync_transaction_for_cashier_voucher(
             amount_ps=Decimal(str(amt_ps)),
             remarks=remarks,
             created_by=created_by,
+            created_by_user_id=created_by_user_id,
             status=status
         )
         db.add(new_txn)
@@ -129,7 +132,7 @@ def generate_rent_reference_no(db: Session, txn_date: date) -> str:
 
 
 @router.post("/rent-reference/reserve")
-def reserve_rent_reference(payload: dict, db: Session = Depends(get_db)):
+def reserve_rent_reference(payload: dict, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     """Generate the next B.No./V.No. and IMMEDIATELY persist a DRAFT placeholder rent bill
     row so the number is consumed and unique. Saving later fills the matching row."""
     acquire_numbering_lock(db)
@@ -144,7 +147,6 @@ def reserve_rent_reference(payload: dict, db: Session = Depends(get_db)):
         RentBill.consignee_name == "",
         RentBill.created_at < stale_cutoff,
     ).delete(synchronize_session=False)
-    db.commit()
 
     def taken(n: str) -> bool:
         return db.query(RentBill.id).filter(RentBill.bill_no == n).first() is not None
@@ -164,6 +166,7 @@ def reserve_rent_reference(payload: dict, db: Session = Depends(get_db)):
         bill_no=bill_no,
         date=d,
         consignee_name="",
+        created_by=user.username,
         status="DRAFT",
         gst_rate=Decimal("0"),
         qty=Decimal("0"),
@@ -184,7 +187,7 @@ def reserve_rent_reference(payload: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/rent-reference/release")
-def release_rent_reference(payload: dict, db: Session = Depends(get_db)):
+def release_rent_reference(payload: dict, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     """Remove an unused reserved placeholder (called on Reset)."""
     bill_no = str(payload.get("bill_no") or "").strip()
     if bill_no:
@@ -192,6 +195,7 @@ def release_rent_reference(payload: dict, db: Session = Depends(get_db)):
             RentBill.bill_no == bill_no,
             RentBill.status == "DRAFT",
             RentBill.consignee_name == "",
+            RentBill.created_by == user.username,
         ).delete(synchronize_session=False)
         db.commit()
     return {"released": True}
@@ -284,7 +288,7 @@ def get_payment_vouchers(
 
 
 @router.post("/payment-vouchers", response_model=CashPaymentVoucherOut, status_code=201)
-def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depends(get_db)):
+def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     acquire_numbering_lock(db)
     v_no = payload.voucher_no or generate_payment_voucher_no(db, payload.date)
     v_no = ensure_free(db, CashPaymentVoucher, CashPaymentVoucher.voucher_no, v_no,
@@ -302,7 +306,7 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
         cheque_no=payload.cheque_no,
         cheque_date=payload.cheque_date,
         bank_name=payload.bank_name,
-        created_by=payload.created_by,
+        created_by=user.username,
         status=payload.status or "POSTED"
     )
     db.add(record)
@@ -317,7 +321,7 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
             received_amount=Decimal("0.00"),
             paid_amount=payload.amount_rs,
             cheque_amount=Decimal("0.00"),
-            created_by=payload.created_by
+            created_by=user.username
         )
         db.add(scroll_entry)
 
@@ -329,7 +333,7 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
             cheque_no=payload.cheque_no,
             amount_rs=payload.amount_rs,
             remarks=payload.purpose_remarks or f"Payment Voucher {v_no}",
-            created_by=payload.created_by
+            created_by=user.username
         )
         db.add(cheque_entry)
 
@@ -343,7 +347,8 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
         nature="DEBIT",
         total_amount=payload.amount_rs,
         remarks=payload.purpose_remarks or f"Payment Voucher {v_no}",
-        created_by=payload.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Sundrey A/C"
     )
 
@@ -356,7 +361,7 @@ def create_payment_voucher(payload: CashPaymentVoucherCreate, db: Session = Depe
     return record
 
 
-@router.delete("/payment-vouchers/{id}")
+@router.delete("/payment-vouchers/{id}", dependencies=[Depends(require_transaction_user)])
 def delete_payment_voucher(id: int, db: Session = Depends(get_db)):
     record = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.id == id).first()
     if not record:
@@ -388,7 +393,7 @@ def get_receipt_vouchers(
 
 
 @router.post("/receipt-vouchers", response_model=CashReceiptVoucherOut, status_code=201)
-def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depends(get_db)):
+def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     acquire_numbering_lock(db)
     b_no = payload.bill_no or generate_receipt_bill_no(db, payload.date)
     b_no = ensure_free(db, CashReceiptVoucher, CashReceiptVoucher.bill_no, b_no,
@@ -408,7 +413,7 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         cheque_no=payload.cheque_no,
         cheque_date=payload.cheque_date,
         bank_name=payload.bank_name,
-        created_by=payload.created_by,
+        created_by=user.username,
         status=payload.status or "POSTED"
     )
     db.add(record)
@@ -425,7 +430,7 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         received_amount=rec_amt,
         paid_amount=Decimal("0.00"),
         cheque_amount=cheque_amt,
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(scroll_entry)
 
@@ -437,7 +442,7 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
             cheque_no=payload.cheque_no,
             amount_rs=payload.total_amount,
             remarks=payload.particulars or f"Receipt Voucher {b_no}",
-            created_by=payload.created_by
+            created_by=user.username
         )
         db.add(cheque_entry)
 
@@ -451,7 +456,8 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
         nature="CREDIT",
         total_amount=payload.total_amount,
         remarks=f"Receipt Voucher {b_no}",
-        created_by=payload.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Sundrey A/C"
     )
 
@@ -464,7 +470,7 @@ def create_receipt_voucher(payload: CashReceiptVoucherCreate, db: Session = Depe
     return record
 
 
-@router.delete("/receipt-vouchers/{id}")
+@router.delete("/receipt-vouchers/{id}", dependencies=[Depends(require_transaction_user)])
 def delete_receipt_voucher(id: int, db: Session = Depends(get_db)):
     record = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.id == id).first()
     if not record:
@@ -497,7 +503,7 @@ def get_rent_bills(
 
 
 @router.post("/rent-bills", response_model=RentBillOut, status_code=201)
-def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
+def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     acquire_numbering_lock(db)
 
     # If this Bill/Voucher No. was generated earlier, a DRAFT placeholder row already
@@ -507,7 +513,10 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         placeholder = db.query(RentBill).filter(
             RentBill.bill_no == payload.bill_no,
             RentBill.status == "DRAFT",
+            RentBill.consignee_name == "",
         ).first()
+        if placeholder and placeholder.created_by and placeholder.created_by != user.username:
+            raise HTTPException(status_code=409, detail="This reference was reserved by another user")
 
     inv_no = payload.invoice_no or generate_rent_invoice_no(db, payload.date)
     if not placeholder:
@@ -539,7 +548,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         placeholder.cheque_no = payload.cheque_no
         placeholder.cheque_date = payload.cheque_date
         placeholder.bank_name = payload.bank_name
-        placeholder.created_by = payload.created_by
+        placeholder.created_by = user.username
         placeholder.status = payload.status or "POSTED"
         record = placeholder
         db.flush()
@@ -566,7 +575,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
         cheque_no=payload.cheque_no,
         cheque_date=payload.cheque_date,
         bank_name=payload.bank_name,
-            created_by=payload.created_by,
+            created_by=user.username,
             status=payload.status or "POSTED"
         )
         db.add(record)
@@ -580,7 +589,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
             received_amount=rec_amt,
             paid_amount=Decimal("0.00"),
             cheque_amount=cheque_amt,
-            created_by=payload.created_by
+            created_by=user.username
         )
         db.add(scroll_entry)
 
@@ -592,7 +601,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
                 cheque_no=payload.cheque_no,
                 amount_rs=payload.total_amount,
                 remarks=payload.particulars or f"Rent Bill {inv_no}",
-                created_by=payload.created_by
+                created_by=user.username
             )
             db.add(cheque_entry)
 
@@ -607,7 +616,8 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
             nature="CREDIT",
             total_amount=payload.total_amount,
             remarks=f"Rent Invoice {inv_no}",
-            created_by=payload.created_by,
+            created_by=user.username,
+            created_by_user_id=user.id,
             target_account_name="Rent"
         )
 
@@ -620,7 +630,7 @@ def create_rent_bill(payload: RentBillCreate, db: Session = Depends(get_db)):
     return record
 
 
-@router.delete("/rent-bills/{id}")
+@router.delete("/rent-bills/{id}", dependencies=[Depends(require_transaction_user)])
 def delete_rent_bill(id: int, db: Session = Depends(get_db)):
     record = db.query(RentBill).filter(RentBill.id == id).first()
     if not record:
@@ -648,7 +658,7 @@ def get_cash_scroll_entries(
 
 
 @router.post("/cash-scroll-entries", response_model=CashScrollBookOut, status_code=201)
-def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depends(get_db)):
+def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     v_no = payload.voucher_no or f"CS-{payload.date.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6]}"
     record = CashScrollBookEntry(
         date=payload.date,
@@ -658,7 +668,7 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
         received_amount=payload.received_amount,
         paid_amount=payload.paid_amount,
         cheque_amount=payload.cheque_amount,
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
 
@@ -677,7 +687,8 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
             nature="CREDIT",
             total_amount=rec_amt,
             remarks=f"Cash Scroll Book {v_no}",
-            created_by=payload.created_by,
+            created_by=user.username,
+            created_by_user_id=user.id,
             target_account_name="Sundrey A/C"
         )
     elif paid_amt > 0:
@@ -690,7 +701,8 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
             nature="DEBIT",
             total_amount=paid_amt,
             remarks=f"Cash Scroll Book {v_no}",
-            created_by=payload.created_by,
+            created_by=user.username,
+            created_by_user_id=user.id,
             target_account_name="Sundrey A/C"
         )
     elif chq_amt > 0:
@@ -703,7 +715,8 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
             nature="DEBIT",
             total_amount=chq_amt,
             remarks=f"Cash Scroll Book {v_no}",
-            created_by=payload.created_by,
+            created_by=user.username,
+            created_by_user_id=user.id,
             target_account_name="Sundrey A/C"
         )
 
@@ -712,7 +725,7 @@ def create_cash_scroll_entry(payload: CashScrollBookCreate, db: Session = Depend
     return record
 
 
-@router.delete("/cash-scroll-entries/{id}")
+@router.delete("/cash-scroll-entries/{id}", dependencies=[Depends(require_transaction_user)])
 def delete_cash_scroll_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(CashScrollBookEntry).filter(CashScrollBookEntry.id == id).first()
     if not record:
@@ -741,14 +754,14 @@ def get_cheque_issue_entries(
 
 
 @router.post("/cheque-issue-entries", response_model=ChequeIssueBookOut, status_code=201)
-def create_cheque_issue_entry(payload: ChequeIssueBookCreate, db: Session = Depends(get_db)):
+def create_cheque_issue_entry(payload: ChequeIssueBookCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     record = ChequeIssueBookEntry(
         issue_date=payload.issue_date,
         name_to_whom_issued=payload.name_to_whom_issued,
         cheque_no=payload.cheque_no,
         amount_rs=payload.amount_rs,
         remarks=payload.remarks,
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
 
@@ -763,7 +776,8 @@ def create_cheque_issue_entry(payload: ChequeIssueBookCreate, db: Session = Depe
         nature="DEBIT",
         total_amount=payload.amount_rs,
         remarks=f"Cheque Issue Book (No. {payload.cheque_no})",
-        created_by=payload.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Sundrey A/C"
     )
 
@@ -772,7 +786,7 @@ def create_cheque_issue_entry(payload: ChequeIssueBookCreate, db: Session = Depe
     return record
 
 
-@router.delete("/cheque-issue-entries/{id}")
+@router.delete("/cheque-issue-entries/{id}", dependencies=[Depends(require_transaction_user)])
 def delete_cheque_issue_entry(id: int, db: Session = Depends(get_db)):
     record = db.query(ChequeIssueBookEntry).filter(ChequeIssueBookEntry.id == id).first()
     if not record:
@@ -785,7 +799,7 @@ def delete_cheque_issue_entry(id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/payment-vouchers/{id}", response_model=CashPaymentVoucherOut)
-def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Session = Depends(get_db)):
+def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     record = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Payment voucher not found")
@@ -825,7 +839,7 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
                 received_amount=Decimal("0.00"),
                 paid_amount=payload.amount_rs,
                 cheque_amount=Decimal("0.00"),
-                created_by=payload.created_by or record.created_by
+                created_by=user.username
             ))
 
     # 2. Sync ChequeIssueBookEntry
@@ -849,7 +863,7 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
                 cheque_no=payload.cheque_no,
                 amount_rs=payload.amount_rs,
                 remarks=payload.purpose_remarks or f"Payment Voucher {old_vno}",
-                created_by=payload.created_by or record.created_by
+                created_by=user.username
             ))
     elif not is_cheque and chq_entry:
         db.delete(chq_entry)
@@ -863,7 +877,8 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
         nature="DEBIT",
         total_amount=payload.amount_rs,
         remarks=payload.purpose_remarks or f"Payment Voucher {record.voucher_no}",
-        created_by=payload.created_by or record.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Sundrey A/C"
     )
 
@@ -873,7 +888,7 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
 
 
 @router.put("/receipt-vouchers/{id}", response_model=CashReceiptVoucherOut)
-def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Session = Depends(get_db)):
+def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     record = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Receipt voucher not found")
@@ -898,7 +913,8 @@ def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Sessi
         nature="CREDIT",
         total_amount=payload.total_amount,
         remarks=f"Receipt Voucher {record.bill_no}",
-        created_by=payload.created_by or record.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Sundrey A/C"
     )
 
@@ -908,7 +924,7 @@ def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Sessi
 
 
 @router.put("/rent-bills/{id}", response_model=RentBillOut)
-def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get_db)):
+def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get_db), user: User = Depends(require_transaction_user)):
     record = db.query(RentBill).filter(RentBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Rent bill not found")
@@ -951,7 +967,8 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
         nature="CREDIT",
         total_amount=payload.total_amount,
         remarks=f"Rent Invoice {record.invoice_no}",
-        created_by=payload.created_by or record.created_by,
+        created_by=user.username,
+        created_by_user_id=user.id,
         target_account_name="Rent"
     )
 
@@ -1038,7 +1055,7 @@ def get_cashier_audit_summary(
 from datetime import timedelta
 import random
 
-@router.post("/generate-30-days-test-data")
+@router.post("/generate-30-days-test-data", dependencies=[Depends(require_transaction_user)])
 def generate_30_days_cashier_test_data(db: Session = Depends(get_db)):
     today_dt = date.today()
     payees = ["Avinash Suregaonkar", "Ramesh Patil", "Society Supplier", "Electric Board", "Water Supply Dept"]
@@ -1183,7 +1200,7 @@ def generate_30_days_cashier_test_data(db: Session = Depends(get_db)):
     }
 
 
-@router.delete("/delete-test-data")
+@router.delete("/delete-test-data", dependencies=[Depends(require_transaction_user)])
 def delete_cashier_test_data(db: Session = Depends(get_db)):
     pv_del = db.query(CashPaymentVoucher).filter(CashPaymentVoucher.created_by == "Test Generator").delete()
     rv_del = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.created_by == "Test Generator").delete()

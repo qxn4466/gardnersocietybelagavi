@@ -131,11 +131,11 @@ def seed():
             if not existing:
                 db.add(AccountMaster(account_name=acc_name))
 
-        # Users (Accountant & Cashier)
+        # Cashier credentials are provisioned through setup_cashier.py.
         from models import User, Customer
         default_users = [
             {"username": "accountant", "password": "pass123", "full_name": "Accounts Officer", "role": "ACCOUNTS"},
-            {"username": "cashier", "password": "pass123", "full_name": "Society Cashier", "role": "CASHIER"},
+            {"username": "shopkeeper", "password": "pass123", "full_name": "Shop Keeper", "role": "SHOPKEEPER"},
         ]
         existing_usernames = {u.username for u in db.query(User).all()}
         for u in default_users:

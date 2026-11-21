@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from numbering import acquire_numbering_lock, ensure_free
 from database import get_db
-from models import ShopSellingRateEntry, ShopTaxInvoice, ShopRetailBill, PesticideSaleEntry, PesticideProductMaster
+from routers.auth import require_user
+from models import ShopSellingRateEntry, ShopTaxInvoice, ShopRetailBill, PesticideSaleEntry, PesticideProductMaster, User
 from schemas import (
     ShopSellingRateCreate, ShopSellingRateOut,
     ShopTaxInvoiceCreate, ShopTaxInvoiceOut,
@@ -35,7 +36,8 @@ def sync_shopkeeper_sale_transaction(
     qty: Decimal,
     total_amount: Decimal,
     remarks: str,
-    created_by: Optional[str]
+    created_by: Optional[str],
+    created_by_user_id: Optional[int] = None,
 ):
     """Auto-post pesticide / shop sales to main transactions table for Credit Book & General Ledger."""
     tot_amt = Decimal(str(total_amount or 0))
@@ -50,6 +52,7 @@ def sync_shopkeeper_sale_transaction(
             total_amount=tot_amt,
             remarks=remarks,
             created_by=created_by or "shopkeeper",
+            created_by_user_id=created_by_user_id,
             target_account_name="Pesticide sales"
         )
 
@@ -63,7 +66,8 @@ def sync_shopkeeper_purchase_transaction(
     qty: Decimal,
     total_amount: Decimal,
     remarks: str,
-    created_by: Optional[str]
+    created_by: Optional[str],
+    created_by_user_id: Optional[int] = None,
 ):
     """Auto-post pesticide stock purchases / opening stock to main transactions table for Debit Book & General Ledger."""
     tot_amt = Decimal(str(total_amount or 0))
@@ -78,6 +82,7 @@ def sync_shopkeeper_purchase_transaction(
             total_amount=tot_amt,
             remarks=remarks,
             created_by=created_by or "shopkeeper",
+            created_by_user_id=created_by_user_id,
             target_account_name="Pesticide purchases"
         )
 
@@ -124,7 +129,8 @@ def check_and_auto_post_pesticide(
     rate_val: Decimal,
     amt_val: Decimal,
     source_ref: str,
-    created_by: Optional[str]
+    created_by: Optional[str],
+    created_by_user_id: Optional[int] = None,
 ):
     if prod_name and prod_name.strip():
         pest_entry = PesticideSaleEntry(
@@ -135,7 +141,8 @@ def check_and_auto_post_pesticide(
             rate=rate_val,
             amount=amt_val,
             remarks=f"Auto-posted from {source_ref}",
-            created_by=created_by
+            created_by=created_by,
+            created_by_user_id=created_by_user_id,
         )
         db.add(pest_entry)
 
@@ -189,7 +196,7 @@ def get_selling_rate_entries(
 
 
 @router.post("/selling-rate-entries", response_model=ShopSellingRateOut, status_code=201)
-def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depends(get_db)):
+def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     u_val = payload.unit or payload.pack_size or "kg"
     record = ShopSellingRateEntry(
         date=payload.date,
@@ -208,7 +215,7 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
         selling_rate=payload.selling_rate,
         stock_book_no=payload.stock_book_no,
         sign_status=payload.sign_status or "Signed",
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
 
@@ -230,7 +237,8 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
         qty=payload.qty,
         total_amount=tot_purchase_amt,
         remarks=f"Selling Rate Book Purchase ({payload.particulars})",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -239,7 +247,7 @@ def create_selling_rate_entry(payload: ShopSellingRateCreate, db: Session = Depe
 
 
 @router.put("/selling-rate-entries/{id}", response_model=ShopSellingRateOut)
-def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Session = Depends(get_db)):
+def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     record = db.query(ShopSellingRateEntry).filter(ShopSellingRateEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Selling rate entry not found")
@@ -276,7 +284,8 @@ def update_selling_rate_entry(id: int, payload: ShopSellingRateCreate, db: Sessi
         qty=payload.qty,
         total_amount=tot_purchase_amt,
         remarks=f"Selling Rate Entry #{record.id}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -313,7 +322,7 @@ def get_shop_tax_invoices(
 
 
 @router.post("/tax-invoices", response_model=ShopTaxInvoiceOut, status_code=201)
-def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db)):
+def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     acquire_numbering_lock(db)
     inv_no = payload.invoice_no or generate_shop_invoice_no(db, payload.date)
     inv_no = ensure_free(db, ShopTaxInvoice, ShopTaxInvoice.invoice_no, inv_no,
@@ -335,7 +344,7 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         cgst_rate=payload.cgst_rate or Decimal("9.00"),
         cgst_amount=payload.cgst_amount or Decimal("0.00"),
         total_amount=tot_amt,
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
 
@@ -348,7 +357,8 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         rate_val=payload.rate,
         amt_val=tot_amt,
         source_ref=f"Tax Invoice {inv_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     sync_shopkeeper_sale_transaction(
@@ -360,7 +370,8 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
         qty=payload.qty,
         total_amount=tot_amt,
         remarks=f"Shop Tax Invoice {inv_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -369,7 +380,7 @@ def create_shop_tax_invoice(payload: ShopTaxInvoiceCreate, db: Session = Depends
 
 
 @router.put("/tax-invoices/{id}", response_model=ShopTaxInvoiceOut)
-def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db)):
+def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     record = db.query(ShopTaxInvoice).filter(ShopTaxInvoice.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Shop tax invoice not found")
@@ -402,7 +413,8 @@ def update_shop_tax_invoice(id: int, payload: ShopTaxInvoiceCreate, db: Session 
         qty=payload.qty,
         total_amount=tot_amt,
         remarks=f"Shop Tax Invoice {inv_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -438,7 +450,7 @@ def get_shop_retail_bills(
 
 
 @router.post("/retail-bills", response_model=ShopRetailBillOut, status_code=201)
-def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
+def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     acquire_numbering_lock(db)
     b_no = payload.bill_no or generate_shop_retail_bill_no(db, payload.date)
     b_no = ensure_free(db, ShopRetailBill, ShopRetailBill.bill_no, b_no,
@@ -460,7 +472,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         cgst_amount=payload.cgst_amount or Decimal("0.00"),
         total_amount=tot_amt,
         seller_signature=payload.seller_signature or "Seller Signed",
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
 
@@ -473,7 +485,8 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         rate_val=payload.rate,
         amt_val=tot_amt,
         source_ref=f"Retail Bill {b_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     sync_shopkeeper_sale_transaction(
@@ -485,7 +498,8 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
         qty=q_val,
         total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -494,7 +508,7 @@ def create_shop_retail_bill(payload: ShopRetailBillCreate, db: Session = Depends
 
 
 @router.put("/retail-bills/{id}", response_model=ShopRetailBillOut)
-def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session = Depends(get_db)):
+def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     record = db.query(ShopRetailBill).filter(ShopRetailBill.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Retail bill not found")
@@ -527,7 +541,8 @@ def update_shop_retail_bill(id: int, payload: ShopRetailBillCreate, db: Session 
         qty=q_val,
         total_amount=tot_amt,
         remarks=f"Shop Retail Bill {b_no}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -563,7 +578,7 @@ def get_pesticide_sales(
 
 
 @router.post("/pesticide-sales", response_model=PesticideSaleEntryOut, status_code=201)
-def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depends(get_db)):
+def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     record = PesticideSaleEntry(
         date=payload.date,
         customer_name=payload.customer_name,
@@ -574,7 +589,7 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
         batch_no=payload.batch_no,
         remarks=payload.remarks,
         doc_path=payload.doc_path,
-        created_by=payload.created_by
+        created_by=user.username
     )
     db.add(record)
     db.flush()
@@ -591,7 +606,8 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
         qty=payload.qty,
         total_amount=payload.amount,
         remarks=f"Pesticide Sale Register #{record.id}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -600,7 +616,7 @@ def create_pesticide_sale(payload: PesticideSaleEntryCreate, db: Session = Depen
 
 
 @router.put("/pesticide-sales/{id}", response_model=PesticideSaleEntryOut)
-def update_pesticide_sale(id: int, payload: PesticideSaleEntryCreate, db: Session = Depends(get_db)):
+def update_pesticide_sale(id: int, payload: PesticideSaleEntryCreate, db: Session = Depends(get_db), user: User = Depends(require_user)):
     record = db.query(PesticideSaleEntry).filter(PesticideSaleEntry.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Pesticide sale entry not found")
@@ -624,7 +640,8 @@ def update_pesticide_sale(id: int, payload: PesticideSaleEntryCreate, db: Sessio
         qty=payload.qty,
         total_amount=payload.amount,
         remarks=f"Pesticide Sale Register #{record.id}",
-        created_by=payload.created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
 
     db.commit()
@@ -647,7 +664,7 @@ def delete_pesticide_sale(id: int, db: Session = Depends(get_db)):
 # ─── Inventory Purchase / Stock Sync Endpoint ───────────────────────────────
 
 @router.post("/inventory-purchase-sync")
-def sync_inventory_purchase_endpoint(payload: dict, db: Session = Depends(get_db)):
+def sync_inventory_purchase_endpoint(payload: dict, db: Session = Depends(get_db), user: User = Depends(require_user)):
     """API endpoint to sync stock purchase or opening stock into Debit Book & General Ledger."""
     memo_no = payload.get("memo_no") or f"PEST-PURCHASE-{payload.get('product_id', 'INIT')}"
     v_date_str = payload.get("date") or date.today().isoformat()
@@ -657,7 +674,6 @@ def sync_inventory_purchase_endpoint(payload: dict, db: Session = Depends(get_db
     qty = Decimal(str(payload.get("qty") or 1))
     total_amount = Decimal(str(payload.get("total_amount") or 0))
     remarks = payload.get("remarks") or f"Stock Inward / Opening Stock: {product_name}"
-    created_by = payload.get("created_by") or "shopkeeper"
 
     sync_shopkeeper_purchase_transaction(
         db=db,
@@ -668,7 +684,8 @@ def sync_inventory_purchase_endpoint(payload: dict, db: Session = Depends(get_db
         qty=qty,
         total_amount=total_amount,
         remarks=remarks,
-        created_by=created_by
+        created_by=user.username,
+        created_by_user_id=user.id,
     )
     db.commit()
     return {"status": "success", "message": f"Inventory purchase synced to Debit Book & General Ledger ({memo_no})"}

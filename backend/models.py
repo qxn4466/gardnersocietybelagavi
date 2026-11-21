@@ -71,6 +71,7 @@ class Transaction(Base):
     amount_ps = Column(Numeric(4, 2), nullable=False, default=0)
     remarks = Column(Text, nullable=True)
     created_by = Column(String(100), nullable=True)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String(20), nullable=False, default="POSTED")
     created_at = Column(DateTime, server_default=func.now())
 
@@ -85,6 +86,14 @@ class User(Base):
     password = Column(String(100), nullable=False)
     full_name = Column(String(100), nullable=False)
     role = Column(String(30), nullable=False)  # "ACCOUNTS" or "CASHIER"
+
+
+class LoginSession(Base):
+    __tablename__ = "login_sessions"
+
+    token_hash = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
 
 
 class Customer(Base):

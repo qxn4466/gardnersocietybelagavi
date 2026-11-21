@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type {
-  User,
+  LoginSession,
   OfficeMaster,
   TransactionType,
   Transaction,
@@ -44,8 +44,38 @@ export const getFileUrl = (path?: string | null): string => {
 const api = axios.create({ baseURL: BASE_URL });
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
-export const loginUser = (username: string, password: string): Promise<User> =>
+export function getSavedSession(): LoginSession | null {
+  try {
+    const session = JSON.parse(sessionStorage.getItem('user') || 'null') as LoginSession | null;
+    return session?.access_token && Date.parse(session.expires_at) > Date.now() ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+api.interceptors.request.use(config => {
+  const session = getSavedSession();
+  if (session && config.url !== '/auth/login' && !config.headers.has('Authorization')) {
+    config.headers.set('Authorization', `Bearer ${session.access_token}`);
+  }
+  return config;
+});
+
+api.interceptors.response.use(response => response, error => {
+  const session = getSavedSession();
+  const requestToken = error.config?.headers?.get('Authorization');
+  if (error.response?.status === 401 && error.config?.url !== '/auth/login' && error.config?.url !== '/auth/logout'
+    && (!session || requestToken === `Bearer ${session.access_token}`)) {
+    window.dispatchEvent(new Event('session-expired'));
+  }
+  return Promise.reject(error);
+});
+
+export const loginUser = (username: string, password: string): Promise<LoginSession> =>
   api.post('/auth/login', { username, password }).then(r => r.data);
+
+export const logoutUser = (token: string): Promise<void> =>
+  api.post('/auth/logout', null, { headers: { Authorization: `Bearer ${token}` } }).then(() => undefined);
 
 // ─── Masters ────────────────────────────────────────────────────────────────
 export const fetchOffice = (): Promise<OfficeMaster> =>

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Lock, User as UserIcon, Shield, LogIn, Leaf, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Lock, User as UserIcon, LogIn, Leaf, AlertCircle, Eye, EyeOff, ArrowLeft, Shield, Wallet } from 'lucide-react';
 import { loginUser } from '../api/client';
-import type { User } from '../types';
+import type { LoginSession } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface LoginProps {
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: LoginSession) => void;
   onBackToLanding?: () => void;
 }
 
@@ -16,6 +16,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordInput = useRef<HTMLInputElement>(null);
+
+  const selectAccount = (account: 'accountant' | 'cashier') => {
+    if (username !== account) setPassword('');
+    setUsername(account);
+    setShowPassword(false);
+    setError(null);
+    passwordInput.current?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +56,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
     }
   };
 
-  const handleFillDemo = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError(null);
-  };
 
   return (
     <div style={{
@@ -112,11 +116,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: 18 }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label htmlFor="login-username" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <UserIcon size={14} color="var(--blue-400)" /> {lang === 'mr' ? 'वापरकर्ता आयडी / वापरकर्ता नाव' : 'User ID / Username'}
               </label>
               <input
                 id="login-username"
+                autoComplete="username"
                 type="text"
                 className="form-input"
                 placeholder={lang === 'mr' ? 'वापरकर्ता आयडी प्रविष्ट करा (उदा. accountant)' : 'Enter User ID (e.g. accountant)'}
@@ -128,12 +133,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
             </div>
 
             <div className="form-group" style={{ marginBottom: 24 }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label htmlFor="login-password" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Lock size={14} color="var(--blue-400)" /> {lang === 'mr' ? 'पासवर्ड' : 'Password'}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   id="login-password"
+                  ref={passwordInput}
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
                   placeholder={lang === 'mr' ? 'पासवर्ड प्रविष्ट करा' : 'Enter Password'}
@@ -179,24 +186,21 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBackToLanding }) => {
             </button>
           </form>
 
-          {/* Quick Demo Login Helpers */}
           <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px dashed var(--border-muted)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
-              {lang === 'mr' ? 'प्रात्यक्षिक जलद लॉगिन (भरण्यासाठी क्लिक करा)' : 'Demo Quick Login (Click to Fill)'}
+            <div className="form-label" style={{ marginBottom: 10 }}>
+              {lang === 'mr' ? 'वापरकर्ता निवडा' : 'Select an account'}
             </div>
-            <div>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleFillDemo('accountant', 'pass123')}
-                style={{ fontSize: 12, width: '100%', justifyContent: 'center', padding: '8px 12px', gap: 6 }}
-              >
-                <Shield size={14} color="var(--blue-400)" /> {lang === 'mr' ? 'लेखापाल (Accountant User)' : 'Accountant User (accountant / pass123)'}
+            <div style={{ display: 'grid', gap: 8 }}>
+              <button type="button" className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}
+                disabled={loading} onClick={() => selectAccount('accountant')}>
+                <Shield size={14} aria-hidden="true" /> {lang === 'mr' ? 'लेखापाल' : 'Accountant'}
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}
+                disabled={loading} onClick={() => selectAccount('cashier')}>
+                <Wallet size={14} aria-hidden="true" /> {lang === 'mr' ? 'रोखपाल' : 'Cashier'}
               </button>
             </div>
           </div>
-
-
         </div>
       </div>
     </div>

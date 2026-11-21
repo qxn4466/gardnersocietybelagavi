@@ -44,6 +44,12 @@ uvicorn main:app --reload --port 8000
 
 API docs available at: http://localhost:8000/docs
 
+#### Cashier login
+
+Run `python setup_cashier.py` from `backend` with the same Python environment and database configuration used by the API. The command creates the `cashier` account or sets its new password through a masked prompt. Share the password privately with the cashier.
+
+The accountant signs in with their existing credentials. New transactions store the signed-in user's ID and username. The **Created By** column in the Credit Account Form transaction history shows verified creators. Older transactions without a verified creator show a dash.
+
 ### 3. Frontend
 
 ```bash

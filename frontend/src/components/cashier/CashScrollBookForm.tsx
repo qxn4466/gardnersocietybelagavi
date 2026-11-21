@@ -9,6 +9,12 @@ interface CashScrollBookFormProps {
   user?: User | null;
 }
 
+function localDateString(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /**
  * Cash Scroll Book — Register only (no manual entry form).
  * Entries are auto-filled from:
@@ -18,13 +24,17 @@ interface CashScrollBookFormProps {
  */
 const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
   const { lang } = useTranslation();
-  const today = new Date().toISOString().split('T')[0];
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
   // Date Filter & Search
-  const [startDateFilter, setStartDateFilter] = useState(thirtyDaysAgo);
-  const [endDateFilter, setEndDateFilter] = useState(today);
+  const [startDateFilter, setStartDateFilter] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return localDateString(date);
+  });
+  const [endDateFilter, setEndDateFilter] = useState(() => localDateString(new Date()));
   const [searchTerm, setSearchTerm] = useState('');
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -34,33 +44,36 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   useEffect(() => {
-    loadHistory();
-    loadOffice();
-  }, [startDateFilter, endDateFilter]);
+    fetchOffice().then(setOffice).catch(() => {});
+  }, []);
 
-  const loadOffice = async () => {
-    try {
-      const data = await fetchOffice();
-      setOffice(data);
-    } catch {
-      // ignore
-    }
-  };
+  useEffect(() => {
+    let ignore = false;
+    setHistory([]);
+    setHistoryLoading(true);
+    setHistoryError(false);
+    fetchCashScrollEntries(startDateFilter, endDateFilter)
+      .then(data => { if (!ignore) setHistory(data); })
+      .catch(() => { if (!ignore) setHistoryError(true); })
+      .finally(() => { if (!ignore) setHistoryLoading(false); });
+    return () => { ignore = true; };
+  }, [startDateFilter, endDateFilter, historyVersion]);
 
-  const loadHistory = async () => {
-    try {
-      const data = await fetchCashScrollEntries(startDateFilter, endDateFilter);
-      setHistory(data);
-    } catch {
-      // ignore
-    }
+  const reloadHistory = () => setHistoryVersion(version => version + 1);
+
+  const showToday = () => {
+    const date = localDateString(new Date());
+    setStartDateFilter(date);
+    setEndDateFilter(date);
+    setSearchTerm('');
+    reloadHistory();
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm(lang === 'mr' ? 'तुम्हाला ही नोंद हटवायची आहे का?' : 'Are you sure you want to delete this entry?')) return;
     try {
       await deleteCashScrollEntry(id);
-      loadHistory();
+      reloadHistory();
     } catch {
       // ignore
     }
@@ -120,7 +133,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                     type: 'success',
                     text: (lang === 'mr' ? '३० दिवसांचा कॅशियर डेटा यशस्वीरित्या जोडला गेला! ' : 'Successfully generated 30 days cashier test data! ') + res.message
                   });
-                  loadHistory();
+                  reloadHistory();
                 } catch {
                   setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा तयार करताना त्रुटी आली.' : 'Error generating test data.' });
                 } finally {
@@ -144,7 +157,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                     type: 'success',
                     text: (lang === 'mr' ? 'सर्व चाचणी डेटा हटवला गेला! ' : 'Successfully deleted test data! ') + res.message
                   });
-                  loadHistory();
+                  reloadHistory();
                 } catch {
                   setMsg({ type: 'error', text: lang === 'mr' ? 'चाचणी डेटा हटवताना त्रुटी आली.' : 'Error deleting test data.' });
                 } finally {
@@ -154,7 +167,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
             >
               <Trash2 size={14} /> {lang === 'mr' ? 'चाचणी डेटा हटवा' : 'Delete Test Data'}
             </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowPrintModal(true)} disabled={historyLoading || historyError}>
               <Printer size={14} /> {lang === 'mr' ? 'स्क्रोल प्रिंट' : 'Print Scroll'}
             </button>
           </div>
@@ -192,6 +205,9 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>to</span>
             <input type="date" className="form-input" style={{ width: 140, padding: '4px 8px', fontSize: 13 }} value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
           </div>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={showToday}>
+            {lang === 'mr' ? 'आज' : 'Today'}
+          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={14} color="var(--text-secondary)" />
             <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (तपशील)...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -199,7 +215,15 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
         </div>
 
         <div className="table-wrapper">
-          {filteredHistory.length === 0 ? (
+          {historyLoading ? (
+            <div className="loading-overlay" role="status">
+              <span className="spinner" /> {lang === 'mr' ? 'स्क्रोल नोंदी लोड होत आहेत…' : 'Loading cash scroll entries…'}
+            </div>
+          ) : historyError ? (
+            <div className="alert alert-error" role="alert">
+              {lang === 'mr' ? 'स्क्रोल नोंदी लोड होऊ शकल्या नाहीत.' : 'Could not load cash scroll entries.'}
+            </div>
+          ) : filteredHistory.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-title">
                 {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत' : 'No cash scroll entries found for this date'}

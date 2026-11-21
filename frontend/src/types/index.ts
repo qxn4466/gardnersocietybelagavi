@@ -4,7 +4,7 @@
   full_name: string;
   role: string;
 }
-
+export interface LoginSession extends User {  access_token: string;  expires_at: string;}
 export interface OfficeMaster {
   id: number;
   gst_no: string;
@@ -78,7 +78,7 @@ export interface Transaction {
   amount_ps: number;
   remarks: string | null;
   created_by: string | null;
-  status?: string;
+  created_by_user_id?: number | null;  status?: string;
   created_at: string | null;
   transaction_type: TransactionType | null;
 }
@@ -98,7 +98,6 @@ export interface TransactionCreate {
   amount_rs: number;
   amount_ps?: number;
   remarks?: string;
-  created_by?: string;
   status?: string;
 }
 
