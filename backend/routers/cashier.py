@@ -33,6 +33,7 @@ from schemas import (
 )
 
 router = APIRouter(prefix="/cashier", tags=["cashier"])
+ZERO = Decimal("0.00")
 
 
 # ─── Helper for Auto-Posting to Main Transactions Table ───────────────────────
@@ -807,6 +808,7 @@ def update_payment_voucher(id: int, payload: CashPaymentVoucherCreate, db: Sessi
     old_vno = record.voucher_no
     old_cheque_no = record.cheque_no
 
+    record.date = payload.date
     record.paid_to = payload.paid_to
     record.purpose_remarks = payload.purpose_remarks
     record.details_of_expenditure = payload.details_of_expenditure
@@ -892,6 +894,7 @@ def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Sessi
     record = db.query(CashReceiptVoucher).filter(CashReceiptVoucher.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Receipt voucher not found")
+    record.date = payload.date
     record.gst_no = payload.gst_no
     record.phone_no = payload.phone_no
     record.received_from = payload.received_from
@@ -903,6 +906,14 @@ def update_receipt_voucher(id: int, payload: CashReceiptVoucherCreate, db: Sessi
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+
+    scroll = db.query(CashScrollBookEntry).filter_by(voucher_no=record.bill_no).first()
+    if scroll:
+        is_cheque = record.payment_mode.upper() == "CHEQUE"
+        scroll.date = record.date
+        scroll.from_received_paid = f"Received From: {record.received_from}"
+        scroll.received_amount = ZERO if is_cheque else record.total_amount
+        scroll.cheque_amount = record.total_amount if is_cheque else ZERO
 
     sync_transaction_for_cashier_voucher(
         db=db,
@@ -929,10 +940,12 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
     if not record:
         raise HTTPException(status_code=404, detail="Rent bill not found")
     acquire_numbering_lock(db)
+    scroll = db.query(CashScrollBookEntry).filter(
+        CashScrollBookEntry.date == record.date,
+        CashScrollBookEntry.voucher_no.in_([record.invoice_no, record.bill_no or record.invoice_no]),
+        CashScrollBookEntry.from_received_paid.startswith("Rent Bill:"),
+    ).first()
     if payload.bill_no:
-        db.query(CashScrollBookEntry).filter(
-            CashScrollBookEntry.voucher_no.in_([record.invoice_no, record.bill_no or ""])
-        ).update({"voucher_no": payload.bill_no}, synchronize_session=False)
         db.query(Transaction).filter(
             Transaction.cash_memo_no == record.invoice_no
         ).update({"bill_no": payload.bill_no}, synchronize_session=False)
@@ -943,6 +956,7 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
             RentBill.id != record.id,
         ).delete(synchronize_session=False)
     record.bill_no = payload.bill_no
+    record.date = payload.date
     record.consignee_name = payload.consignee_name
     record.consignee_address = payload.consignee_address
     record.particulars = payload.particulars
@@ -957,6 +971,20 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
     record.cheque_no = payload.cheque_no
     record.cheque_date = payload.cheque_date
     record.bank_name = payload.bank_name
+    record.status = payload.status or "POSTED"
+
+    if record.status == "POSTED":
+        if scroll is None:
+            scroll = CashScrollBookEntry(created_by=record.created_by)
+            db.add(scroll)
+        is_cheque = record.payment_mode.upper() == "CHEQUE"
+        scroll.date = record.date
+        scroll.voucher_no = record.bill_no or record.invoice_no
+        scroll.from_received_paid = f"Rent Bill: {record.consignee_name}"
+        scroll.received_amount = ZERO if is_cheque else record.total_amount
+        scroll.cheque_amount = record.total_amount if is_cheque else ZERO
+    elif scroll:
+        db.delete(scroll)
 
     sync_transaction_for_cashier_voucher(
         db=db,
@@ -969,7 +997,8 @@ def update_rent_bill(id: int, payload: RentBillCreate, db: Session = Depends(get
         remarks=f"Rent Invoice {record.invoice_no}",
         created_by=user.username,
         created_by_user_id=user.id,
-        target_account_name="Rent"
+        target_account_name="Rent",
+        status=record.status,
     )
 
     db.commit()

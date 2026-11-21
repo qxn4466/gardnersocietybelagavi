@@ -226,6 +226,14 @@ class CashScrollBookEntry(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class CashScrollOpeningBalance(Base):
+    __tablename__ = "cash_scroll_opening_balances"
+
+    scope = Column(String(64), primary_key=True)
+    balance_date = Column(Date, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+
+
 class ChequeIssueBookEntry(Base):
     """5. Cheque Issue Book"""
     __tablename__ = "cheque_issue_book"

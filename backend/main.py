@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
+from routers import cash_scroll_register
 from routers import masters, transactions, cashbook, ledger, auth, customers, translations, cashier, shopkeeper, meeting_notice, audit_reports
 
 app = FastAPI(
@@ -85,6 +86,7 @@ app.include_router(ledger.router, prefix="/api")
 app.include_router(customers.router, prefix="/api")
 app.include_router(translations.router, prefix="/api")
 app.include_router(cashier.router, prefix="/api")
+app.include_router(cash_scroll_register.router, prefix="/api")
 app.include_router(shopkeeper.router, prefix="/api")
 app.include_router(meeting_notice.router, prefix="/api")
 app.include_router(audit_reports.router, prefix="/api")

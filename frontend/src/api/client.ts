@@ -356,6 +356,12 @@ export const deleteRentBill = (id: number): Promise<void> =>
 export const fetchCashScrollEntries = (startDate?: string, endDate?: string): Promise<import('../types').CashScrollBookEntry[]> =>
   api.get('/cashier/cash-scroll-entries', { params: { start_date: startDate, end_date: endDate } }).then(r => r.data);
 
+export const fetchCashScrollRegister = (startDate: string, endDate: string, accountId?: number): Promise<import('../types').CashScrollRegister> =>
+  api.get('/cashier/cash-scroll-register', { params: { start_date: startDate, end_date: endDate, account_id: accountId } }).then(r => r.data);
+
+export const saveCashScrollOpeningBalance = (balance: import('../types').CashScrollOpeningBalance, accountId?: number): Promise<import('../types').CashScrollOpeningBalance> =>
+  api.put('/cashier/cash-scroll-opening-balance', balance, { params: { account_id: accountId } }).then(r => r.data);
+
 export const createCashScrollEntry = (payload: import('../types').CashScrollBookCreate): Promise<import('../types').CashScrollBookEntry> =>
   api.post('/cashier/cash-scroll-entries', payload).then(r => r.data);
 

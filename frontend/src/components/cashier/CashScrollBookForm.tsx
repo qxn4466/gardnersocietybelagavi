@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Trash2, CheckCircle2, AlertCircle, Zap, Calendar, Search, BookOpen, Loader2, Info } from 'lucide-react';
-import { fetchCashScrollEntries, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
-import type { CashScrollBookEntry, User, OfficeMaster } from '../../types';
+import { fetchAccounts, fetchCashScrollRegister, saveCashScrollOpeningBalance, deleteCashScrollEntry, fetchOffice, generate30DaysCashierTestData, delete30DaysCashierTestData } from '../../api/client';
+import type { AccountMaster, CashScrollDay, CashScrollRegister, User, OfficeMaster } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
-import DailyBalanceBar from '../DailyBalanceBar';
 
 interface CashScrollBookFormProps {
   user?: User | null;
@@ -14,6 +13,9 @@ function localDateString(date: Date) {
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
 }
+
+const formatAmount = (amount: number | string) =>
+  Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
  * Cash Scroll Book — Register only (no manual entry form).
@@ -32,6 +34,12 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
   });
   const [endDateFilter, setEndDateFilter] = useState(() => localDateString(new Date()));
   const [searchTerm, setSearchTerm] = useState('');
+  const [accounts, setAccounts] = useState<AccountMaster[]>([]);
+  const [accountId, setAccountId] = useState<number>();
+  const [editingOpening, setEditingOpening] = useState(false);
+  const [openingDate, setOpeningDate] = useState('');
+  const [openingAmount, setOpeningAmount] = useState('');
+  const [savingOpening, setSavingOpening] = useState(false);
   const [historyVersion, setHistoryVersion] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
@@ -39,27 +47,50 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  const [history, setHistory] = useState<CashScrollBookEntry[]>([]);
+  const [register, setRegister] = useState<CashScrollRegister | null>(null);
   const [office, setOffice] = useState<OfficeMaster | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   useEffect(() => {
     fetchOffice().then(setOffice).catch(() => {});
-  }, []);
+    fetchAccounts().then(setAccounts).catch(() => {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'खाती लोड होऊ शकली नाहीत.' : 'Could not load accounts.' });
+    });
+  }, [lang]);
 
   useEffect(() => {
     let ignore = false;
-    setHistory([]);
+    setRegister(null);
+    if (!startDateFilter || !endDateFilter || startDateFilter > endDateFilter) {
+      setHistoryLoading(false);
+      setHistoryError(true);
+      return;
+    }
     setHistoryLoading(true);
     setHistoryError(false);
-    fetchCashScrollEntries(startDateFilter, endDateFilter)
-      .then(data => { if (!ignore) setHistory(data); })
+    fetchCashScrollRegister(startDateFilter, endDateFilter, accountId)
+      .then(data => { if (!ignore) setRegister(data); })
       .catch(() => { if (!ignore) setHistoryError(true); })
       .finally(() => { if (!ignore) setHistoryLoading(false); });
     return () => { ignore = true; };
-  }, [startDateFilter, endDateFilter, historyVersion]);
+  }, [startDateFilter, endDateFilter, accountId, historyVersion]);
 
   const reloadHistory = () => setHistoryVersion(version => version + 1);
+
+  const saveOpening = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSavingOpening(true);
+    setMsg(null);
+    try {
+      await saveCashScrollOpeningBalance({ balance_date: openingDate, amount: openingAmount }, accountId);
+      setEditingOpening(false);
+      reloadHistory();
+    } catch {
+      setMsg({ type: 'error', text: lang === 'mr' ? 'सुरुवातीची शिल्लक जतन झाली नाही.' : 'Could not save the starting balance.' });
+    } finally {
+      setSavingOpening(false);
+    }
+  };
 
   const showToday = () => {
     const date = localDateString(new Date());
@@ -79,16 +110,37 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
     }
   };
 
-  const filteredHistory = history.filter(h => h.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()));
+  const days = register?.days ?? [];
+  const history = days.flatMap(day => day.entries);
+  const accountName = accounts.find(account => account.id === accountId)?.account_name
+    ?? (lang === 'mr' ? 'एकत्रित रोख नोंदवही' : 'Combined Cash Register');
 
-  const totalReceived = history.reduce((s, r) => s + Number(r.received_amount || 0), 0);
-  const totalPaid = history.reduce((s, r) => s + Number(r.paid_amount || 0), 0);
-  const totalCheque = history.reduce((s, r) => s + Number(r.cheque_amount || 0), 0);
+  const totalReceived = days.reduce((sum, day) => sum + Number(day.received), 0);
+  const totalPaid = days.reduce((sum, day) => sum + Number(day.paid), 0);
+  const totalCheque = history.reduce((sum, entry) => sum + Number(entry.cheque_amount), 0);
+
+  const balanceRow = (label: string, amount: string | number, print: boolean, dayDate?: string) => (
+    <tr style={{ background: '#eff6ff', fontWeight: 700 }}>
+      <td colSpan={3} style={{ padding: 6 }}>{dayDate}</td>
+      <th scope="row" style={{ padding: 6, textAlign: 'left' }}>{label}</th>
+      <td style={{ padding: 6, textAlign: 'right' }}>₹{formatAmount(amount)}</td>
+      <td colSpan={print ? 2 : 3} />
+    </tr>
+  );
+
+  const openingRow = (day: CashScrollDay, print: boolean) =>
+    balanceRow(lang === 'mr' ? 'सुरुवातीची शिल्लक' : 'Opening Balance', day.opening, print, day.date);
+
+  const closingRows = (day: CashScrollDay, print: boolean) => (
+    <>
+      {balanceRow(lang === 'mr' ? 'नावेपूर्वीची एकूण रक्कम' : 'Available Before Payments', Number(day.opening) + Number(day.received), print)}
+      {balanceRow(lang === 'mr' ? 'वजा नावे' : 'Less Payments', -Number(day.paid), print)}
+      {balanceRow(lang === 'mr' ? 'अंतिम शिल्लक' : 'Closing Balance', day.closing, print)}
+    </>
+  );
 
   return (
     <div>
-      <DailyBalanceBar selectedDate={endDateFilter} />
-
       {msg && (
         <div className={`alert ${msg.type === 'info' ? 'alert-info' : msg.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 16 }}>
           {msg.type === 'info' ? <Loader2 size={16} className="spinner" /> : msg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -198,6 +250,18 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
           alignItems: 'center',
           flexWrap: 'wrap'
         }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {lang === 'mr' ? 'खाते' : 'Account'}
+            <select className="form-input" value={accountId ?? ''} disabled={savingOpening}
+              onChange={event => {
+                setAccountId(event.target.value ? Number(event.target.value) : undefined);
+                setEditingOpening(false);
+                setSearchTerm('');
+              }}>
+              <option value="">{lang === 'mr' ? 'एकत्रित रोख नोंदवही' : 'Combined Cash Register'}</option>
+              {accounts.map(account => <option key={account.id} value={account.id}>{account.account_name}</option>)}
+            </select>
+          </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Calendar size={15} color="var(--blue-600)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{lang === 'mr' ? 'कालावधी:' : 'Period:'}</span>
@@ -208,11 +272,33 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
           <button type="button" className="btn btn-secondary btn-sm" onClick={showToday}>
             {lang === 'mr' ? 'आज' : 'Today'}
           </button>
+          <button type="button" className="btn btn-secondary btn-sm" disabled={!register || savingOpening} onClick={() => {
+            setOpeningDate(register?.starting_balance?.balance_date ?? startDateFilter);
+            setOpeningAmount(register?.starting_balance?.amount ?? '');
+            setEditingOpening(true);
+          }}>
+            {lang === 'mr' ? 'सुरुवातीची शिल्लक संपादित करा' : 'Edit Starting Balance'}
+          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={14} color="var(--text-secondary)" />
             <input type="text" className="form-input" style={{ width: 220, padding: '4px 8px', fontSize: 13 }} placeholder={lang === 'mr' ? 'शोधा (तपशील)...' : 'Search particulars...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
         </div>
+
+        {editingOpening && (
+          <form className="no-print" onSubmit={saveOpening} style={{ padding: '12px 18px', display: 'flex', alignItems: 'end', flexWrap: 'wrap', gap: 12 }}>
+            <label>{lang === 'mr' ? 'लागू दिनांक' : 'Effective Date'}
+              <input type="date" className="form-input" value={openingDate} onChange={event => setOpeningDate(event.target.value)} required />
+            </label>
+            <label>{lang === 'mr' ? 'सुरुवातीची शिल्लक (₹)' : 'Starting Balance (₹)'}
+              <input type="number" step="0.01" className="form-input" value={openingAmount}
+                onChange={event => setOpeningAmount(event.target.value)} required />
+            </label>
+            <button className="btn btn-primary btn-sm" type="submit" disabled={savingOpening}>{lang === 'mr' ? 'जतन करा' : 'Save Balance'}</button>
+            <button className="btn btn-secondary btn-sm" type="button" disabled={savingOpening}
+              onClick={() => setEditingOpening(false)}>{lang === 'mr' ? 'रद्द करा' : 'Cancel'}</button>
+          </form>
+        )}
 
         <div className="table-wrapper">
           {historyLoading ? (
@@ -222,12 +308,6 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
           ) : historyError ? (
             <div className="alert alert-error" role="alert">
               {lang === 'mr' ? 'स्क्रोल नोंदी लोड होऊ शकल्या नाहीत.' : 'Could not load cash scroll entries.'}
-            </div>
-          ) : filteredHistory.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-title">
-                {lang === 'mr' ? 'निवडलेल्या दिनांकासाठी कोणत्याही स्क्रोल नोंदी नाहीत' : 'No cash scroll entries found for this date'}
-              </div>
             </div>
           ) : (
             <table className="data-table" style={{ width: '100%' }}>
@@ -244,7 +324,15 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredHistory.map((row, idx) => (
+                {days.map(day => {
+                  const matchingEntries = day.entries.filter(row => row.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()));
+                  return (
+                  <React.Fragment key={day.date}>
+                    {openingRow(day, false)}
+                    {matchingEntries.length === 0 && (
+                      <tr><td colSpan={8}>{lang === 'mr' ? 'जुळणाऱ्या नोंदी नाहीत' : 'No matching entries'}</td></tr>
+                    )}
+                    {matchingEntries.map((row, idx) => (
                   <tr
                     key={row.id}
                     style={{
@@ -265,7 +353,11 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                    ))}
+                    {closingRows(day, false)}
+                  </React.Fragment>
+                  );
+                })}
               </tbody>
               {history.length > 0 && (
                 <tfoot>
@@ -323,7 +415,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                   CASH SCROLL BOOK REGISTER
                 </div>
                 <div style={{ fontSize: 13, fontStyle: 'italic', marginTop: 4 }}>
-                  Period: {startDateFilter} to {endDateFilter}
+                  {accountName} · {startDateFilter} to {endDateFilter}
                 </div>
               </div>
 
@@ -340,10 +432,10 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 12, fontStyle: 'italic' }}>No entries found</td></tr>
-                  ) : (
-                    history.map(row => (
+                  {days.map(day => (
+                    <React.Fragment key={day.date}>
+                      {openingRow(day, true)}
+                      {day.entries.map(row => (
                       <tr key={row.id}>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.page_no || '-'}</td>
@@ -353,8 +445,10 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{Number(row.paid_amount || 0).toFixed(2)}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{Number(row.cheque_amount || 0).toFixed(2)}</td>
                       </tr>
-                    ))
-                  )}
+                      ))}
+                      {closingRows(day, true)}
+                    </React.Fragment>
+                  ))}
                 </tbody>
                 <tfoot>
                   <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>

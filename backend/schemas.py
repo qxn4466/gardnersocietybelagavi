@@ -297,6 +297,25 @@ class CashScrollBookOut(CashScrollBookCreate):
     created_at: Optional[datetime] = None
 
 
+class CashScrollOpeningBalanceInput(BaseModel):
+    balance_date: date
+    amount: Decimal = Field(max_digits=12, decimal_places=2)
+
+
+class CashScrollDay(BaseModel):
+    date: date
+    opening: Decimal
+    received: Decimal
+    paid: Decimal
+    closing: Decimal
+    entries: List[CashScrollBookOut]
+
+
+class CashScrollRegister(BaseModel):
+    starting_balance: Optional[CashScrollOpeningBalanceInput]
+    days: List[CashScrollDay]
+
+
 # 5. Cheque Issue Book
 class ChequeIssueBookCreate(BaseModel):
     issue_date: date

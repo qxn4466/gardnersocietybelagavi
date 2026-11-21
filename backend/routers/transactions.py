@@ -58,14 +58,14 @@ def post_transaction_to_cash_scroll(db: Session, txn: Transaction):
     """Auto-post a POSTED transaction into the Cash Scroll Book (cash transactions only).
 
     CREDIT + CASH -> received_amount; DEBIT + CASH -> paid_amount; CHEQUE -> cheque_amount.
-    Deduplicated by voucher_no == cash_memo_no so edits never create double entries.
+    Updates the existing row for the cash memo so edits update the running balance.
     """
-    if (txn.status or "POSTED") != "POSTED":
-        return
-    already = db.query(CashScrollBookEntry).filter(
+    scroll = db.query(CashScrollBookEntry).filter(
         CashScrollBookEntry.voucher_no == txn.cash_memo_no
     ).first()
-    if already:
+    if (txn.status or "POSTED") != "POSTED":
+        if scroll:
+            db.delete(scroll)
         return
     amount = Decimal(str(txn.amount_rs or 0)) + (Decimal(str(txn.amount_ps or 0)) / Decimal("100"))
     is_cheque = (txn.payment_mode or "CASH").upper() == "CHEQUE"
@@ -76,15 +76,14 @@ def post_transaction_to_cash_scroll(db: Session, txn: Transaction):
     else:
         received_amt, paid_amt, cheque_amt = amount, Decimal("0.00"), Decimal("0.00")
     prefix = "Paid To" if (txn.entry_nature or "CREDIT").upper() == "DEBIT" else "Received From"
-    db.add(CashScrollBookEntry(
-        date=txn.date,
-        voucher_no=txn.cash_memo_no,
-        from_received_paid=f"{prefix}: {txn.customer_name}"[:250],
-        received_amount=received_amt,
-        paid_amount=paid_amt,
-        cheque_amount=cheque_amt,
-        created_by=txn.created_by,
-    ))
+    if scroll is None:
+        scroll = CashScrollBookEntry(voucher_no=txn.cash_memo_no, created_by=txn.created_by)
+        db.add(scroll)
+    scroll.date = txn.date
+    scroll.from_received_paid = f"{prefix}: {txn.customer_name}"[:250]
+    scroll.received_amount = received_amt
+    scroll.paid_amount = paid_amt
+    scroll.cheque_amount = cheque_amt
 
 
 @router.post("/upload")
@@ -360,10 +359,9 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
                 raise HTTPException(status_code=409, detail="This reference was reserved by another user")
             db.delete(reservation)
 
-    db.commit()
-    db.refresh(txn)
     post_transaction_to_cash_scroll(db, txn)
     db.commit()
+    db.refresh(txn)
     return txn
 
 
