@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from typing import List, Optional
@@ -15,11 +16,22 @@ MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
+def filter_transaction_dates(query, from_date: Optional[date], to_date: Optional[date]):
+    if from_date and to_date and from_date > to_date:
+        raise HTTPException(status_code=422, detail="From date must be on or before To date")
+    if from_date:
+        query = query.filter(Transaction.date >= from_date)
+    if to_date:
+        query = query.filter(Transaction.date <= to_date)
+    return query
+
 @router.get("/entries")
 def get_ledger_entries(
     account: str,
     year: Optional[int] = None,
     db: Session = Depends(get_db),
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
 ):
     """Individual POSTED entries for one ledger account (with B.No./V.No.) for the drill-down view."""
     q = (
@@ -30,6 +42,7 @@ def get_ledger_entries(
     )
     if year:
         q = q.filter(extract("year", Transaction.date) == year)
+    q = filter_transaction_dates(q, from_date, to_date)
     q = q.order_by(Transaction.date.asc(), Transaction.id.asc())
     return [
         {
@@ -51,7 +64,9 @@ def get_ledger(
     month: Optional[int] = None,
     year: Optional[int] = None,
     account: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
 ):
     """
     Return general ledger rows grouped by (year, month, ledger_account, entry_nature).
@@ -69,6 +84,7 @@ def get_ledger(
     )
 
     q = q.filter(Transaction.status == "POSTED")
+    q = filter_transaction_dates(q, from_date, to_date)
 
     if month:
         q = q.filter(extract("month", Transaction.date) == month)

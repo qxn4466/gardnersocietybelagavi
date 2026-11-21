@@ -123,8 +123,8 @@ export const fetchCashBook = (startDate?: string, endDate?: string, bookType?: s
   api.get('/cashbook/', { params: { start_date: startDate, end_date: endDate, book_type: bookType } }).then(r => r.data);
 
 // ─── Ledger ──────────────────────────────────────────────────────────────────
-export const fetchLedger = (month?: number, year?: number, account?: string): Promise<LedgerRow[]> =>
-  api.get('/ledger/', { params: { month, year, account } }).then(r => r.data);
+export const fetchLedger = (month?: number, year?: number, account?: string, fromDate?: string, toDate?: string): Promise<LedgerRow[]> =>
+  api.get('/ledger/', { params: { month, year, account, from_date: fromDate, to_date: toDate } }).then(r => r.data);
 
 // ─── Customers / Savings Accounts ─────────────────────────────────────────────
 export const fetchNextCustomerId = (): Promise<{ customer_id: string }> =>
@@ -468,8 +468,8 @@ export const releaseRentReference = (billNo: string): Promise<{ released: boolea
   api.post('/cashier/rent-reference/release', { bill_no: billNo }).then(r => r.data);
 
 // Per-account ledger entries for the drill-down (with bill/voucher numbers)
-export const fetchLedgerEntries = (account: string, year?: number): Promise<LedgerEntry[]> =>
-  api.get('/ledger/entries', { params: { account, year } }).then(r => r.data);
+export const fetchLedgerEntries = (account: string, year?: number, fromDate?: string, toDate?: string): Promise<LedgerEntry[]> =>
+  api.get('/ledger/entries', { params: { account, year, from_date: fromDate, to_date: toDate } }).then(r => r.data);
 
 
 // 7. Test Data Generator API

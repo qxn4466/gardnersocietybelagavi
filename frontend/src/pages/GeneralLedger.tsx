@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { RefreshCw, BookMarked, TrendingUp, TrendingDown, ArrowRightLeft, Wallet, ChevronDown, ChevronRight } from 'lucide-react';
 import Header from '../components/Header';
 import PrintButton from '../components/PrintButton';
@@ -84,6 +84,16 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const now = new Date();
   const [year, setYear] = useState<string>(String(now.getFullYear()));
   const [account, setAccount] = useState<string>('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const hasDateFilter = Boolean(fromDate || toDate);
+  const invalidRange = Boolean(fromDate && toDate && fromDate > toDate);
+  const filterYear = year && !hasDateFilter ? Number(year) : undefined;
+  const filterPeriod = hasDateFilter
+    ? [fromDate && `${lang === 'mr' ? 'पासून' : 'From'} ${fromDate}`, toDate && `${lang === 'mr' ? 'पर्यंत' : 'To'} ${toDate}`].filter(Boolean).join(' · ')
+    : year ? `${lang === 'mr' ? 'वर्ष' : 'Year'} ${year}` : lang === 'mr' ? 'सर्व वर्षे' : 'All Years';
+  const entryPeriod = JSON.stringify([filterYear, fromDate, toDate]);
+  const latestRequest = useRef(0);
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [accounts, setAccounts] = useState<AccountMaster[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,7 +102,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const [entries, setEntries] = useState<Record<string, LedgerEntry[] | 'loading'>>({});
 
   const toggleAccount = (grp: AccountGroup) => {
-    const key = `${grp.account}|${year}`;
+    const key = `${grp.account}|${entryPeriod}`;
     if (expandedAccount === grp.account) {
       setExpandedAccount(null);
       return;
@@ -100,7 +110,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
     setExpandedAccount(grp.account);
     if (!entries[key]) {
       setEntries(prev => ({ ...prev, [key]: 'loading' }));
-      fetchLedgerEntries(grp.account, year ? parseInt(year, 10) : undefined)
+      fetchLedgerEntries(grp.account, filterYear, fromDate || undefined, toDate || undefined)
         .then(list => setEntries(prev => ({ ...prev, [key]: list })))
         .catch(() => setEntries(prev => ({ ...prev, [key]: [] })));
     }
@@ -113,26 +123,40 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const [dailyBal, setDailyBal] = useState<DailyBalanceSummary | null>(null);
 
   const loadData = useCallback(async () => {
+    const request = ++latestRequest.current;
+    setExpandedAccount(null);
+    setRows([]);
+    if (invalidRange) {
+      setLoading(false);
+      setError(lang === 'mr'
+        ? 'सुरुवातीची तारीख शेवटच्या तारखेला किंवा त्यापूर्वी असावी.'
+        : 'From Date must be on or before To Date.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const data = await fetchLedger(
         undefined,
-        year ? parseInt(year) : undefined,
-        account || undefined
+        filterYear,
+        account || undefined,
+        fromDate || undefined,
+        toDate || undefined
       );
+      if (request !== latestRequest.current) return;
       setRows(data);
       fetchDailyBalance().then(setDailyBal).catch(() => {});
     } catch {
+      if (request !== latestRequest.current) return;
       setError(lang === 'mr'
         ? 'खातेवही डेटा लोड होऊ शकला नाही. बॅकएंड कनेक्शन तपासा.'
         : 'Could not load Ledger data. Check backend connection.');
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
-  }, [year, account, lang]);
+  }, [filterYear, account, fromDate, toDate, invalidRange, lang]);
 
-  // Auto-load whenever year / account filter changes
+  // Auto-load whenever a ledger filter changes.
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── Group by account (account-first, month detail inside) ─────────────────
@@ -175,6 +199,11 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
   const totalPayable  = accountGroups.reduce((s, g) => s + g.totalPayable, 0);
   const totalRcv      = accountGroups.reduce((s, g) => s + g.totalReceivable, 0);
   const netBalance    = totalReceipt - totalDebit;
+  const closingBalanceLabel = lang === 'mr' ? 'अंतिम शिल्लक (Closing Balance)' : 'Closing Balance';
+  const closingBalanceDate = hasDateFilter && dailyBal ? ` (${dailyBal.selected_date})` : '';
+  const closingBalance = dailyBal
+    ? `₹${Number(dailyBal.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+    : hasDateFilter ? '—' : `₹${netBalance >= 0 ? '+' : '-'}${fmtPos(netBalance)}`;
 
   const yearOptions = Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i);
 
@@ -183,8 +212,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
       <Header
         title={t('ledger_title')}
         subtitle={lang === 'mr'
-          ? `सर्वसाधारण खातेवही — ${year ? `वर्ष ${year}` : 'सर्व वर्षे'}`
-          : `General Ledger — ${year ? `Year ${year}` : 'All Years'}`}
+          ? `सर्वसाधारण खातेवही — ${filterPeriod}`
+          : `General Ledger — ${filterPeriod}`}
         level={3}
         actions={<PrintButton label={lang === 'mr' ? 'खातेवही मुद्रित करा' : 'Print Ledger'} />}
         user={user}
@@ -227,10 +256,10 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
           <div className="stat-card" style={{ borderColor: '#c084fc', background: '#faf5ff' }}>
             <div className="stat-label" style={{ color: '#7e22ce', fontWeight: 700 }}>
               <Wallet size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {lang === 'mr' ? 'अंतिम शिल्लक (Closing Balance)' : 'Closing Balance'}
+              {closingBalanceLabel}{closingBalanceDate}
             </div>
             <div className="stat-value" style={{ color: '#6b21a8', fontWeight: 800 }}>
-              ₹{dailyBal ? Number(dailyBal.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (netBalance >= 0 ? '+' : '-') + fmtPos(netBalance)}
+              {closingBalance}
             </div>
           </div>
         </div>
@@ -239,7 +268,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         <div className="filter-bar no-print">
           <div className="filter-group">
             <span className="filter-label">{lang === 'mr' ? 'वर्ष' : 'Year'}</span>
-            <select id="ledger-year" className="filter-select" value={year} onChange={e => setYear(e.target.value)}>
+            <select id="ledger-year" className="filter-select" value={hasDateFilter ? '' : year}
+              disabled={hasDateFilter} onChange={e => setYear(e.target.value)}>
               <option value="">{lang === 'mr' ? 'सर्व वर्षे' : 'All Years'}</option>
               {yearOptions.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
@@ -256,7 +286,17 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
               ))}
             </select>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={loadData} id="ledger-refresh">
+          <div className="filter-group">
+            <label className="filter-label" htmlFor="ledger-from-date">{lang === 'mr' ? 'पासून तारीख' : 'From Date'}</label>
+            <input id="ledger-from-date" type="date" className="filter-input" value={fromDate}
+              max={toDate || undefined} onChange={e => setFromDate(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label className="filter-label" htmlFor="ledger-to-date">{lang === 'mr' ? 'पर्यंत तारीख' : 'To Date'}</label>
+            <input id="ledger-to-date" type="date" className="filter-input" value={toDate}
+              min={fromDate || undefined} onChange={e => setToDate(e.target.value)} />
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={loadData} id="ledger-refresh" disabled={invalidRange}>
             <RefreshCw size={14} /> {lang === 'mr' ? 'ताजे करा' : 'Refresh'}
           </button>
           {accountGroups.length > 0 && (
@@ -272,8 +312,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
         <PrintHeader
           documentTitle={lang === 'mr' ? 'सर्वसाधारण खातेवही' : 'G E N E R A L   L E D G E R'}
           subTitle={lang === 'mr'
-            ? `वार्षिक खाते शिल्लक — ${year ? `वर्ष ${year}` : 'सर्व वर्षे'}`
-            : `Annual Account Balance — ${year ? `Year ${year}` : 'All Years'}`}
+            ? `खाते शिल्लक — ${filterPeriod}`
+            : `Account Balance — ${filterPeriod}`}
         />
 
         {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -285,7 +325,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
               <div className="loading-overlay">
                 <span className="spinner" /> {lang === 'mr' ? 'खातेवही लोड होत आहे…' : 'Loading ledger…'}
               </div>
-            ) : accountGroups.length === 0 ? (
+            ) : error ? null : accountGroups.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon"><BookMarked /></div>
                 <div className="empty-state-title">
@@ -413,7 +453,7 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                         ))}
 
                         {/* Expanded: individual entries with Bill/Voucher numbers */}
-                        {isOpen && <LedgerEntriesPanel state={entries[`${grp.account}|${year}`] || 'loading'} lang={lang} />}
+                        {isOpen && <LedgerEntriesPanel state={entries[`${grp.account}|${entryPeriod}`] || 'loading'} lang={lang} />}
                       </React.Fragment>
                     );
                   })}
@@ -426,8 +466,8 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                     <td />
                     <td style={{ color: '#c7d2fe', padding: '10px 8px', fontWeight: 700 }}>
                       {lang === 'mr'
-                        ? `वार्षिक एकूण — ${year || 'सर्व वर्षे'} (${accountGroups.length} खाती)`
-                        : `YEARLY TOTAL — ${year || 'All Years'} (${accountGroups.length} accounts)`}
+                        ? `एकूण — ${filterPeriod} (${accountGroups.length} खाती)`
+                        : `TOTAL — ${filterPeriod} (${accountGroups.length} accounts)`}
                     </td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#86efac', fontSize: 14, fontWeight: 800 }}>
                       {fmt(totalReceipt)}
@@ -458,13 +498,13 @@ const GeneralLedger: React.FC<GeneralLedgerProps> = ({ user, onLogout, onToggleM
                   }}>
                     <td />
                     <td style={{ color: '#6b21a8', padding: '10px 8px', fontWeight: 800 }}>
-                      💰 {lang === 'mr' ? 'अंतिम शिल्लक (Closing Balance)' : 'CLOSING BALANCE'}
+                      💰 {lang === 'mr' ? closingBalanceLabel : 'CLOSING BALANCE'}{closingBalanceDate}
                     </td>
                     <td colSpan={4} style={{ textAlign: 'right', color: '#7e22ce', fontSize: 12 }}>
                       {lang === 'mr' ? '(प्रारंभिक शिल्लक + एकूण जमा - एकूण नावे)' : '(Opening Balance + Total Receipts - Total Payments)'}
                     </td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#6b21a8' }}>
-                      ₹{dailyBal ? Number(dailyBal.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (netBalance >= 0 ? '+' : '-') + fmtPos(netBalance)}
+                      {closingBalance}
                     </td>
                   </tr>
                 </tfoot>
