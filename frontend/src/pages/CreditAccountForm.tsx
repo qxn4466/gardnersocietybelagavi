@@ -354,36 +354,52 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [expandedParticularsId, setExpandedParticularsId] = useState<number | null>(null);
 
   // History Filter states
+  const [hUseDates, setHUseDates] = useState(true);
   const [hStartDate, setHStartDate] = useState(todayStr);
   const [hEndDate, setHEndDate] = useState(todayStr);
+  const searchStartDate = hUseDates ? hStartDate || undefined : undefined;
+  const searchEndDate = hUseDates ? hEndDate || undefined : undefined;
   const [hTxnTypeId, setHTxnTypeId] = useState('');
   const [hCustomerId, setHCustomerId] = useState('');
   const [hStatus, setHStatus] = useState('');
   const [hNature, setHNature] = useState('');
   const [historyList, setHistoryList] = useState<Transaction[]>([]);
   const [hLoading, setHLoading] = useState(false);
+  const historyRequest = useRef(0);
+
+  const resetHistoryFilters = () => {
+    setHUseDates(true);
+    setHStartDate(todayStr);
+    setHEndDate(todayStr);
+    setHCustomerId('');
+    setHTxnTypeId('');
+    setHStatus('');
+    setHNature('');
+  };
 
   const loadDrafts = useCallback(() => {
     fetchDrafts().then(setDrafts).catch(() => {});
   }, []);
 
   const loadHistory = useCallback(async () => {
+    const request = ++historyRequest.current;
     setHLoading(true);
+    setHistoryList([]);
     try {
       const data = await fetchTransactions(
-        hStartDate,
-        hEndDate,
+        searchStartDate,
+        searchEndDate,
         hTxnTypeId ? parseInt(hTxnTypeId) : undefined,
         hStatus || undefined,
         hCustomerId || undefined
       );
-      setHistoryList(data);
+      if (request === historyRequest.current) setHistoryList(data);
     } catch {
       // ignore history error silently
     } finally {
-      setHLoading(false);
+      if (request === historyRequest.current) setHLoading(false);
     }
-  }, [hStartDate, hEndDate, hTxnTypeId, hStatus, hCustomerId]);
+  }, [searchStartDate, searchEndDate, hTxnTypeId, hStatus, hCustomerId]);
 
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
@@ -681,8 +697,8 @@ loadDraftIntoForm(t);
       setSavedMemo(saved.cash_memo_no);
       setLastSavedTxn(saved);
       loadDrafts();
-      if (saved.date && saved.date < hStartDate) setHStartDate(saved.date);
-      if (saved.date && saved.date > hEndDate) setHEndDate(saved.date);
+      if (searchStartDate && saved.date < searchStartDate) setHStartDate(saved.date);
+      if (searchEndDate && saved.date > searchEndDate) setHEndDate(saved.date);
       loadHistory();
 
       if (isDraft) {
@@ -2084,7 +2100,7 @@ loadDraftIntoForm(t);
                 type="button"
                 className="btn btn-primary btn-sm"
                 onClick={() => setShowStatementModal(true)}
-                disabled={historyList.length === 0}
+                disabled={hLoading || displayedHistoryList.length === 0}
                 id="print-monthly-stmt-btn"
               >
                 <Printer size={14} /> {lang === 'mr' ? 'मासिक खाते विवरणपत्र मुद्रित करा' : 'Print Customer Monthly Statement'}
@@ -2093,6 +2109,11 @@ loadDraftIntoForm(t);
           </div>
 
           <div className="card-body">
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <input type="checkbox" checked={hUseDates} onChange={event => setHUseDates(event.target.checked)} />
+              {lang === 'mr' ? 'तारखेनुसार शोधा' : 'Filter by date'}
+              {!hUseDates && <span style={{ color: 'var(--text-muted)' }}>{lang === 'mr' ? 'सर्व तारखा' : 'All dates'}</span>}
+            </label>
             {/* ═══════════════════════════════════════════════════════════════ */}
             {/* SEARCH MODE 1: EXCEL SPREADSHEET GRID VIEW (Vertically Aligned) */}
             {/* ═══════════════════════════════════════════════════════════════ */}
@@ -2168,6 +2189,8 @@ loadDraftIntoForm(t);
                             type="date"
                             className="form-input"
                             value={hStartDate}
+                            disabled={!hUseDates}
+                            aria-label={lang === 'mr' ? 'सुरुवातीची तारीख' : 'From Date'}
                             onChange={e => setHStartDate(e.target.value)}
                             style={{ width: '100%', maxWidth: 260, height: 38 }}
                           />
@@ -2193,6 +2216,8 @@ loadDraftIntoForm(t);
                             type="date"
                             className="form-input"
                             value={hEndDate}
+                            disabled={!hUseDates}
+                            aria-label={lang === 'mr' ? 'शेवटची तारीख' : 'To Date'}
                             onChange={e => setHEndDate(e.target.value)}
                             style={{ width: '100%', maxWidth: 260, height: 38 }}
                           />
@@ -2304,19 +2329,11 @@ loadDraftIntoForm(t);
                     <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
                   </button>
 
-                  {(hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
+                  {(!hUseDates || hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => {
-                        setHCustomerId('');
-                        setHStartDate(todayStr);
-                        setHEndDate(todayStr);
-                        setHTxnTypeId('');
-                        setHStatus('');
-                        setHNature('');
-                        fetchTransactions(todayStr, todayStr).then(setHistoryList);
-                      }}
+                      onClick={resetHistoryFilters}
                       id="hist-reset-btn"
                       style={{ padding: '8px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
                     >
@@ -2365,6 +2382,8 @@ loadDraftIntoForm(t);
                       type="date"
                       className="form-input"
                       value={hStartDate}
+                      disabled={!hUseDates}
+                      aria-label={lang === 'mr' ? 'सुरुवातीची तारीख' : 'From Date'}
                       onChange={e => setHStartDate(e.target.value)}
                       style={{ width: '100%', maxWidth: 260, height: 38 }}
                     />
@@ -2380,6 +2399,8 @@ loadDraftIntoForm(t);
                       type="date"
                       className="form-input"
                       value={hEndDate}
+                      disabled={!hUseDates}
+                      aria-label={lang === 'mr' ? 'शेवटची तारीख' : 'To Date'}
                       onChange={e => setHEndDate(e.target.value)}
                       style={{ width: '100%', maxWidth: 260, height: 38 }}
                     />
@@ -2449,19 +2470,11 @@ loadDraftIntoForm(t);
                     <RefreshCw size={14} /> {lang === 'mr' ? 'नोंदी शोधा' : 'Filter Records'}
                   </button>
 
-                  {(hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
+                  {(!hUseDates || hCustomerId || hStartDate !== todayStr || hEndDate !== todayStr || hTxnTypeId || hStatus || hNature) && (
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => {
-                        setHCustomerId('');
-                        setHStartDate(todayStr);
-                        setHEndDate(todayStr);
-                        setHTxnTypeId('');
-                        setHStatus('');
-                        setHNature('');
-                        fetchTransactions(todayStr, todayStr).then(setHistoryList);
-                      }}
+                      onClick={resetHistoryFilters}
                       id="hist-reset-btn"
                       style={{ padding: '8px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
                     >
@@ -2749,10 +2762,10 @@ onClick={() => loadDraftIntoForm(d)}
         <CustomerStatementModal
           isOpen={showStatementModal}
           customerId={hCustomerId}
-          customerName={historyList[0]?.customer_name || ''}
-          startDate={hStartDate}
-          endDate={hEndDate}
-          transactions={historyList}
+          customerName={displayedHistoryList[0]?.customer_name || ''}
+          startDate={searchStartDate}
+          endDate={searchEndDate}
+          transactions={displayedHistoryList}
           office={office}
           onClose={() => setShowStatementModal(false)}
         />

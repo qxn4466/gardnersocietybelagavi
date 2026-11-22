@@ -11,8 +11,8 @@ interface CustomerStatementModalProps {
   isOpen: boolean;
   customerId: string;
   customerName: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   transactions: Transaction[];
   office?: OfficeMaster | null;
   onClose: () => void;
@@ -39,6 +39,12 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const period = startDate && endDate
+    ? `${startDate} ${lang === 'mr' ? 'ते' : 'to'} ${endDate}`
+    : startDate ? `${lang === 'mr' ? 'पासून' : 'From'} ${startDate}`
+      : endDate ? `${lang === 'mr' ? 'पर्यंत' : 'Through'} ${endDate}`
+        : lang === 'mr' ? 'सर्व तारखा' : 'All dates';
 
   const totalAmount = transactions.reduce(
     (sum, t) => sum + Number(t.amount_rs) + Number(t.amount_ps) / 100,
@@ -98,7 +104,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           {/* Header Banner */}
           <PrintHeader
             documentTitle={lang === 'mr' ? 'ग्राहक  मासिक  खाते  विवरणपत्र' : 'C U S T O M E R   M O N T H L Y   A C C O U N T   S T A T E M E N T'}
-            subTitle={lang === 'mr' ? `पासबुक विवरणपत्र कालावधी: ${startDate} ते ${endDate}` : `Passbook Statement Period: ${startDate} to ${endDate}`}
+            subTitle={period}
           />
 
           {/* Customer Metadata Bar */}
@@ -122,7 +128,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{lang === 'mr' ? 'विवरणपत्र कालावधी' : 'STATEMENT PERIOD'}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
-                {startDate} {lang === 'mr' ? 'ते' : 'to'} {endDate}
+                {period}
               </div>
             </div>
           </div>
