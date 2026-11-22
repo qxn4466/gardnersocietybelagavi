@@ -315,7 +315,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                 <tr>
                   <th style={{ width: 100 }}>{lang === 'mr' ? 'दिनांक' : 'Date'}</th>
                   <th style={{ width: 80 }}>{lang === 'mr' ? 'पान क्र.' : 'Page No.'}</th>
-                  <th style={{ width: 130 }}>{lang === 'mr' ? 'व्हाऊचर/B Cash' : 'V. / B Cash No.'}</th>
+                  <th style={{ width: 130 }}>{lang === 'mr' ? 'बिल / व्हाऊचर क्र.' : 'Bill / Voucher No.'}</th>
                   <th>{lang === 'mr' ? 'कोणाकडून आले व दिले (Particulars)' : 'From Received and Paid'}</th>
                   <th style={{ textAlign: 'right', color: '#16a34a', width: 130 }}>{lang === 'mr' ? 'जमा (Received ₹)' : 'Received (₹)'}</th>
                   <th style={{ textAlign: 'right', color: '#dc2626', width: 130 }}>{lang === 'mr' ? 'नावे (Paid ₹)' : 'Paid (₹)'}</th>
@@ -325,7 +325,10 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
               </thead>
               <tbody>
                 {days.map(day => {
-                  const matchingEntries = day.entries.filter(row => row.from_received_paid.toLowerCase().includes(searchTerm.toLowerCase()));
+                  const search = searchTerm.toLowerCase();
+                  const matchingEntries = day.entries.filter(row =>
+                    [row.item_details, row.from_received_paid, row.reference_no].some(value => value?.toLowerCase().includes(search))
+                  );
                   return (
                   <React.Fragment key={day.date}>
                     {openingRow(day, false)}
@@ -342,8 +345,8 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                   >
                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date}</td>
                     <td style={{ fontFamily: 'monospace' }}>{row.page_no || '—'}</td>
-                    <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.voucher_no || '—'}</td>
-                    <td style={{ fontWeight: 600 }}>{row.from_received_paid}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--text-brand)', fontFamily: 'monospace' }}>{row.reference_no || '—'}</td>
+                    <td style={{ fontWeight: 600, whiteSpace: 'pre-line' }}>{row.item_details || row.from_received_paid}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#16a34a' }}>₹{Number(row.received_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#dc2626' }}>₹{Number(row.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#2563eb' }}>₹{Number(row.cheque_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -424,7 +427,7 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                   <tr style={{ background: '#f1f5f9', borderTop: '1px solid #000', borderBottom: '1px solid #000' }}>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Date</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>Page No.</th>
-                    <th style={{ border: '1px solid #000', padding: 6 }}>V. / B Cash No.</th>
+                    <th style={{ border: '1px solid #000', padding: 6 }}>Bill / Voucher No.</th>
                     <th style={{ border: '1px solid #000', padding: 6 }}>From Received and Paid (Particulars)</th>
                     <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Received (₹)</th>
                     <th style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>Paid (₹)</th>
@@ -439,8 +442,8 @@ const CashScrollBookForm: React.FC<CashScrollBookFormProps> = () => {
                       <tr key={row.id}>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.date}</td>
                         <td style={{ border: '1px solid #000', padding: 6 }}>{row.page_no || '-'}</td>
-                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.voucher_no || '-'}</td>
-                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.from_received_paid}</td>
+                        <td style={{ border: '1px solid #000', padding: 6 }}>{row.reference_no || '—'}</td>
+                        <td style={{ border: '1px solid #000', padding: 6, whiteSpace: 'pre-line' }}>{row.item_details || row.from_received_paid}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{Number(row.received_amount || 0).toFixed(2)}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{Number(row.paid_amount || 0).toFixed(2)}</td>
                         <td style={{ border: '1px solid #000', padding: 6, textAlign: 'right' }}>₹{Number(row.cheque_amount || 0).toFixed(2)}</td>

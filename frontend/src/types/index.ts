@@ -475,7 +475,7 @@ export interface CashScrollBookEntry {
   created_at?: string | null;
 }
 
-export interface CashScrollOpeningBalance {  balance_date: string;  amount: string;}export interface CashScrollDay {  date: string;  opening: string;  received: string;  paid: string;  closing: string;  entries: CashScrollBookEntry[];}export interface CashScrollRegister {  starting_balance: CashScrollOpeningBalance | null;  days: CashScrollDay[];}export interface CashScrollBookCreate {  date: string;
+export interface CashScrollOpeningBalance {  balance_date: string;  amount: string;}export interface CashScrollRegisterEntry extends CashScrollBookEntry {  reference_no: string | null;  item_details: string | null;}export interface CashScrollDay {  date: string;  opening: string;  received: string;  paid: string;  closing: string;  entries: CashScrollRegisterEntry[];}export interface CashScrollRegister {  starting_balance: CashScrollOpeningBalance | null;  days: CashScrollDay[];}export interface CashScrollBookCreate {  date: string;
   page_no?: string;
   voucher_no?: string;
   from_received_paid: string;

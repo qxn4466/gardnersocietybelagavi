@@ -260,7 +260,7 @@ const CreditAccountForm: React.FC<CreditAccountFormProps> = ({ user, onLogout, o
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [rows, setRows] = useState<ParticularRow[]>([newRow()]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-  const [generatedRef, setGeneratedRef] = useState<{ nature: 'CREDIT' | 'DEBIT'; number: string } | null>(null);
+  const [generatedRef, setGeneratedRef] = useState<{ nature: 'CREDIT' | 'DEBIT'; number: string; draftId: number } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ path: string; name: string } | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -471,12 +471,12 @@ loadDraftIntoForm(t);
 
   const generateReference = async () => {
     try {
-      const { reference_no } = await reserveTransactionReference(form.date, form.entry_nature);
+      const { reference_no, draft_id } = await reserveTransactionReference(form.date, form.entry_nature);
       setForm(prev => form.entry_nature === 'CREDIT'
         ? { ...prev, bill_no: reference_no }
         : { ...prev, voucher_no: reference_no }
       );
-setGeneratedRef({ nature: form.entry_nature, number: reference_no });
+      setGeneratedRef(draft_id === null ? null : { nature: form.entry_nature, number: reference_no, draftId: draft_id });
       setAlert({ type: 'success', msg: `${form.entry_nature === 'CREDIT' ? 'Bill' : 'Voucher'} number ${reference_no} generated and reserved.` });
     } catch {
       setAlert({ type: 'error', msg: 'Could not generate the reference number. Check backend connection.' });
@@ -718,7 +718,7 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
 
   const handleReset = (clearAlertAndMemo: boolean = true) => {
     if (generatedRef) {
-      void releaseTransactionReference(generatedRef.number, generatedRef.nature).catch(() => {});
+      void releaseTransactionReference(generatedRef.number, generatedRef.nature, generatedRef.draftId).catch(() => {});
     }
     setGeneratedRef(null);
     localStorage.removeItem(creditDraftKey);
@@ -1222,9 +1222,9 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                           id="entry-reference"
                           type="text"
                           className="form-input"
-                          placeholder={form.entry_nature === 'CREDIT' ? 'Enter bill number' : 'Enter voucher number'}
+                          placeholder={lang === 'mr' ? 'जतन केल्यावर क्रमांक मिळेल' : 'Assigned on save'}
                           value={form.entry_nature === 'CREDIT' ? form.bill_no : form.voucher_no}
-                          onChange={handleChange(form.entry_nature === 'CREDIT' ? 'bill_no' : 'voucher_no')}
+                          readOnly
                           style={{ width: '100%' }}
                         />
                         <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>
@@ -1726,9 +1726,9 @@ setGeneratedRef({ nature: form.entry_nature, number: reference_no });
                                 id="entry-reference-excel"
                                 type="text"
                                 className="form-input"
-                                placeholder={form.entry_nature === 'CREDIT' ? 'Enter bill number' : 'Enter voucher number'}
+                                placeholder={lang === 'mr' ? 'जतन केल्यावर क्रमांक मिळेल' : 'Assigned on save'}
                                 value={form.entry_nature === 'CREDIT' ? form.bill_no : form.voucher_no}
-                                onChange={handleChange(form.entry_nature === 'CREDIT' ? 'bill_no' : 'voucher_no')}
+                                readOnly
                                 style={{ width: '100%', height: 38 }}
                               />
                               <button type="button" className="btn btn-secondary" onClick={generateReference} style={{ whiteSpace: 'nowrap' }}>

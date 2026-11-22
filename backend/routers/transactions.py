@@ -11,7 +11,7 @@ from typing import List, Optional
 from database import get_db
 from models import Transaction, TransactionTypeMaster, CashScrollBookEntry, User
 from schemas import TransactionCreate, TransactionOut, NextMemoResponse
-from numbering import acquire_numbering_lock, ensure_free
+from numbering import acquire_numbering_lock
 from routers.auth import require_transaction_user
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -36,17 +36,30 @@ def financial_year_bounds(txn_date: date) -> tuple[date, date]:
     return date(start_year, 4, 1), date(start_year + 1, 4, 1)
 
 
-def generate_reference_no(db: Session, txn_date: date, entry_nature: str) -> str:
-    """Generate B.No./V.No. serials independently for each financial year."""
+def reference_query(db: Session, txn_date: date, entry_nature: str):
     fy_start, fy_end = financial_year_bounds(txn_date)
     reference_column = Transaction.bill_no if entry_nature == "CREDIT" else Transaction.voucher_no
-    references = (
-        db.query(reference_column)
-        .filter(Transaction.date >= fy_start, Transaction.date < fy_end, reference_column.isnot(None))
-        .all()
-    )
-    highest = max((int(value[0]) for value in references if str(value[0]).isdigit()), default=0)
-    return str(highest + 1).zfill(4)
+    return db.query(Transaction).filter(Transaction.date >= fy_start, Transaction.date < fy_end), reference_column
+
+
+def generate_reference_no(db: Session, txn_date: date, entry_nature: str) -> str:
+    """Generate B.No./V.No. serials independently for each financial year."""
+    query, column = reference_query(db, txn_date, entry_nature)
+    references = query.with_entities(column).filter(column.isnot(None)).all()
+    highest = max((int(value) for (value,) in references if value.isascii() and value.isdecimal() and len(value) <= 4), default=0)
+    if highest >= 9999:
+        raise HTTPException(status_code=409, detail="All four-digit references for this financial year are in use.")
+    return f"{highest + 1:04d}"
+
+
+def find_reservation(db: Session, txn_date: date, nature: str, number: str | None, user: User):
+    if not number:
+        return None
+    query, column = reference_query(db, txn_date, nature)
+    reservation = query.filter(column == number, Transaction.status == "DRAFT", Transaction.customer_name == "(reserved)").first()
+    if reservation and reservation.created_by_user_id not in (None, user.id):
+        raise HTTPException(status_code=409, detail="This reference was reserved by another user")
+    return reservation
 
 
 # Upload Directory for Transaction Attachments (Credit-Debit Account Form)
@@ -128,16 +141,7 @@ def reserve_reference(payload: dict, db: Session = Depends(get_db), user: User =
         Transaction.customer_name == "(reserved)",
         Transaction.created_at < stale_cutoff,
     ).delete(synchronize_session=False)
-    column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
-
-    def taken(n: str) -> bool:
-        return db.query(Transaction.id).filter(column == n).first() is not None
-
     number = generate_reference_no(db, d, nature)
-    guard = 0
-    while taken(number) and guard < 200:
-        number = generate_reference_no(db, d, nature)
-        guard += 1
 
     # Use a VALID account-head id — hardcoding 1 breaks when the master's ids don't start at 1
     tt = db.query(TransactionTypeMaster).order_by(TransactionTypeMaster.id.asc()).first()
@@ -177,13 +181,18 @@ def release_reference(payload: dict, db: Session = Depends(get_db), user: User =
     nature = str(payload.get("entry_nature", "CREDIT")).upper()
     if number:
         column = Transaction.bill_no if nature == "CREDIT" else Transaction.voucher_no
-        db.query(Transaction).filter(
+        reservation = db.query(Transaction).filter(
             column == number,
             Transaction.status == "DRAFT",
             Transaction.customer_name == "(reserved)",
             Transaction.created_by_user_id == user.id,
-        ).delete(synchronize_session=False)
-        db.commit()
+        )
+        if payload.get("draft_id") is not None:
+            reservation = reservation.filter(Transaction.id == payload["draft_id"])
+        reserved = reservation.order_by(Transaction.id.desc()).first()
+        if reserved:
+            db.delete(reserved)
+            db.commit()
     return {"released": True}
 
 
@@ -220,29 +229,9 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
 
     memo_no = generate_cash_memo_no(db, payload.date)
 
-    bill_no = payload.bill_no if nature == "CREDIT" else None
-    voucher_no = payload.voucher_no if nature == "DEBIT" else None
-    if nature == "CREDIT" and not bill_no:
-        bill_no = generate_reference_no(db, payload.date, nature)
-    if nature == "DEBIT" and not voucher_no:
-        voucher_no = generate_reference_no(db, payload.date, nature)
-    # If this Bill/Voucher No. was generated earlier, a DRAFT placeholder row already
-    # exists — fill/update THAT row instead of creating a new one.
-    placeholder = None
-    if nature == "CREDIT" and payload.bill_no:
-        placeholder = db.query(Transaction).filter(
-            Transaction.bill_no == payload.bill_no,
-            Transaction.status == "DRAFT",
-        ).first()
-    if nature == "DEBIT" and payload.voucher_no:
-        placeholder = db.query(Transaction).filter(
-            Transaction.voucher_no == payload.voucher_no,
-            Transaction.status == "DRAFT",
-        ).first()
-
-    if placeholder and placeholder.customer_name == "(reserved)":
-        if placeholder.created_by_user_id is not None and placeholder.created_by_user_id != user.id:
-            raise HTTPException(status_code=409, detail="This reference was reserved by another user")
+    requested_reference = payload.bill_no if nature == "CREDIT" else payload.voucher_no
+    placeholder = find_reservation(db, payload.date, nature, requested_reference, user)
+    if placeholder:
         placeholder.date = payload.date
         placeholder.customer_id = payload.customer_id
         placeholder.mobile_no = payload.mobile_no
@@ -270,19 +259,13 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         db.refresh(txn)
         return txn
 
-    if nature == "CREDIT" and bill_no:
-        bill_no = ensure_free(db, Transaction, Transaction.bill_no, bill_no,
-                              lambda: generate_reference_no(db, payload.date, "CREDIT"))
-    if nature == "DEBIT" and voucher_no:
-        voucher_no = ensure_free(db, Transaction, Transaction.voucher_no, voucher_no,
-                                 lambda: generate_reference_no(db, payload.date, "DEBIT"))
-
+    reference = generate_reference_no(db, payload.date, nature)
     txn = Transaction(
         date=payload.date,
         cash_memo_no=memo_no,
         customer_id=payload.customer_id,
-        bill_no=bill_no,
-        voucher_no=voucher_no,
+        bill_no=reference if nature == "CREDIT" else None,
+        voucher_no=reference if nature == "DEBIT" else None,
         mobile_no=payload.mobile_no,
         customer_name=payload.customer_name,
         particulars=payload.particulars,
@@ -328,36 +311,34 @@ def update_transaction(txn_id: int, payload: TransactionCreate, db: Session = De
     if tt and (not nature or tt.entry_type in ["CREDIT", "DEBIT"]):
         nature = tt.entry_type if tt.entry_type != "BOTH" else (payload.entry_nature or "CREDIT")
 
+    nature = nature or "CREDIT"
+    acquire_numbering_lock(db)
+    requested_reference = payload.bill_no if nature == "CREDIT" else payload.voucher_no
+    existing_reference = txn.bill_no if nature == "CREDIT" else txn.voucher_no
+    reservation = find_reservation(db, payload.date, nature, requested_reference, user)
+    if reservation:
+        reference = requested_reference
+        db.delete(reservation)
+    elif existing_reference and txn.entry_nature == nature and financial_year_bounds(txn.date) == financial_year_bounds(payload.date):
+        reference = existing_reference
+    else:
+        reference = generate_reference_no(db, payload.date, nature)
+
     txn.date = payload.date
     txn.customer_id = payload.customer_id
-    txn.bill_no = payload.bill_no
-    txn.voucher_no = payload.voucher_no
+    txn.bill_no = reference if nature == "CREDIT" else None
+    txn.voucher_no = reference if nature == "DEBIT" else None
     txn.mobile_no = payload.mobile_no
     txn.customer_name = payload.customer_name
     txn.particulars = payload.particulars
     txn.transaction_type_id = tt.id if tt else type_id
-    txn.entry_nature = nature or "CREDIT"
+    txn.entry_nature = nature
     txn.amount_rs = payload.amount_rs
     txn.amount_ps = payload.amount_ps
     txn.payment_mode = (payload.payment_mode or "CASH").upper()
     txn.attachments = payload.attachments
     txn.remarks = payload.remarks
     txn.status = payload.status or "POSTED"
-
-    # If the new Bill/Voucher No. came from a Generate reservation, consume its placeholder
-    ref_value = txn.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else txn.voucher_no
-    if ref_value:
-        ref_column = Transaction.bill_no if (txn.entry_nature or "CREDIT").upper() == "CREDIT" else Transaction.voucher_no
-        reservation = db.query(Transaction).filter(
-            ref_column == ref_value,
-            Transaction.status == "DRAFT",
-            Transaction.id != txn.id,
-            Transaction.customer_name == "(reserved)",
-        ).first()
-        if reservation:
-            if reservation.created_by_user_id is not None and reservation.created_by_user_id != user.id:
-                raise HTTPException(status_code=409, detail="This reference was reserved by another user")
-            db.delete(reservation)
 
     post_transaction_to_cash_scroll(db, txn)
     db.commit()

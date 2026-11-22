@@ -302,13 +302,18 @@ class CashScrollOpeningBalanceInput(BaseModel):
     amount: Decimal = Field(max_digits=12, decimal_places=2)
 
 
+class CashScrollRegisterEntry(CashScrollBookOut):
+    reference_no: Optional[str] = None
+    item_details: Optional[str] = None
+
+
 class CashScrollDay(BaseModel):
     date: date
     opening: Decimal
     received: Decimal
     paid: Decimal
     closing: Decimal
-    entries: List[CashScrollBookOut]
+    entries: List[CashScrollRegisterEntry]
 
 
 class CashScrollRegister(BaseModel):

@@ -95,11 +95,11 @@ export const fetchAccounts = (): Promise<AccountMaster[]> =>
 export const fetchNextMemo = (date?: string): Promise<{ cash_memo_no: string }> =>
   api.get('/transactions/next-memo', { params: { txn_date: date } }).then(r => r.data);
 
-export const reserveTransactionReference = (date: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ reference_no: string; draft_id: number }> =>
+export const reserveTransactionReference = (date: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ reference_no: string; draft_id: number | null }> =>
   api.post('/transactions/reference/reserve', { txn_date: date, entry_nature: entryNature }).then(r => r.data);
 
-export const releaseTransactionReference = (number: string, entryNature: 'CREDIT' | 'DEBIT'): Promise<{ released: boolean }> =>
-  api.post('/transactions/reference/release', { number, entry_nature: entryNature }).then(r => r.data);
+export const releaseTransactionReference = (number: string, entryNature: 'CREDIT' | 'DEBIT', draftId: number): Promise<{ released: boolean }> =>
+  api.post('/transactions/reference/release', { number, entry_nature: entryNature, draft_id: draftId }).then(r => r.data);
 
 // Upload an attachment for a Credit/Debit transaction entry
 export const uploadTransactionAttachment = (file: File): Promise<{ filename: string; filepath: string; original_name?: string }> => {

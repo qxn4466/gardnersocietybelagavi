@@ -1,9 +1,10 @@
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
+import re
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import exists, func, or_
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
@@ -14,10 +15,13 @@ from models import (
     SystemBalanceSetting, Transaction, TransactionTypeMaster,
 )
 from routers.auth import require_transaction_user
-from schemas import CashScrollDay, CashScrollOpeningBalanceInput, CashScrollRegister
+from schemas import CashScrollDay, CashScrollOpeningBalanceInput, CashScrollRegister, CashScrollRegisterEntry
 
 router = APIRouter(prefix="/cashier", tags=["cashier"])
 ZERO = Decimal("0.00")
+SERIAL = re.compile(r"(?:(?:BGS|PV|RV|RENT)-[0-9]{8}-)?([0-9]{1,4})")
+FORM_ITEM_AMOUNT = re.compile(r": Rs\.[+-]?[0-9]+\.[0-9]*(?= \| | — |$)")
+FORM_TAX_NOTE = re.compile(r" — (?=(?:CGST|SGST) \()")
 
 
 def get_account(db: Session, account_id: int | None) -> AccountMaster | None:
@@ -45,28 +49,32 @@ def get_register(start_date: date, end_date: date, account_id: int | None = None
                 balance_date=legacy.initial_balance_date, amount=legacy.initial_opening_balance
             )
 
-    entries = db.query(CashScrollBookEntry)
-    if account:
-        # Rent scroll rows may use the printed bill number instead of the transaction's invoice number.
-        rent_reference = exists().where(
-            RentBill.invoice_no == Transaction.cash_memo_no,
-            RentBill.bill_no == CashScrollBookEntry.voucher_no,
-            RentBill.date == CashScrollBookEntry.date,
-            CashScrollBookEntry.from_received_paid.startswith("Rent Bill:"),
-        ).correlate(Transaction, CashScrollBookEntry)
-        account_transaction = (
-            db.query(Transaction.id)
-            .join(TransactionTypeMaster, Transaction.transaction_type_id == TransactionTypeMaster.id)
-            .filter(
-                Transaction.status == "POSTED",
-                Transaction.date == CashScrollBookEntry.date,
-                func.lower(TransactionTypeMaster.ledger_account) == account.account_name.lower(),
-                or_(Transaction.cash_memo_no == CashScrollBookEntry.voucher_no, rent_reference),
-            )
-            .correlate(CashScrollBookEntry)
-            .exists()
+    # Rent scroll rows may use the printed bill number instead of the transaction's invoice number.
+    rent_reference = exists().where(
+        RentBill.invoice_no == Transaction.cash_memo_no,
+        RentBill.bill_no == CashScrollBookEntry.voucher_no,
+        RentBill.date == CashScrollBookEntry.date,
+        CashScrollBookEntry.from_received_paid.startswith("Rent Bill:"),
+    ).correlate(Transaction, CashScrollBookEntry)
+    transaction_id = (
+        select(Transaction.id)
+        .where(
+            Transaction.status == "POSTED",
+            Transaction.date == CashScrollBookEntry.date,
+            or_(Transaction.cash_memo_no == CashScrollBookEntry.voucher_no, rent_reference),
         )
-        entries = entries.filter(account_transaction)
+        .order_by((Transaction.cash_memo_no == CashScrollBookEntry.voucher_no).desc(), Transaction.id.desc())
+        .limit(1)
+        .correlate(CashScrollBookEntry)
+        .scalar_subquery()
+    )
+    entries = db.query(CashScrollBookEntry)
+    matched_entries = entries.outerjoin(Transaction, Transaction.id == transaction_id)
+    if account:
+        matched_entries = matched_entries.join(TransactionTypeMaster, Transaction.transaction_type_id == TransactionTypeMaster.id).filter(
+            func.lower(TransactionTypeMaster.ledger_account) == account.account_name.lower()
+        )
+        entries = matched_entries
 
     prior = entries.filter(CashScrollBookEntry.date < start_date)
     balance = ZERO
@@ -78,10 +86,22 @@ def get_register(start_date: date, end_date: date, account_id: int | None = None
     ).scalar()
 
     by_date = defaultdict(list)
-    for entry in entries.filter(CashScrollBookEntry.date.between(start_date, end_date)).order_by(
+    for entry, transaction in matched_entries.add_entity(Transaction).filter(CashScrollBookEntry.date.between(start_date, end_date)).order_by(
         CashScrollBookEntry.date, CashScrollBookEntry.id
     ):
-        by_date[entry.date].append(entry)
+        source_reference = None
+        details = None
+        if transaction:
+            source_reference = transaction.bill_no if transaction.entry_nature == "CREDIT" else transaction.voucher_no
+            details = (transaction.particulars or "").strip()
+            if transaction.cash_memo_no.startswith("BGS-") and FORM_ITEM_AMOUNT.search(details):
+                details = FORM_TAX_NOTE.split(details, maxsplit=1)[0]
+                details = FORM_ITEM_AMOUNT.sub("", details).replace(" | ", "\n").strip()
+        serial = SERIAL.fullmatch((source_reference or "").strip()) or SERIAL.fullmatch((entry.voucher_no or "").strip())
+        row = CashScrollRegisterEntry.model_validate(entry)
+        row.reference_no = serial[1].zfill(4) if serial else None
+        row.item_details = details or None
+        by_date[entry.date].append(row)
 
     dates = set(by_date) | {start_date, end_date}
     if starting_balance and start_date <= starting_balance.balance_date <= end_date:
